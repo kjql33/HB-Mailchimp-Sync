@@ -1,0 +1,45 @@
+{
+  "results": [
+    {
+      "recordId": "2751",
+      "membershipTimestamp": "2025-05-20T16:15:55.713Z"
+    },
+    {
+      "recordId": "2801",
+      "membershipTimestamp": "2025-05-20T16:23:49.882Z"
+    },
+    {
+      "recordId": "2852",
+      "membershipTimestamp": "2025-05-20T16:15:55.713Z"
+    },
+    {
+      "recordId": "3301",
+      "membershipTimestamp": "2025-05-20T16:15:55.713Z"
+    },
+    {
+      "recordId": "3651",
+      "membershipTimestamp": "2025-05-20T16:15:55.713Z"
+    },
+    {
+      "recordId": "4801",
+      "membershipTimestamp": "2025-05-20T16:15:55.713Z"
+    },
+    {
+      "recordId": "7201",
+      "membershipTimestamp": "2025-05-20T16:15:55.713Z"
+    },
+    {
+      "recordId": "7251",
+      "membershipTimestamp": "2025-05-20T16:15:55.713Z"
+    },
+    {
+      "recordId": "7351",
+      "membershipTimestamp": "2025-05-20T16:15:55.713Z"
+    },
+    {
+      "recordId": "7451",
+      "membershipTimestamp": "2025-05-20T16:15:55.713Z"
+    }
+  ],
+  "total": 10
+}
