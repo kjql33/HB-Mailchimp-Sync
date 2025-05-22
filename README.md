@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 # HubSpot → Mailchimp Sync Agent
+=======
+# Migration-Sync
+>>>>>>> origin/main
 
 # HubSpot → Mailchimp Sync Agent
 A Python-based integration that synchronizes contacts from a HubSpot Active List to a Mailchimp Audience using the HubSpot CRM v3 Lists API. This tool automates the process of keeping your marketing lists in sync, ensuring consistent communication across platforms.
@@ -83,3 +87,7 @@ This agent keeps your Mailchimp audience in lock-step with one or more HubSpot l
 - Archived or unsubscribed Mailchimp contacts will be resurrected if they reappear in HubSpot.
 - Contacts in multiple HubSpot lists end up with multiple tags in Mailchimp.
 - Use `TEST_CONTACT_LIMIT` to cap contacts per list for safe testing.
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/main
