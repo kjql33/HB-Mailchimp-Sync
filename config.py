@@ -9,10 +9,15 @@ from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
-# HubSpot API
+
+# HubSpot lists to sync (edit here whenever you need to add/remove a list)
+HUBSPOT_LIST_IDS = [
+    "676",  # Main prospect list
+    "677",  # Secondary nurture list
+    # …add more as needed…
+]
+# HubSpot API token (keep secret)
 HUBSPOT_PRIVATE_TOKEN = os.getenv("HUBSPOT_PRIVATE_TOKEN", "")
-# Comma-separated HubSpot List IDs to sync (e.g. "123,456"); falls back to single HUBSPOT_LIST_ID
-HUBSPOT_LIST_IDS = [s.strip() for s in os.getenv("HUBSPOT_LIST_IDS", os.getenv("HUBSPOT_LIST_ID", "")).split(",") if s.strip()]
 
 # Mailchimp API
 MAILCHIMP_API_KEY = os.getenv("MAILCHIMP_API_KEY", "")

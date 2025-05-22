@@ -25,8 +25,7 @@ A Python-based integration that synchronizes contacts from a HubSpot Active List
    ```bash
    # HubSpot API
    HUBSPOT_PRIVATE_TOKEN=your_hubspot_private_app_token
-   # Comma-separated list of HubSpot list IDs to sync (e.g., "123,456"); falls back to single HUBSPOT_LIST_ID
-   HUBSPOT_LIST_IDS=your_hubspot_list_id[,another_list_id,...]
+   # (HubSpot lists are now configured in config.py, not .env)
 
    # Mailchimp API
    MAILCHIMP_API_KEY=your_mailchimp_api_key
@@ -41,6 +40,9 @@ A Python-based integration that synchronizes contacts from a HubSpot Active List
    REQUIRED_TAGS=COMPANY,CITY,INDUSTRY,PHONE,FNAME,LNAME
    LOG_LEVEL=INFO             # Logging verbosity (DEBUG, INFO, WARNING, ERROR)
    ```
+## Configuration
+
+**HubSpot lists:** You can now edit the Python list `HUBSPOT_LIST_IDS` directly in `config.py` (no need to touch `.env`).
 5. Run the sync script:
    ```bash
    python sync.py
