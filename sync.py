@@ -13,9 +13,6 @@ from tqdm import tqdm
 import os
 import sys
 
-# ─── TEMP: force a failure so the Teams webhook runs ───
-sys.exit(1)
-
 # -----------------------------------------------------------------------------
 # Output directories (ensure they exist)
 RAW_DATA_DIR = "raw_data"
