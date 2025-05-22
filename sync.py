@@ -11,6 +11,10 @@ from typing import Dict, List, Any, Optional, Set
 import requests
 from tqdm import tqdm
 import os
+import sys
+
+# ─── TEMP: force a failure so the Teams webhook runs ───
+sys.exit(1)
 
 # -----------------------------------------------------------------------------
 # Output directories (ensure they exist)
