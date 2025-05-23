@@ -1,4 +1,4 @@
-name: Hourly HubSpot→Mailchimp Sync
+name: 3 Hourly HubSpot→Mailchimp Sync
 
 on:
   schedule:
