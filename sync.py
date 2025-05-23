@@ -7,6 +7,9 @@ tagging them appropriately and removing contacts no longer in the HubSpot list.
 """
 
 import sys, time, hashlib, logging, json
+
+# Global error flag for CI failure detection
+had_errors = False
 from typing import Dict, List, Any, Optional, Set
 import requests
 from tqdm import tqdm
@@ -916,7 +919,9 @@ def fetch_hubspot_list_name(list_id: str) -> str:
 
 def main():
     """Main execution function."""
-    global MAILCHIMP_TAG
+
+    global MAILCHIMP_TAG, had_errors
+    had_errors = False
     # Track every synced email across all lists for final archival cleanup
     all_synced_emails: Set[str] = set()
     logger.info("Starting multi-list HubSpot → Mailchimp sync for lists: %s", HUBSPOT_LIST_IDS)
@@ -925,11 +930,11 @@ def main():
         logger.info("%s Syncing list %s %s", "="*10, list_id, "="*10)
         try:
             list_name = fetch_hubspot_list_name(list_id)
-            global MAILCHIMP_TAG
             MAILCHIMP_TAG = list_name
             logger.info("Contacts will be tagged with: '%s'", MAILCHIMP_TAG)
         except Exception as e:
-            logger.error("Failed to fetch name for list %s: %s", list_id, e)
+            logger.error("Fatal: cannot fetch list name for %s: %s", list_id, e)
+            had_errors = True
             continue
 
         # Validate environment and merge fields
@@ -1005,10 +1010,20 @@ def main():
     else:
         logger.info("No Mailchimp contacts to archive; all members are in at least one HubSpot list")
     # Final summary
+
+    # If any list failed, abort with non-zero exit
+    if had_errors:
+        logger.critical("Sync finished with errors—failing the process.")
+        sys.exit(1)
+
     logger.info("Multi-list sync complete: %d unique contacts synced, %d contacts archived", len(all_synced_emails), len(to_archive))
     logger.info("All configured HubSpot lists have been synced and cleanup is complete.")
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        logger.exception("Unhandled exception—failing CI.")
+        sys.exit(1)
 
