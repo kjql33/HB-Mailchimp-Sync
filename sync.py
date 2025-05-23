@@ -1,45 +1,110 @@
+
 #!/usr/bin/env python
 """
 HubSpot → Mailchimp Sync Agent
 
-This script synchronizes contacts from a HubSpot Active List to a Mailchimp Audience,
-tagging them appropriately and removing contacts no longer in the HubSpot list.
+This script synchronizes contacts from HubSpot lists into a Mailchimp audience,
+dynamically fetching list metadata and preserving all other tags.
 """
 
-import sys, time, hashlib, logging, json
 import os
-from typing import Dict, List, Any, Optional
-import requests
+import sys
+import time
+import json
+import logging
+import hashlib
 
-# centrally managed config
 import config
+ # Make RAW_DATA_DIR available locally, matching config.py
+RAW_DATA_DIR = config.RAW_DATA_DIR
+import requests
+from tqdm import tqdm
+from typing import Dict, List, Any, Optional, Set
 
-def create_mailchimp_merge_field(tag: str, name: str, field_type: str = "text") -> None:
-    """
-    Create a new merge-field on the Mailchimp audience.
-    """
-    url = f"{MAILCHIMP_BASE_URL}/lists/{MAILCHIMP_LIST_ID}/merge-fields"
-    payload = {
-        "tag": tag,
-        "name": name,
-        "type": field_type,
-        "public": False
-    }
-    resp = requests.post(url, auth=("anystring", MAILCHIMP_API_KEY), json=payload)
-    resp.raise_for_status()
-    logger.info(f"✅ Created Mailchimp merge-field: {tag}")
+# ── Initialize logging ─────────────────────────────────────────────────────────
+LOG_DIR = "logs"
+os.makedirs(LOG_DIR, exist_ok=True)
 
-## Configure logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=config.LOG_LEVEL,
     format="%(asctime)s - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
     handlers=[
-        logging.FileHandler("sync.log"),
+        logging.FileHandler(os.path.join(LOG_DIR, "sync.log")),
         logging.StreamHandler()
     ]
 )
 logger = logging.getLogger(__name__)
+logger.setLevel(config.LOG_LEVEL)
+root_logger = logging.getLogger()
+# summary.log for INFO+
+summary_handler = logging.FileHandler(os.path.join(LOG_DIR, "summary.log"))
+summary_handler.setLevel(logging.INFO)
+summary_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+root_logger.addHandler(summary_handler)
+
+# Quiet noisy libs
+logging.getLogger("urllib3").setLevel(logging.INFO)
+logging.getLogger("requests").setLevel(logging.INFO)
+
+# ── Ensure raw_data directory exists ────────────────────────────────────────────
+os.makedirs(config.RAW_DATA_DIR, exist_ok=True)
+
+# Global error flag for CI failure detection
+had_errors = False
+
+# -----------------------------------------------------------------------------
+
+
+# Path to persist mapping of list IDs and raw metadata
+LIST_NAME_MAP_FILE = os.path.join(config.RAW_DATA_DIR, "list_name_map.json")
+
+def fetch_and_dump_list_metadata(list_id: str) -> dict:
+    """
+    Fetch HubSpot list metadata (v3→v1), dump JSON into raw_data/,
+    and return the parsed body.
+    """
+    headers = {
+        "Authorization": f"Bearer {config.HUBSPOT_PRIVATE_TOKEN}",
+        "Content-Type": "application/json",
+    }
+
+    # 1) v3 Active Lists API
+    v3_url = f"https://api.hubapi.com/crm/v3/lists/{list_id}"
+    try:
+        resp = requests.get(v3_url, headers=headers)
+        if resp.status_code == 200:
+            body = resp.json()
+            path = os.path.join(config.RAW_DATA_DIR, f"hubspot_list_{list_id}_metadata.json")
+            with open(path, "w") as f:
+                json.dump(body, f, indent=2)
+            logger.info(f"Wrote v3 list metadata to {path}")
+            return body
+        elif resp.status_code != 404:
+            resp.raise_for_status()
+    except Exception as e:
+        logger.warning(f"Error fetching v3 metadata for list {list_id}: {e}")
+
+    # 2) v1 Static Lists API
+    v1_url = f"https://api.hubapi.com/contacts/v1/lists/{list_id}"
+    try:
+        resp = requests.get(v1_url, headers=headers)
+        resp.raise_for_status()
+        body = resp.json()
+        path = os.path.join(config.RAW_DATA_DIR, f"hubspot_list_{list_id}_static_metadata.json")
+        with open(path, "w") as f:
+            json.dump(body, f, indent=2)
+        logger.info(f"Wrote v1 static metadata to {path}")
+        return body
+    except Exception as e:
+        logger.warning(f"Error fetching v1 metadata for list {list_id}: {e}")
+
+    logger.error(f"Failed to fetch metadata for list {list_id}")
+    return {}
+
+
+
+# To see debug messages (e.g. “Parsed v3 list name…”), run with LOG_LEVEL=DEBUG
 
 ## Pull configuration from config.py
 HUBSPOT_PRIVATE_TOKEN  = config.HUBSPOT_PRIVATE_TOKEN
@@ -61,11 +126,25 @@ RETRY_DELAY            = config.RETRY_DELAY
 # merge-fields to enforce
 REQUIRED_TAGS          = config.REQUIRED_TAGS
 
-# runtime variables
-MAILCHIMP_TAG          = None
+# Helper: Create a new merge-field on the Mailchimp audience
+def create_mailchimp_merge_field(tag: str, name: str, field_type: str = "text") -> None:
+    """
+    Create a new merge-field on the Mailchimp audience.
+    """
+    url = f"{MAILCHIMP_BASE_URL}/lists/{MAILCHIMP_LIST_ID}/merge-fields"
+    payload = {
+        "tag": tag,
+        "name": name,
+        "type": field_type,
+        "public": False
+    }
+    resp = requests.post(url, auth=("anystring", MAILCHIMP_API_KEY), json=payload)
+    resp.raise_for_status()
+    logger.info(f"✅ Created Mailchimp merge-field: {tag}")
 
-# log level
-logger.setLevel(config.LOG_LEVEL)
+# runtime variables
+MAILCHIMP_TAG = None
+# Removed per-module LOG_LEVEL override to retain DEBUG on sync.log
 
 
 def validate_environment() -> bool:
@@ -106,7 +185,7 @@ def get_hubspot_contacts(list_id: str) -> List[Dict[str, Any]]:
     contacts = []
     
     # Truncate the raw contacts file at the start of a run
-    with open("hubspot_raw_contacts.json", "w") as f:
+    with open(os.path.join(RAW_DATA_DIR, "hubspot_raw_contacts.json"), "w") as f:
         f.write(f"# HubSpot Raw Contacts from List ID {list_id} - Generated on {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
     
     headers = {
@@ -115,10 +194,23 @@ def get_hubspot_contacts(list_id: str) -> List[Dict[str, Any]]:
     }
     
     # Define the properties we want to retrieve from the Batch Read API
-    properties = ["email", "company", "phone", "city", "industry", "firstname", "lastname"]
+    properties = [
+        "email",
+        "company",
+        "phone",
+        "address",        # street address
+        "address2",       # second address line
+        "city",
+        "state_region",   # or your portal’s internal name for state
+        "postal_code",    # postal code
+        "country_region", # or “country”
+        "branches",       # branch assignments
+        "firstname",
+        "lastname"
+    ]
     
     # STEP 1 (v3): Fetch contact IDs via CRM v3 Lists API
-    logger.info(f"STEP 1 (v3): Fetching contact IDs from list {list_id}")
+    logger.info(f"STEP 1 (v3): Fetching contact IDs from list {list_id}")  # Major step indicator
     list_url = f"https://api.hubapi.com/crm/v3/lists/{list_id}/memberships"
     # Page size from config
     params = {"limit": PAGE_SIZE}
@@ -132,7 +224,7 @@ def get_hubspot_contacts(list_id: str) -> List[Dict[str, Any]]:
         if after:
             params["after"] = after
 
-        logger.info(f"Fetching CRM v3 memberships page {page}")
+        logger.debug(f"Fetching CRM v3 memberships page {page}")  # Detailed pagination info
         resp = requests.get(list_url, headers=headers, params=params)
         resp.raise_for_status()
         body = resp.json()
@@ -141,39 +233,36 @@ def get_hubspot_contacts(list_id: str) -> List[Dict[str, Any]]:
             total_members = body.get("total")
             if isinstance(total_members, int):
                 expected_pages = math.ceil(total_members / params.get("limit", 1))
-                logger.info(f"Total memberships in list: {total_members}, expecting ~{expected_pages} pages at {params['limit']} per page")
+                logger.debug(f"Total memberships in list: {total_members}, expecting ~{expected_pages} pages at {params['limit']} per page")
 
         # Dump raw response for debug
         with open(
-            f"hubspot_list_{list_id}_memberships_page_{page}.json", "w"
+            os.path.join(RAW_DATA_DIR, f"hubspot_list_{list_id}_memberships_page_{page}.json"),
+            "w"
         ) as f:
             json.dump(body, f, indent=2)
 
         # Each membership has recordId = contact’s internal ID
         results = body.get("results", [])
         vids = [m.get("recordId") for m in results if m.get("recordId")]
-        logger.info(f"Retrieved {len(vids)} IDs from page {page}")
+        logger.debug(f"Retrieved {len(vids)} IDs from page {page}")  # IDs fetched
         all_vids.extend(vids)
         # Early exit if test cap reached
         if TEST_CONTACT_LIMIT > 0 and len(all_vids) >= TEST_CONTACT_LIMIT:
-            logger.info(f"TEST_CONTACT_LIMIT={TEST_CONTACT_LIMIT} reached; ending STEP 1 early")
+            logger.debug(f"TEST_CONTACT_LIMIT={TEST_CONTACT_LIMIT} reached; ending STEP 1 early")
             all_vids = all_vids[:TEST_CONTACT_LIMIT]
             break
         # Pagination cursor
         paging = body.get("paging", {}).get("next", {})
         after = paging.get("after")
         if not after:
-            logger.info("No further paging cursor returned – ending STEP 1")
+            logger.debug("No further paging cursor returned – ending STEP 1")
             break
 
         page += 1
         time.sleep(1)  # respect rate limits
 
     logger.info(f"STEP 1 COMPLETE: collected {len(all_vids)} contact IDs")
-    # apply test limit if set (>0)
-    if TEST_CONTACT_LIMIT > 0 and len(all_vids) > TEST_CONTACT_LIMIT:
-        logger.info(f"TEST_CONTACT_LIMIT={TEST_CONTACT_LIMIT} set; truncating to {TEST_CONTACT_LIMIT} IDs")
-        all_vids = all_vids[:TEST_CONTACT_LIMIT]
     if not all_vids:
         logger.warning("No contacts found in CRM v3 list – aborting")
         return []
@@ -189,7 +278,7 @@ def get_hubspot_contacts(list_id: str) -> List[Dict[str, Any]]:
     batch_counter = 1
     
     for vid_batch in vid_batches:
-        logger.info(f"Processing batch {batch_counter} of {len(vid_batches)} with {len(vid_batch)} contacts")
+        logger.debug(f"Processing batch {batch_counter} of {len(vid_batches)} with {len(vid_batch)} contacts")
         
         # Create batch read payload
         batch_payload = {
@@ -201,7 +290,7 @@ def get_hubspot_contacts(list_id: str) -> List[Dict[str, Any]]:
             for attempt in range(MAX_RETRIES):
                 try:
                     # Send batch request
-                    logger.info(f"Sending Batch Read API request for {len(vid_batch)} contacts")
+                    logger.debug(f"Sending Batch Read API request for {len(vid_batch)} contacts")
                     logger.debug(f"Batch Read payload: {json.dumps(batch_payload)}")
                     
                     response = requests.post(batch_url, headers=headers, json=batch_payload)
@@ -211,11 +300,11 @@ def get_hubspot_contacts(list_id: str) -> List[Dict[str, Any]]:
                         results = data.get("results", [])
                         
                         # Log success info
-                        logger.info(f"Successfully retrieved {len(results)} contact details from batch {batch_counter}")
+                        logger.debug(f"Successfully retrieved {len(results)} contact details from batch {batch_counter}")
                         
-                        # Write raw contact data to debug file
+                            # Write raw contact data to debug file
                         if results:
-                            with open("hubspot_raw_contacts.json", "a") as f:
+                            with open(os.path.join(RAW_DATA_DIR, "hubspot_raw_contacts.json"), "a") as f:
                                 f.write(f"\n\n# Batch {batch_counter} of {len(results)} contacts\n\n")
                                 for contact in results:
                                     json.dump(contact, f, indent=2)
@@ -240,13 +329,18 @@ def get_hubspot_contacts(list_id: str) -> List[Dict[str, Any]]:
                                 
                                 # Extract required fields with empty string fallbacks
                                 contact_data = {
-                                    "email": email.lower(),  # Ensure email is lowercase
-                                    "company": contact_properties.get("company", ""),
-                                    "phone": contact_properties.get("phone", ""),
-                                    "city": contact_properties.get("city", ""),
-                                    "industry": contact_properties.get("industry", ""),
-                                    "firstname": contact_properties.get("firstname", ""),
-                                    "lastname": contact_properties.get("lastname", "")
+                                    "email":     email.lower(),  # Ensure email is lowercase
+                                    "company":   (contact_properties.get("company") or "")[:255],
+                                    "phone":     (contact_properties.get("phone") or "")[:50],
+                                    "address":   (contact_properties.get("address") or "")[:255],
+                                    "address2":  (contact_properties.get("address2") or "")[:255],
+                                    "city":      (contact_properties.get("city") or "")[:50],
+                                    "state":     (contact_properties.get("state_region") or "")[:50],
+                                    "postcode":  (contact_properties.get("postal_code") or "")[:20],
+                                    "country":   (contact_properties.get("country_region") or "")[:50],
+                                    "branches":  (contact_properties.get("branches") or "")[:255],
+                                    "firstname": (contact_properties.get("firstname") or "")[:50],
+                                    "lastname":  (contact_properties.get("lastname") or "")[:50]
                                 }
                                 
                                 # Extract any additional useful contact info that might be available
@@ -258,7 +352,7 @@ def get_hubspot_contacts(list_id: str) -> List[Dict[str, Any]]:
                                 batch_contacts.append(contact_data)
                             
                             contacts.extend(batch_contacts)
-                            logger.info(f"Processed {len(batch_contacts)} valid contacts from batch {batch_counter}")
+                            logger.debug(f"Processed {len(batch_contacts)} valid contacts from batch {batch_counter}")
                     else:
                         logger.error(f"HubSpot Batch Read API error: Status {response.status_code}")
                         logger.error(f"Response: {response.text}")
@@ -299,12 +393,9 @@ def get_hubspot_contacts(list_id: str) -> List[Dict[str, Any]]:
     return contacts
 
 
-def get_contact_property(contact: Dict[str, Any], property_name: str) -> Optional[str]:
-    """Helper to safely extract a property value from a HubSpot contact."""
-    try:
-        return contact.get("properties", {}).get(property_name, {}).get("value", "")
-    except (AttributeError, KeyError):
-        return None
+"""
+# Removed unused helper: get_contact_property
+"""
 
 
 def calculate_subscriber_hash(email: str) -> str:
@@ -370,6 +461,41 @@ def get_current_mailchimp_emails() -> Dict[str, str]:
     logger.info(f"Found {len(mailchimp_members)} members in Mailchimp with the '{MAILCHIMP_TAG}' tag")
     return mailchimp_members
 
+def get_all_mailchimp_emails() -> Set[str]:
+    """
+    Fetch all members' emails from the Mailchimp audience (no tag filter).
+    """
+    if not all([MAILCHIMP_API_KEY, MAILCHIMP_LIST_ID, MAILCHIMP_DC]):
+        logger.error("Mailchimp credentials not properly set")
+        return set()
+    emails = set()
+    auth = ("anystring", MAILCHIMP_API_KEY)
+    headers = {"Content-Type": "application/json"}
+    url = f"https://{MAILCHIMP_DC}.api.mailchimp.com/3.0/lists/{MAILCHIMP_LIST_ID}/members"
+    params = {"count": 1000, "offset": 0}
+    try:
+        has_more = True
+        while has_more:
+            response = requests.get(url, auth=auth, headers=headers, params=params)
+            response.raise_for_status()
+            data = response.json()
+            for m in data.get("members", []):
+                email = m.get("email_address", "").lower()
+                if email:
+                    emails.add(email)
+            total = data.get("total_items", 0)
+            current = params['offset'] + len(data.get("members", []))
+            if current < total:
+                params['offset'] = current
+            else:
+                has_more = False
+            if has_more:
+                time.sleep(0.5)
+    except Exception as e:
+        logger.error(f"Error fetching all Mailchimp members: {e}")
+    logger.info(f"Found {len(emails)} total Mailchimp audience members")
+    return emails
+
 
 def upsert_mailchimp_contact(contact: Dict[str, str]) -> bool:
     """
@@ -390,10 +516,15 @@ def upsert_mailchimp_contact(contact: Dict[str, str]) -> bool:
     
     # Build merge fields, adding first and last name if they exist
     merge_fields = {
-        "COMPANY": str(contact.get("company") or "")[:255],  # Ensure within Mailchimp field limits
-        "PHONE": str(contact.get("phone") or "")[:50],
-        "CITY": str(contact.get("city") or "")[:50],
-        "INDUSTRY": str(contact.get("industry") or "")[:255]
+        "COMPANY":  contact.get("company", "")[:255],
+        "PHONE":    contact.get("phone", "")[:50],
+        "ADDRESS":  contact.get("address", "")[:255],
+        "ADDRESS2": contact.get("address2", "")[:255],
+        "CITY":     contact.get("city", "")[:50],
+        "STATE":    contact.get("state", "")[:50],
+        "POSTCODE": contact.get("postcode", "")[:20],
+        "COUNTRY":  contact.get("country", "")[:50],
+        "BRANCHES": contact.get("branches", "")[:255]
     }
     
     # Add FNAME and LNAME if available
@@ -435,7 +566,7 @@ def upsert_mailchimp_contact(contact: Dict[str, str]) -> bool:
                         
                     # Log member status explicitly if available
                     if "status" in response_body:
-                        logger.info(f"Contact {email} status after upsert: {response_body['status']}")
+                        logger.debug(f"Contact {email} status after upsert: {response_body['status']}")
                         if response_body["status"] not in ["subscribed", "unsubscribed"]:
                             logger.warning(f"⚠️ Contact {email} has status '{response_body['status']}' which may not be visible in Mailchimp UI")
                 except ValueError:
@@ -443,13 +574,13 @@ def upsert_mailchimp_contact(contact: Dict[str, str]) -> bool:
                 
                 # Handle successful responses
                 if response.status_code in (200, 201):
-                    logger.info(f"Successfully upserted contact: {email} (Status: {response.status_code})")
+                    logger.debug(f"Successfully upserted contact: {email} (Status: {response.status_code})")
                     
                     # Apply tag with increased delay to ensure the member is fully created/updated
                     logger.debug(f"Waiting 2 seconds before applying tag to {email}")
                     time.sleep(2)  # Increased from 1s to 2s
                     if apply_mailchimp_tag(email):
-                        logger.info(f"Successfully tagged {email} with '{MAILCHIMP_TAG}'")
+                        logger.debug(f"Successfully tagged {email} with '{MAILCHIMP_TAG}'")
                         
                         # Verify contact status after tagging
                         logger.debug(f"Verifying contact status for {email} after tagging")
@@ -542,11 +673,11 @@ def apply_mailchimp_tag(email: str) -> bool:
                         logger.error(f"Member {email} not found in Mailchimp - cannot apply tag")
                     elif check_response.status_code == 200:
                         member_data = check_response.json()
-                        logger.info(f"Member exists with status: {member_data.get('status')}")
+                        logger.debug(f"Member exists with status: {member_data.get('status')}")
                         
                     response.raise_for_status()
                 else:
-                    logger.info(f"Successfully applied tag '{MAILCHIMP_TAG}' to {email}")
+                    logger.debug(f"Successfully applied tag '{MAILCHIMP_TAG}' to {email}")
                     
                     # Verify tag was actually applied by re-fetching the contact
                     time.sleep(1)  # Brief delay to allow tag processing
@@ -559,7 +690,7 @@ def apply_mailchimp_tag(email: str) -> bool:
                         tag_names = [tag.get("name") for tag in tags]
                         
                         if MAILCHIMP_TAG in tag_names:
-                            logger.info(f"✅ Verified tag '{MAILCHIMP_TAG}' was successfully applied to {email}")
+                            logger.debug(f"✅ Verified tag '{MAILCHIMP_TAG}' was successfully applied to {email}")
                         else:
                             logger.warning(f"⚠️ Tag '{MAILCHIMP_TAG}' not found on contact {email} despite successful API response!")
                     
@@ -596,15 +727,7 @@ def remove_mailchimp_contact_by_email(email: str) -> bool:
     
     auth = ("anystring", MAILCHIMP_API_KEY)
 
-    # STEP 1: Inactivate the tag on this member
-    tags_url = f"{MAILCHIMP_BASE_URL}/lists/{MAILCHIMP_LIST_ID}/members/{subscriber_hash}/tags"
-    tag_payload = {"tags": [{"name": MAILCHIMP_TAG, "status": "inactive"}]}
-    logger.info(f"Removing tag '{MAILCHIMP_TAG}' from {email}")
-    resp = requests.post(tags_url, auth=auth, json=tag_payload)
-    if resp.status_code not in (204, 200):
-        logger.warning(f"Failed to remove tag from {email}: {resp.text}")
-
-    # STEP 2: Archive the member
+    # Archive the member (DELETE) in Mailchimp
     archive_url = f"{MAILCHIMP_BASE_URL}/lists/{MAILCHIMP_LIST_ID}/members/{subscriber_hash}"
     
     try:
@@ -613,7 +736,7 @@ def remove_mailchimp_contact_by_email(email: str) -> bool:
                 response = requests.delete(archive_url, auth=auth)
                 
                 if response.status_code in (204, 200):
-                    logger.info(f"✅ Archived contact in Mailchimp: {email}")
+                    logger.debug(f"✅ Archived contact in Mailchimp: {email}")
                     return True
                 elif response.status_code == 404:
                     logger.warning(f"Contact already archived/not found: {email}")
@@ -633,6 +756,53 @@ def remove_mailchimp_contact_by_email(email: str) -> bool:
         return False
     
     return False
+ 
+ 
+def untag_mailchimp_contact(email: str) -> bool:
+    """
+    Inactivate the current MAILCHIMP_TAG on a Mailchimp contact without archiving them.
+    """
+    if not all([MAILCHIMP_API_KEY, MAILCHIMP_LIST_ID, MAILCHIMP_DC]):
+        logger.error("Mailchimp credentials not properly set")
+        return False
+    email = email.lower()
+    subscriber_hash = calculate_subscriber_hash(email)
+    url = f"{MAILCHIMP_BASE_URL}/lists/{MAILCHIMP_LIST_ID}/members/{subscriber_hash}/tags"
+    auth = ("anystring", MAILCHIMP_API_KEY)
+    headers = {"Content-Type": "application/json"}
+    payload = {"tags": [{"name": MAILCHIMP_TAG, "status": "inactive"}]}
+    try:
+        for attempt in range(MAX_RETRIES):
+            response = requests.post(url, auth=auth, headers=headers, json=payload)
+            if response.status_code in (200, 204):
+                logger.debug(f"✅ Removed tag '{MAILCHIMP_TAG}' from {email}")
+                return True
+            else:
+                logger.warning(f"Failed to remove tag '{MAILCHIMP_TAG}' from {email}: {response.text}")
+                response.raise_for_status()
+    except Exception as e:
+        logger.error(f"Error untagging contact {email}: {e}")
+    return False
+
+def remove_mailchimp_tag_definition(tag_name: str) -> None:
+    """
+    Permanently delete the tag _definition_ (static segment) from Mailchimp,
+    so it no longer appears in the UI. Does NOT affect any other tags.
+    """
+    # List all segments (tags appear as static segments)
+    url = f"{MAILCHIMP_BASE_URL}/lists/{MAILCHIMP_LIST_ID}/segments"
+    resp = requests.get(url, auth=("anystring", MAILCHIMP_API_KEY))
+    resp.raise_for_status()
+    for seg in resp.json().get("segments", []):
+        if seg.get("name") == tag_name and seg.get("type") == "static_segment":
+            seg_id = seg["id"]
+            del_resp = requests.delete(f"{url}/{seg_id}", auth=("anystring", MAILCHIMP_API_KEY))
+            if del_resp.status_code == 204:
+                logger.info(f"Deleted Mailchimp tag definition '{tag_name}' (segment id {seg_id})")
+            else:
+                logger.warning(f"Failed to delete tag definition '{tag_name}': {del_resp.text}")
+            return
+    logger.debug(f"No static segment found for tag '{tag_name}', so nothing to delete")
 
 
 def fetch_mailchimp_merge_fields() -> Dict[str, Any]:
@@ -652,7 +822,12 @@ def fetch_mailchimp_merge_fields() -> Dict[str, Any]:
         for attempt in range(MAX_RETRIES):
             try:
                 logger.debug(f"Fetching Mailchimp merge fields from: {url}")
-                response = requests.get(url, auth=auth, headers=headers)
+                response = requests.get(
+                    url,
+                    auth=auth,
+                    headers=headers,
+                    params={"count": 1000}
+                )
                 
                 # Log full response on non-200
                 if response.status_code != 200:
@@ -669,20 +844,32 @@ def fetch_mailchimp_merge_fields() -> Dict[str, Any]:
                 # Log all available merge fields
                 logger.info(f"Mailchimp merge fields available: {field_tags}")
                 
-                # Check required fields exist
-                required_fields = ["COMPANY", "PHONE", "CITY", "INDUSTRY"]
-                missing_fields = [field for field in required_fields if field not in field_tags]
+                # Check required fields exist (use config-defined REQUIRED_TAGS)
+                missing_fields = [field for field in REQUIRED_TAGS if field not in field_tags]
                 
                 if missing_fields:
                     logger.warning(f"Mailchimp is missing these required merge-fields: {missing_fields}. Creating them now…")
                     # Map tags to human-readable names
-                    display_names = {"COMPANY": "Company", "CITY": "City", "INDUSTRY": "Industry"}
+                    display_names = {
+                        "COMPANY":  "Company",
+                        "PHONE":    "Phone",
+                        "ADDRESS":  "Address",
+                        "ADDRESS2": "Address 2",
+                        "CITY":     "City",
+                        "STATE":    "State/Region",
+                        "POSTCODE": "Postal Code",
+                        "COUNTRY":  "Country/Region",
+                        "BRANCHES": "Branches",
+                        "FNAME":    "First Name",
+                        "LNAME":    "Last Name"
+                    }
                     for tag in missing_fields:
                         create_mailchimp_merge_field(tag, display_names.get(tag, tag.title()))
                     # Re-fetch merge fields to include newly created ones
                     resp = requests.get(
                         f"{MAILCHIMP_BASE_URL}/lists/{MAILCHIMP_LIST_ID}/merge-fields",
-                        auth=("anystring", MAILCHIMP_API_KEY)
+                        auth=("anystring", MAILCHIMP_API_KEY),
+                        params={"count": 1000}
                     )
                     resp.raise_for_status()
                     available = [m.get("tag") for m in resp.json().get("merge_fields", [])]
@@ -736,17 +923,17 @@ def get_mailchimp_contact_status(email: str) -> Dict[str, Any]:
                 if response.status_code == 200:
                     data = response.json()
                     status = data.get("status", "unknown")
-                    
+
                     # Check if the status might cause UI visibility issues
                     if status not in ["subscribed", "unsubscribed"]:
                         logger.warning(f"⚠️ Contact {email} has status '{status}' which may not be visible in Mailchimp UI")
                     else:
-                        logger.info(f"✅ Verified Mailchimp contact status for {email}: {status}")
-                    
+                        logger.debug(f"✅ Verified Mailchimp contact status for {email}: {status}")
+
                     # Log which tags are applied
                     tags = data.get("tags", [])
                     tag_names = [tag.get("name") for tag in tags]
-                    logger.info(f"Contact {email} has tags: {tag_names}")
+                    logger.debug(f"Contact {email} has tags: {tag_names}")
                     
                     # Check if our tag is applied
                     if MAILCHIMP_TAG not in tag_names:
@@ -779,30 +966,82 @@ def get_mailchimp_contact_status(email: str) -> Dict[str, Any]:
 
 
 def fetch_hubspot_list_name(list_id: str) -> str:
-    """Retrieve the HubSpot list’s human-readable name for tagging."""
-    url = f"https://api.hubapi.com/crm/v3/lists/{list_id}"
-    headers = {
-        "Authorization": f"Bearer {HUBSPOT_PRIVATE_TOKEN}",
-        "Content-Type": "application/json",
-    }
-    resp = requests.get(url, headers=headers)
-    resp.raise_for_status()
-    return resp.json().get("name", f"hubspot_list_{list_id}")
+    """
+    Extract the human-readable list name from the freshly dumped metadata.
+    """
+    # 1) Fetch & dump metadata from API
+    meta = fetch_and_dump_list_metadata(list_id)
+
+    # 2) v3 response nests data under 'list'
+    list_obj = meta.get("list") or {}
+    if isinstance(list_obj, dict):
+        name = list_obj.get("name") or list_obj.get("displayName")
+        if name:
+            logger.debug(f"Parsed v3 list name for {list_id}: '{name}'")
+            return name
+
+    # 3) v1 static metadata returns at root
+    name = meta.get("name")
+    if name:
+        logger.debug(f"Parsed static list name for {list_id}: '{name}'")
+        return name
+
+    # 4) Final fallback to ID‐based tag
+    fallback = f"hubspot_list_{list_id}"
+    logger.warning(f"No valid name in metadata for list {list_id}; falling back to '{fallback}'")
+    return fallback
 
 def main():
     """Main execution function."""
-    global MAILCHIMP_TAG
-    logger.info("Starting HubSpot → Mailchimp sync for lists: %s", HUBSPOT_LIST_IDS)
+
+    global MAILCHIMP_TAG, had_errors
+    had_errors = False
+    # ─── Load previous list names from disk ───
+    if os.path.exists(LIST_NAME_MAP_FILE):
+        with open(LIST_NAME_MAP_FILE, "r") as f:
+            previous_list_names = json.load(f)
+    else:
+        previous_list_names = {}
+    # Track every synced email across all lists for final archival cleanup
+    all_synced_emails: Set[str] = set()
+    logger.info("Starting multi-list HubSpot → Mailchimp sync for lists: %s", HUBSPOT_LIST_IDS)
     logger.info("Configuration: PAGE_SIZE=%d, TEST_CONTACT_LIMIT=%d, MAX_RETRIES=%d, RETRY_DELAY=%d", PAGE_SIZE, TEST_CONTACT_LIMIT, MAX_RETRIES, RETRY_DELAY)
     for list_id in HUBSPOT_LIST_IDS:
         logger.info("%s Syncing list %s %s", "="*10, list_id, "="*10)
         try:
+            # ─── Fetch current HubSpot list name ───
             list_name = fetch_hubspot_list_name(list_id)
-            global MAILCHIMP_TAG
+
+            # ─── If the list was renamed, remove ONLY the old list‐specific tag ───
+            old_name = previous_list_names.get(list_id)
+            if old_name and old_name != list_name:
+                logger.info(
+                    f"HubSpot list {list_id} renamed from '{old_name}' to '{list_name}'. "
+                    "Removing old tag from Mailchimp contacts and deleting its definition…"
+                )
+                # 1) Untag every contact carrying the _old_ tag
+                MAILCHIMP_TAG = old_name
+                old_members = list(get_current_mailchimp_emails().keys())
+                for email in old_members:
+                    untag_mailchimp_contact(email)
+                logger.info(f"Removed old tag '{old_name}' from {len(old_members)} contacts.")
+
+                # 2) Delete the tag definition so it no longer appears in Mailchimp UI
+                remove_mailchimp_tag_definition(old_name)
+
+
+            # ─── Persist the new name for next run ───
+            previous_list_names[list_id] = list_name
+            with open(LIST_NAME_MAP_FILE, "w") as f:
+                json.dump(previous_list_names, f, indent=2)
+
+            # ─── Now use the up-to-date tag for the normal sync flow ───
             MAILCHIMP_TAG = list_name
+
             logger.info("Contacts will be tagged with: '%s'", MAILCHIMP_TAG)
         except Exception as e:
-            logger.error("Failed to fetch name for list %s: %s", list_id, e)
+            logger.exception("Failed to determine list name for %s: %s", list_id, e)
+            had_errors = True
             continue
 
         # Validate environment and merge fields
@@ -824,10 +1063,15 @@ def main():
         # Step 2: Create a set of all HubSpot emails for comparison
         hubspot_emails = {contact["email"].lower() for contact in hubspot_contacts}
         logger.info(f"Found {len(hubspot_emails)} unique emails in HubSpot for list {list_id}")
+        # Track these emails globally for final archival cleanup
+        all_synced_emails.update(hubspot_emails)
 
         # Step 3: Upsert all HubSpot contacts to Mailchimp
         successful_upserts = 0
-        for contact in hubspot_contacts:
+        # Upsert contacts with progress bar
+        for contact in tqdm(hubspot_contacts,
+                            desc=f"Upserting contacts for list {list_id}",
+                            unit="contact"):
             if upsert_mailchimp_contact(contact):
                 successful_upserts += 1
             time.sleep(0.2)
@@ -837,24 +1081,56 @@ def main():
         mailchimp_emails_dict = get_current_mailchimp_emails()
         mailchimp_emails = set(mailchimp_emails_dict.keys())
 
-        # Step 5: Find and remove stale contacts
-        emails_to_remove = mailchimp_emails - hubspot_emails
-        if emails_to_remove:
-            logger.info(f"Found {len(emails_to_remove)} contacts to remove from Mailchimp for list {list_id}")
-            successful_removals = 0
-            for email in emails_to_remove:
-                if remove_mailchimp_contact_by_email(email):
-                    successful_removals += 1
+        # Step 5: Find and untag stale contacts
+        emails_to_untag = mailchimp_emails - hubspot_emails
+        if emails_to_untag:
+            logger.info(f"Found {len(emails_to_untag)} contacts to untag from Mailchimp for list {list_id}")
+            successful_untags = 0
+            # Untag contacts with progress bar
+            for email in tqdm(emails_to_untag,
+                               desc=f"Untagging stale contacts for list {list_id}",
+                               unit="contact"):
+                if untag_mailchimp_contact(email):
+                    successful_untags += 1
                 time.sleep(0.2)
-            logger.info(f"Successfully removed {successful_removals} contacts from Mailchimp for list {list_id}")
+            logger.info(f"Successfully removed tag from {successful_untags} contacts for list {list_id}")
         else:
-            logger.info("No contacts to remove from Mailchimp for list %s", list_id)
+            logger.info("No contacts to untag from Mailchimp for list %s", list_id)
         
         logger.info("%s Completed sync for list %s %s", "="*10, list_id, "="*10)
 
-    logger.info("All configured HubSpot lists have been synced.")
+    # --- Phase 3: Global cleanup (archive any Mailchimp members not in any synced list) ---
+    logger.info("Starting global archival cleanup: members not in any HubSpot list will be archived")
+    all_mc_emails = get_all_mailchimp_emails()
+    to_archive = all_mc_emails - all_synced_emails
+    if to_archive:
+        logger.info(f"Found {len(to_archive)} contacts to archive (no longer in any HubSpot list)")
+        archived_count = 0
+        # Archive contacts with progress bar
+        for email in tqdm(to_archive,
+                           desc="Archiving global stale contacts",
+                           unit="contact"):
+            if remove_mailchimp_contact_by_email(email):
+                archived_count += 1
+            time.sleep(0.2)
+        logger.info(f"Successfully archived {archived_count} contacts from Mailchimp")
+    else:
+        logger.info("No Mailchimp contacts to archive; all members are in at least one HubSpot list")
+    # Final summary
+
+    # If any list failed, abort with non-zero exit
+    if had_errors:
+        logger.critical("Sync finished with errors—failing the process.")
+        sys.exit(1)
+
+    logger.info("Multi-list sync complete: %d unique contacts synced, %d contacts archived", len(all_synced_emails), len(to_archive))
+    logger.info("All configured HubSpot lists have been synced and cleanup is complete.")
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        logger.exception("Unhandled exception—failing CI.")
+        sys.exit(1)
 
