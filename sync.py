@@ -1,36 +1,32 @@
+
 #!/usr/bin/env python
 """
 HubSpot → Mailchimp Sync Agent
 
-This script synchronizes contacts from a HubSpot Active List to a Mailchimp Audience,
-tagging them appropriately and removing contacts no longer in the HubSpot list.
+This script synchronizes contacts from HubSpot lists into a Mailchimp audience,
+dynamically fetching list metadata and preserving all other tags.
 """
 
-import sys, time, hashlib, logging, json
-
-# Global error flag for CI failure detection
-had_errors = False
-from typing import Dict, List, Any, Optional, Set
-import requests
-from tqdm import tqdm
 import os
 import sys
+import time
+import json
+import logging
+import hashlib
 
-# -----------------------------------------------------------------------------
-# Output directories (ensure they exist)
-RAW_DATA_DIR = "raw_data"
-LOG_DIR      = "logs"
-
-os.makedirs(RAW_DATA_DIR, exist_ok=True)
-os.makedirs(LOG_DIR, exist_ok=True)
-# -----------------------------------------------------------------------------
-
-# centrally managed config
 import config
+ # Make RAW_DATA_DIR available locally, matching config.py
+RAW_DATA_DIR = config.RAW_DATA_DIR
+import requests
+from tqdm import tqdm
+from typing import Dict, List, Any, Optional, Set
 
-## Configure logging
+# ── Initialize logging ─────────────────────────────────────────────────────────
+LOG_DIR = "logs"
+os.makedirs(LOG_DIR, exist_ok=True)
+
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=config.LOG_LEVEL,
     format="%(asctime)s - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
     handlers=[
@@ -38,34 +34,77 @@ logging.basicConfig(
         logging.StreamHandler()
     ]
 )
-# Initialize logger
 logger = logging.getLogger(__name__)
-# Ensure logger captures all levels
-logger.setLevel(logging.DEBUG)
-
-## Adjust handler levels on the root logger
+logger.setLevel(config.LOG_LEVEL)
 root_logger = logging.getLogger()
-for handler in root_logger.handlers:
-    # FileHandler for full debug log
-    if isinstance(handler, logging.FileHandler) and handler.baseFilename.endswith("sync.log"):
-        handler.setLevel(logging.DEBUG)
-    # StreamHandler for console
-    elif isinstance(handler, logging.StreamHandler):
-        handler.setLevel(logging.INFO)
-
-# Quiet noisy libraries
-logging.getLogger("urllib3").setLevel(logging.INFO)
-logging.getLogger("requests").setLevel(logging.INFO)
-    
-# -----------------------------------------------------------------------------
-# summary log: capture INFO+ to summary.log
+# summary.log for INFO+
 summary_handler = logging.FileHandler(os.path.join(LOG_DIR, "summary.log"))
 summary_handler.setLevel(logging.INFO)
-summary_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-summary_handler.setFormatter(summary_formatter)
-# Attach summary handler to root logger so console and summary align
+summary_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
 root_logger.addHandler(summary_handler)
+
+# Quiet noisy libs
+logging.getLogger("urllib3").setLevel(logging.INFO)
+logging.getLogger("requests").setLevel(logging.INFO)
+
+# ── Ensure raw_data directory exists ────────────────────────────────────────────
+os.makedirs(config.RAW_DATA_DIR, exist_ok=True)
+
+# Global error flag for CI failure detection
+had_errors = False
+
 # -----------------------------------------------------------------------------
+
+
+# Path to persist mapping of list IDs and raw metadata
+LIST_NAME_MAP_FILE = os.path.join(config.RAW_DATA_DIR, "list_name_map.json")
+
+def fetch_and_dump_list_metadata(list_id: str) -> dict:
+    """
+    Fetch HubSpot list metadata (v3→v1), dump JSON into raw_data/,
+    and return the parsed body.
+    """
+    headers = {
+        "Authorization": f"Bearer {config.HUBSPOT_PRIVATE_TOKEN}",
+        "Content-Type": "application/json",
+    }
+
+    # 1) v3 Active Lists API
+    v3_url = f"https://api.hubapi.com/crm/v3/lists/{list_id}"
+    try:
+        resp = requests.get(v3_url, headers=headers)
+        if resp.status_code == 200:
+            body = resp.json()
+            path = os.path.join(config.RAW_DATA_DIR, f"hubspot_list_{list_id}_metadata.json")
+            with open(path, "w") as f:
+                json.dump(body, f, indent=2)
+            logger.info(f"Wrote v3 list metadata to {path}")
+            return body
+        elif resp.status_code != 404:
+            resp.raise_for_status()
+    except Exception as e:
+        logger.warning(f"Error fetching v3 metadata for list {list_id}: {e}")
+
+    # 2) v1 Static Lists API
+    v1_url = f"https://api.hubapi.com/contacts/v1/lists/{list_id}"
+    try:
+        resp = requests.get(v1_url, headers=headers)
+        resp.raise_for_status()
+        body = resp.json()
+        path = os.path.join(config.RAW_DATA_DIR, f"hubspot_list_{list_id}_static_metadata.json")
+        with open(path, "w") as f:
+            json.dump(body, f, indent=2)
+        logger.info(f"Wrote v1 static metadata to {path}")
+        return body
+    except Exception as e:
+        logger.warning(f"Error fetching v1 metadata for list {list_id}: {e}")
+
+    logger.error(f"Failed to fetch metadata for list {list_id}")
+    return {}
+
+
+
+# To see debug messages (e.g. “Parsed v3 list name…”), run with LOG_LEVEL=DEBUG
 
 ## Pull configuration from config.py
 HUBSPOT_PRIVATE_TOKEN  = config.HUBSPOT_PRIVATE_TOKEN
@@ -745,6 +784,26 @@ def untag_mailchimp_contact(email: str) -> bool:
         logger.error(f"Error untagging contact {email}: {e}")
     return False
 
+def remove_mailchimp_tag_definition(tag_name: str) -> None:
+    """
+    Permanently delete the tag _definition_ (static segment) from Mailchimp,
+    so it no longer appears in the UI. Does NOT affect any other tags.
+    """
+    # List all segments (tags appear as static segments)
+    url = f"{MAILCHIMP_BASE_URL}/lists/{MAILCHIMP_LIST_ID}/segments"
+    resp = requests.get(url, auth=("anystring", MAILCHIMP_API_KEY))
+    resp.raise_for_status()
+    for seg in resp.json().get("segments", []):
+        if seg.get("name") == tag_name and seg.get("type") == "static_segment":
+            seg_id = seg["id"]
+            del_resp = requests.delete(f"{url}/{seg_id}", auth=("anystring", MAILCHIMP_API_KEY))
+            if del_resp.status_code == 204:
+                logger.info(f"Deleted Mailchimp tag definition '{tag_name}' (segment id {seg_id})")
+            else:
+                logger.warning(f"Failed to delete tag definition '{tag_name}': {del_resp.text}")
+            return
+    logger.debug(f"No static segment found for tag '{tag_name}', so nothing to delete")
+
 
 def fetch_mailchimp_merge_fields() -> Dict[str, Any]:
     """
@@ -907,21 +966,42 @@ def get_mailchimp_contact_status(email: str) -> Dict[str, Any]:
 
 
 def fetch_hubspot_list_name(list_id: str) -> str:
-    """Retrieve the HubSpot list’s human-readable name for tagging."""
-    url = f"https://api.hubapi.com/crm/v3/lists/{list_id}"
-    headers = {
-        "Authorization": f"Bearer {HUBSPOT_PRIVATE_TOKEN}",
-        "Content-Type": "application/json",
-    }
-    resp = requests.get(url, headers=headers)
-    resp.raise_for_status()
-    return resp.json().get("name", f"hubspot_list_{list_id}")
+    """
+    Extract the human-readable list name from the freshly dumped metadata.
+    """
+    # 1) Fetch & dump metadata from API
+    meta = fetch_and_dump_list_metadata(list_id)
+
+    # 2) v3 response nests data under 'list'
+    list_obj = meta.get("list") or {}
+    if isinstance(list_obj, dict):
+        name = list_obj.get("name") or list_obj.get("displayName")
+        if name:
+            logger.debug(f"Parsed v3 list name for {list_id}: '{name}'")
+            return name
+
+    # 3) v1 static metadata returns at root
+    name = meta.get("name")
+    if name:
+        logger.debug(f"Parsed static list name for {list_id}: '{name}'")
+        return name
+
+    # 4) Final fallback to ID‐based tag
+    fallback = f"hubspot_list_{list_id}"
+    logger.warning(f"No valid name in metadata for list {list_id}; falling back to '{fallback}'")
+    return fallback
 
 def main():
     """Main execution function."""
 
     global MAILCHIMP_TAG, had_errors
     had_errors = False
+    # ─── Load previous list names from disk ───
+    if os.path.exists(LIST_NAME_MAP_FILE):
+        with open(LIST_NAME_MAP_FILE, "r") as f:
+            previous_list_names = json.load(f)
+    else:
+        previous_list_names = {}
     # Track every synced email across all lists for final archival cleanup
     all_synced_emails: Set[str] = set()
     logger.info("Starting multi-list HubSpot → Mailchimp sync for lists: %s", HUBSPOT_LIST_IDS)
@@ -929,11 +1009,38 @@ def main():
     for list_id in HUBSPOT_LIST_IDS:
         logger.info("%s Syncing list %s %s", "="*10, list_id, "="*10)
         try:
+            # ─── Fetch current HubSpot list name ───
             list_name = fetch_hubspot_list_name(list_id)
+
+            # ─── If the list was renamed, remove ONLY the old list‐specific tag ───
+            old_name = previous_list_names.get(list_id)
+            if old_name and old_name != list_name:
+                logger.info(
+                    f"HubSpot list {list_id} renamed from '{old_name}' to '{list_name}'. "
+                    "Removing old tag from Mailchimp contacts and deleting its definition…"
+                )
+                # 1) Untag every contact carrying the _old_ tag
+                MAILCHIMP_TAG = old_name
+                old_members = list(get_current_mailchimp_emails().keys())
+                for email in old_members:
+                    untag_mailchimp_contact(email)
+                logger.info(f"Removed old tag '{old_name}' from {len(old_members)} contacts.")
+
+                # 2) Delete the tag definition so it no longer appears in Mailchimp UI
+                remove_mailchimp_tag_definition(old_name)
+
+
+            # ─── Persist the new name for next run ───
+            previous_list_names[list_id] = list_name
+            with open(LIST_NAME_MAP_FILE, "w") as f:
+                json.dump(previous_list_names, f, indent=2)
+
+            # ─── Now use the up-to-date tag for the normal sync flow ───
             MAILCHIMP_TAG = list_name
+
             logger.info("Contacts will be tagged with: '%s'", MAILCHIMP_TAG)
         except Exception as e:
-            logger.error("Fatal: cannot fetch list name for %s: %s", list_id, e)
+            logger.exception("Failed to determine list name for %s: %s", list_id, e)
             had_errors = True
             continue
 

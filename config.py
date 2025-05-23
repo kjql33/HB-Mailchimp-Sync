@@ -45,5 +45,9 @@ REQUIRED_TAGS = [
     "BRANCHES"  # branch assignment
 ]
 
+
 # Logging
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+
+# Directory for all raw-JSON exports (memberships, metadata, etc.)
+RAW_DATA_DIR = os.getenv("RAW_DATA_DIR", "raw_data")
