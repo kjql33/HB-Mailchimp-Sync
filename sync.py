@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 """
 HubSpot → Mailchimp Sync Agent
@@ -10,14 +9,35 @@ dynamically fetching list metadata and preserving all other tags.
 import os
 import sys
 import time
+import math
+from datetime import datetime, timezone
 import json
 import logging
 import hashlib
-
-import config
- # Make RAW_DATA_DIR available locally, matching config.py
-RAW_DATA_DIR = config.RAW_DATA_DIR
 import requests
+
+# ─── IMPORT CONFIGURATION FROM MAIN ─────────────────────────────────────────
+from main import (
+    HUBSPOT_LIST_IDS, HUBSPOT_PRIVATE_TOKEN,
+    MAILCHIMP_API_KEY, MAILCHIMP_LIST_ID, MAILCHIMP_DC,
+    PAGE_SIZE, TEST_CONTACT_LIMIT, MAX_RETRIES, RETRY_DELAY,
+    REQUIRED_TAGS, LOG_LEVEL, RAW_DATA_DIR, RUN_MODE
+)
+
+# ─── RAW_DATA FOLDER STRUCTURE ─────────────────────────────────────────
+RAW_BASE      = RAW_DATA_DIR
+METADATA_DIR  = os.path.join(RAW_BASE, "metadata")
+SNAPSHOT_DIR  = os.path.join(RAW_BASE, "snapshots")
+MEM_DIR       = os.path.join(SNAPSHOT_DIR, "memberships")
+CONT_DIR      = os.path.join(SNAPSHOT_DIR, "contacts")
+LIST_NAME_MAP = os.path.join(RAW_BASE, "list_name_map.json")
+HISTORY_FILE  = os.path.join(RAW_BASE, "list_name_history.json")
+# Retain raw data for this many days before pruning:
+RETENTION_DAYS = int(os.getenv("RAW_RETENTION_DAYS", "7"))
+
+# Ensure new dirs exist
+for d in (METADATA_DIR, MEM_DIR, CONT_DIR):
+    os.makedirs(d, exist_ok=True)
 from tqdm import tqdm
 from typing import Dict, List, Any, Optional, Set
 
@@ -26,7 +46,7 @@ LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 
 logging.basicConfig(
-    level=config.LOG_LEVEL,
+    level=LOG_LEVEL,
     format="%(asctime)s - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
     handlers=[
@@ -35,7 +55,7 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
-logger.setLevel(config.LOG_LEVEL)
+logger.setLevel(LOG_LEVEL)
 root_logger = logging.getLogger()
 # summary.log for INFO+
 summary_handler = logging.FileHandler(os.path.join(LOG_DIR, "summary.log"))
@@ -48,24 +68,97 @@ logging.getLogger("urllib3").setLevel(logging.INFO)
 logging.getLogger("requests").setLevel(logging.INFO)
 
 # ── Ensure raw_data directory exists ────────────────────────────────────────────
-os.makedirs(config.RAW_DATA_DIR, exist_ok=True)
+os.makedirs(RAW_DATA_DIR, exist_ok=True)
+
+# ── Remove any loose root‐level JSON (except map/history) ───────────────────
+def remove_loose_root_files():
+    for fn in os.listdir(RAW_BASE):
+        path = os.path.join(RAW_BASE, fn)
+        if fn.endswith(".json") and fn not in (
+            os.path.basename(LIST_NAME_MAP),
+            os.path.basename(HISTORY_FILE)
+        ):
+            os.remove(path)
+            logger.debug(f"Removed loose root JSON: {path}")
+
+remove_loose_root_files()
 
 # Global error flag for CI failure detection
 had_errors = False
 
+# ─── Prune old raw + snapshot files ────────────────────────────────────────
+def prune_old_files():
+    cutoff = time.time() - RETENTION_DAYS * 86400
+    for root, dirs, files in os.walk(RAW_BASE):
+        # never prune map/history at top level
+        if root == RAW_BASE:
+            continue
+        for fn in files:
+            if fn.endswith(".json"):
+                path = os.path.join(root, fn)
+                if os.path.getmtime(path) < cutoff:
+                    os.remove(path)
+                    logger.debug(f"Pruned old file: {path}")
+
+prune_old_files()
+
+def record_list_name_history(list_id: str, list_name: str) -> None:
+    """
+    Record list name changes in the history file.
+    This function tracks when a list name changes and maintains a permanent history.
+    """
+    timestamp = datetime.now(timezone.utc).isoformat()
+    history_exists = os.path.exists(HISTORY_FILE)
+    
+    # Load existing history file or create new one
+    if history_exists:
+        try:
+            with open(HISTORY_FILE, 'r') as f:
+                history = json.load(f)
+        except json.JSONDecodeError:
+            # Corrupted history file, start fresh
+            logger.warning(f"History file {HISTORY_FILE} corrupted, creating new history")
+            history = {}
+    else:
+        history = {}
+    
+    # Initialize list history if not present
+    if list_id not in history:
+        history[list_id] = []
+    
+    # Check if this is a new name or the first record for this list
+    list_history = history[list_id]
+    if not list_history or list_history[-1].get('name') != list_name:
+        # Record the change with timestamp
+        list_history.append({
+            'name': list_name,
+            'timestamp': timestamp
+        })
+        
+        # Write updated history back to file
+        with open(HISTORY_FILE, 'w') as f:
+            json.dump(history, f, indent=2)
+        
+        logger.debug(f"Recorded name '{list_name}' for list {list_id} in history")
+
 # -----------------------------------------------------------------------------
 
 
-# Path to persist mapping of list IDs and raw metadata
-LIST_NAME_MAP_FILE = os.path.join(config.RAW_DATA_DIR, "list_name_map.json")
+# Path to persist mapping of list IDs and raw metadata is
+# defined above as LIST_NAME_MAP
 
 def fetch_and_dump_list_metadata(list_id: str) -> dict:
     """
-    Fetch HubSpot list metadata (v3→v1), dump JSON into raw_data/,
+    Fetch HubSpot list metadata (v3→v1), dump JSON into timestamped metadata directory,
     and return the parsed body.
     """
+    # Create timestamp-based directory for metadata
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    metadata_date_dir = os.path.join(METADATA_DIR, timestamp)
+    os.makedirs(metadata_date_dir, exist_ok=True)
+    
     headers = {
-        "Authorization": f"Bearer {config.HUBSPOT_PRIVATE_TOKEN}",
+        "Authorization": f"Bearer {HUBSPOT_PRIVATE_TOKEN}",
         "Content-Type": "application/json",
     }
 
@@ -75,9 +168,11 @@ def fetch_and_dump_list_metadata(list_id: str) -> dict:
         resp = requests.get(v3_url, headers=headers)
         if resp.status_code == 200:
             body = resp.json()
-            path = os.path.join(config.RAW_DATA_DIR, f"hubspot_list_{list_id}_metadata.json")
+            # Save in timestamped directory
+            path = os.path.join(metadata_date_dir, f"hubspot_list_{list_id}_metadata.json")
             with open(path, "w") as f:
                 json.dump(body, f, indent=2)
+            # (legacy root‐level dump removed)
             logger.info(f"Wrote v3 list metadata to {path}")
             return body
         elif resp.status_code != 404:
@@ -91,9 +186,11 @@ def fetch_and_dump_list_metadata(list_id: str) -> dict:
         resp = requests.get(v1_url, headers=headers)
         resp.raise_for_status()
         body = resp.json()
-        path = os.path.join(config.RAW_DATA_DIR, f"hubspot_list_{list_id}_static_metadata.json")
+        # Save in timestamped directory
+        path = os.path.join(metadata_date_dir, f"hubspot_list_{list_id}_static_metadata.json")
         with open(path, "w") as f:
             json.dump(body, f, indent=2)
+        # (legacy root‐level dump removed)
         logger.info(f"Wrote v1 static metadata to {path}")
         return body
     except Exception as e:
@@ -106,25 +203,25 @@ def fetch_and_dump_list_metadata(list_id: str) -> dict:
 
 # To see debug messages (e.g. “Parsed v3 list name…”), run with LOG_LEVEL=DEBUG
 
-## Pull configuration from config.py
-HUBSPOT_PRIVATE_TOKEN  = config.HUBSPOT_PRIVATE_TOKEN
+## Pull configuration from py
+HUBSPOT_PRIVATE_TOKEN  = HUBSPOT_PRIVATE_TOKEN
 # list of list IDs to sync
-HUBSPOT_LIST_IDS       = config.HUBSPOT_LIST_IDS
+HUBSPOT_LIST_IDS       = HUBSPOT_LIST_IDS
 # Mailchimp settings
-MAILCHIMP_API_KEY      = config.MAILCHIMP_API_KEY
-MAILCHIMP_LIST_ID      = config.MAILCHIMP_LIST_ID
-MAILCHIMP_DC           = config.MAILCHIMP_DC
+MAILCHIMP_API_KEY      = MAILCHIMP_API_KEY
+MAILCHIMP_LIST_ID      = MAILCHIMP_LIST_ID
+MAILCHIMP_DC           = MAILCHIMP_DC
 # Mailchimp base URL
 MAILCHIMP_BASE_URL     = f"https://{MAILCHIMP_DC}.api.mailchimp.com/3.0"
 
 # paging, limits & retries from config
-PAGE_SIZE              = config.PAGE_SIZE
-TEST_CONTACT_LIMIT     = config.TEST_CONTACT_LIMIT
-MAX_RETRIES            = config.MAX_RETRIES
-RETRY_DELAY            = config.RETRY_DELAY
+PAGE_SIZE              = PAGE_SIZE
+TEST_CONTACT_LIMIT     = TEST_CONTACT_LIMIT
+MAX_RETRIES            = MAX_RETRIES
+RETRY_DELAY            = RETRY_DELAY
 
 # merge-fields to enforce
-REQUIRED_TAGS          = config.REQUIRED_TAGS
+REQUIRED_TAGS          = REQUIRED_TAGS
 
 # Helper: Create a new merge-field on the Mailchimp audience
 def create_mailchimp_merge_field(tag: str, name: str, field_type: str = "text") -> None:
@@ -148,7 +245,7 @@ MAILCHIMP_TAG = None
 
 
 def validate_environment() -> bool:
-    """Validate that all required configuration values are set in config.py."""
+    """Validate that all required configuration values are set in py."""
     missing = []
     if not HUBSPOT_PRIVATE_TOKEN:
         missing.append('HUBSPOT_PRIVATE_TOKEN')
@@ -184,9 +281,17 @@ def get_hubspot_contacts(list_id: str) -> List[Dict[str, Any]]:
 
     contacts = []
     
-    # Truncate the raw contacts file at the start of a run
-    with open(os.path.join(RAW_DATA_DIR, "hubspot_raw_contacts.json"), "w") as f:
+    # Create dated contacts directory for snapshot
+    current_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    contacts_date_dir = os.path.join(CONT_DIR, current_date)
+    os.makedirs(contacts_date_dir, exist_ok=True)
+    
+    # Prepare contacts snapshot file
+    contacts_file = os.path.join(contacts_date_dir, f"hubspot_list_{list_id}_contacts.json")
+    with open(contacts_file, "w") as f:
         f.write(f"# HubSpot Raw Contacts from List ID {list_id} - Generated on {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+    
+    # (legacy root‐level raw_contacts.json dump removed)
     
     headers = {
         "Authorization": f"Bearer {HUBSPOT_PRIVATE_TOKEN}",
@@ -218,7 +323,6 @@ def get_hubspot_contacts(list_id: str) -> List[Dict[str, Any]]:
     all_vids: List[str] = []
     page = 1
 
-    import math  # for expected page calculation
     expected_pages = None
     while True:
         if after:
@@ -235,11 +339,14 @@ def get_hubspot_contacts(list_id: str) -> List[Dict[str, Any]]:
                 expected_pages = math.ceil(total_members / params.get("limit", 1))
                 logger.debug(f"Total memberships in list: {total_members}, expecting ~{expected_pages} pages at {params['limit']} per page")
 
-        # Dump raw response for debug
-        with open(
-            os.path.join(RAW_DATA_DIR, f"hubspot_list_{list_id}_memberships_page_{page}.json"),
-            "w"
-        ) as f:
+        # Create dated memberships directory for snapshot
+        membership_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        membership_dir = os.path.join(MEM_DIR, membership_date)
+        os.makedirs(membership_dir, exist_ok=True)
+        
+        # Save to snapshot directory
+        snapshot_path = os.path.join(membership_dir, f"hubspot_list_{list_id}_memberships_page_{page}.json")
+        with open(snapshot_path, "w") as f:
             json.dump(body, f, indent=2)
 
         # Each membership has recordId = contact’s internal ID
@@ -302,9 +409,10 @@ def get_hubspot_contacts(list_id: str) -> List[Dict[str, Any]]:
                         # Log success info
                         logger.debug(f"Successfully retrieved {len(results)} contact details from batch {batch_counter}")
                         
-                            # Write raw contact data to debug file
+                            # Write raw contact data to snapshot file
                         if results:
-                            with open(os.path.join(RAW_DATA_DIR, "hubspot_raw_contacts.json"), "a") as f:
+                            # Write to snapshot file
+                            with open(contacts_file, "a") as f:
                                 f.write(f"\n\n# Batch {batch_counter} of {len(results)} contacts\n\n")
                                 for contact in results:
                                     json.dump(contact, f, indent=2)
@@ -593,6 +701,8 @@ def upsert_mailchimp_contact(contact: Dict[str, str]) -> bool:
                     return True
                 else:
                     response.raise_for_status()
+                
+                break  # Break out of retry loop on successful completion
             except requests.exceptions.RequestException as e:
                 if attempt < MAX_RETRIES - 1:
                     logger.warning(f"Mailchimp API request failed for {email}: {e}. Retrying in {RETRY_DELAY} seconds...")
@@ -784,27 +894,6 @@ def untag_mailchimp_contact(email: str) -> bool:
         logger.error(f"Error untagging contact {email}: {e}")
     return False
 
-def remove_mailchimp_tag_definition(tag_name: str) -> None:
-    """
-    Permanently delete the tag _definition_ (static segment) from Mailchimp,
-    so it no longer appears in the UI. Does NOT affect any other tags.
-    """
-    # List all segments (tags appear as static segments)
-    url = f"{MAILCHIMP_BASE_URL}/lists/{MAILCHIMP_LIST_ID}/segments"
-    resp = requests.get(url, auth=("anystring", MAILCHIMP_API_KEY))
-    resp.raise_for_status()
-    for seg in resp.json().get("segments", []):
-        if seg.get("name") == tag_name and seg.get("type") == "static_segment":
-            seg_id = seg["id"]
-            del_resp = requests.delete(f"{url}/{seg_id}", auth=("anystring", MAILCHIMP_API_KEY))
-            if del_resp.status_code == 204:
-                logger.info(f"Deleted Mailchimp tag definition '{tag_name}' (segment id {seg_id})")
-            else:
-                logger.warning(f"Failed to delete tag definition '{tag_name}': {del_resp.text}")
-            return
-    logger.debug(f"No static segment found for tag '{tag_name}', so nothing to delete")
-
-
 def fetch_mailchimp_merge_fields() -> Dict[str, Any]:
     """
     Fetch all merge fields for the Mailchimp audience and validate required fields exist.
@@ -991,14 +1080,166 @@ def fetch_hubspot_list_name(list_id: str) -> str:
     logger.warning(f"No valid name in metadata for list {list_id}; falling back to '{fallback}'")
     return fallback
 
+def rename_mailchimp_tag_definition(old_name: str, new_name: str) -> bool:
+    """
+    Rename a Mailchimp tag by exploiting Mailchimp's internal architecture.
+    
+    This function leverages the fact that Mailchimp tags are implemented as static 
+    segments internally. By using the segments API to rename the underlying segment,
+    the tag name is updated across all members automatically with zero member 
+    operations required. This achieves true in-place renaming.
+    
+    Technical approach:
+    1. Search for tag using /tag-search endpoint  
+    2. Rename via /segments/{tag_id} endpoint (tags are static segments)
+    3. Verify rename success
+    
+    Returns True if successful, False otherwise.
+    """
+    if not all([MAILCHIMP_API_KEY, MAILCHIMP_LIST_ID, MAILCHIMP_DC]):
+        logger.error("Mailchimp credentials not properly set for tag rename")
+        return False
+    
+    auth = ("anystring", MAILCHIMP_API_KEY)
+    headers = {"Content-Type": "application/json"}
+    
+    logger.info(f"🏷️  DIRECT TAG RENAME VIA MAILCHIMP API: '{old_name}' → '{new_name}'")
+    
+    # Step 1: Get the tag ID of the old tag
+    tag_search_url = f"{MAILCHIMP_BASE_URL}/lists/{MAILCHIMP_LIST_ID}/tag-search"
+    tag_search_params = {"name": old_name}
+    
+    try:
+        tag_id = None
+        
+        for attempt in range(MAX_RETRIES):
+            try:
+                logger.debug(f"Searching for tag: '{old_name}'")
+                response = requests.get(tag_search_url, auth=auth, headers=headers, params=tag_search_params)
+                response.raise_for_status()
+                
+                tag_data = response.json()
+                tags = tag_data.get("tags", [])
+                
+                for tag in tags:
+                    if tag.get("name") == old_name:
+                        tag_id = tag.get("id")
+                        break
+                
+                if tag_id:
+                    logger.debug(f"Found tag ID for '{old_name}': {tag_id}")
+                    break
+                else:
+                    logger.warning(f"Tag '{old_name}' not found in Mailchimp")
+                    return False
+                
+            except requests.exceptions.RequestException as e:
+                if attempt < MAX_RETRIES - 1:
+                    logger.warning(f"API request failed when searching for tag: {e}. Retrying...")
+                    time.sleep(RETRY_DELAY)
+                else:
+                    logger.error(f"Failed to find tag '{old_name}': {e}")
+                    return False
+        
+        # Step 2: Update the tag name
+        if not tag_id:
+            logger.error(f"Could not find tag ID for '{old_name}'")
+            return False
+        
+        tag_update_url = f"{MAILCHIMP_BASE_URL}/lists/{MAILCHIMP_LIST_ID}/segments/{tag_id}"
+        tag_update_payload = {"name": new_name}
+        
+        for attempt in range(MAX_RETRIES):
+            try:
+                logger.debug(f"Updating tag name from '{old_name}' to '{new_name}'")
+                response = requests.patch(tag_update_url, auth=auth, headers=headers, json=tag_update_payload)
+                
+                if response.status_code == 200:
+                    logger.info(f"✅ Successfully renamed tag '{old_name}' to '{new_name}'")
+                    
+                    # Verify the tag was renamed correctly
+                    updated_tag = response.json()
+                    if updated_tag.get("name") == new_name:
+                        logger.info(f"✅ Verified tag rename success, new name: '{updated_tag.get('name')}'")
+                    else:
+                        logger.warning(f"⚠️ Tag was renamed but returned unexpected name: '{updated_tag.get('name')}'")
+                    
+                    return True
+                else:
+                    if attempt < MAX_RETRIES - 1:
+                        logger.warning(f"⚠️ Failed to rename tag (Status: {response.status_code}). Retrying...")
+                        time.sleep(RETRY_DELAY)
+                    else:
+                        logger.error(f"❌ Failed to rename tag: {response.status_code}")
+                        logger.error(f"Response: {response.text}")
+                        return False
+                    
+            except Exception as e:
+                if attempt < MAX_RETRIES - 1:
+                    logger.warning(f"⚠️ Error during tag rename: {e}. Retrying...")
+                    time.sleep(RETRY_DELAY)
+                else:
+                    logger.error(f"❌ Error renaming tag: {e}")
+                    return False
+                    
+    except Exception as e:
+        logger.error(f"❌ Unexpected error during tag rename: {e}")
+        return False
+        
+    return False
+
+
+def _get_members_with_tag(tag_name: str, auth: tuple, headers: dict) -> list:
+    """Get all members who have a specific tag."""
+    logger.debug(f"Finding all members with tag '{tag_name}'...")
+    
+    url = f"{MAILCHIMP_BASE_URL}/lists/{MAILCHIMP_LIST_ID}/members"
+    members_with_tag = []
+    params = {"count": 1000, "offset": 0}
+    
+    try:
+        while True:
+            response = requests.get(url, auth=auth, headers=headers, params=params)
+            response.raise_for_status()
+            data = response.json()
+            
+            members = data.get("members", [])
+            if not members:
+                break
+            
+            for member in members:
+                member_tags = [tag.get("name") for tag in member.get("tags", [])]
+                if tag_name in member_tags:
+                    members_with_tag.append({
+                        "email": member.get("email_address"),
+                        "subscriber_hash": member.get("id"),
+                        "current_tags": member_tags
+                    })
+            
+            # Check pagination
+            total_items = data.get("total_items", 0)
+            current_count = params['offset'] + len(members)
+            
+            if current_count < total_items:
+                params['offset'] = current_count
+            else:
+                break
+                
+    except Exception as e:
+        logger.error(f"❌ Error fetching members with tag '{tag_name}': {e}")
+        return []
+    
+    logger.debug(f"Found {len(members_with_tag)} members with tag '{tag_name}'")
+    return members_with_tag
+
 def main():
     """Main execution function."""
 
     global MAILCHIMP_TAG, had_errors
     had_errors = False
     # ─── Load previous list names from disk ───
-    if os.path.exists(LIST_NAME_MAP_FILE):
-        with open(LIST_NAME_MAP_FILE, "r") as f:
+    if os.path.exists(LIST_NAME_MAP):
+        with open(LIST_NAME_MAP, "r") as f:
             previous_list_names = json.load(f)
     else:
         previous_list_names = {}
@@ -1017,23 +1258,42 @@ def main():
             if old_name and old_name != list_name:
                 logger.info(
                     f"HubSpot list {list_id} renamed from '{old_name}' to '{list_name}'. "
-                    "Removing old tag from Mailchimp contacts and deleting its definition…"
+                    "Renaming Mailchimp tag in place…"
                 )
-                # 1) Untag every contact carrying the _old_ tag
-                MAILCHIMP_TAG = old_name
-                old_members = list(get_current_mailchimp_emails().keys())
-                for email in old_members:
-                    untag_mailchimp_contact(email)
-                logger.info(f"Removed old tag '{old_name}' from {len(old_members)} contacts.")
+                # Rename the segment definition on Mailchimp—no mass untagging or deletion
+                rename_success = rename_mailchimp_tag_definition(old_name, list_name)
+                
+                # If rename failed, implement fallback - untag Mailchimp members who still have the old tag
+                if not rename_success:
+                    logger.warning(
+                        f"Failed to rename tag '{old_name}' to '{list_name}'. "
+                        "Implementing fallback: untagging Mailchimp members with old tag."
+                    )
+                    
+                    # Temporarily switch to the old tag so we can find exactly those members
+                    prev_tag = MAILCHIMP_TAG
+                    MAILCHIMP_TAG = old_name
+                    # Fetch Mailchimp members still carrying the old tag
+                    old_members = list(get_current_mailchimp_emails().keys())
+                    if old_members:
+                        for email in old_members:
+                            untag_mailchimp_contact(email)
+                        logger.info(f"Successfully removed old tag '{old_name}' from {len(old_members)} contacts")
+                    else:
+                        logger.info(f"No Mailchimp members found with tag '{old_name}'")
+                    # Restore the previous tag so the rest of the sync uses the correct new tag
+                    MAILCHIMP_TAG = prev_tag
+                else:
+                    logger.info(f"Successfully renamed tag '{old_name}' to '{list_name}'!")
 
-                # 2) Delete the tag definition so it no longer appears in Mailchimp UI
-                remove_mailchimp_tag_definition(old_name)
 
-
-            # ─── Persist the new name for next run ───
+            # ─── Record history and persist the new name for next run ───
             previous_list_names[list_id] = list_name
-            with open(LIST_NAME_MAP_FILE, "w") as f:
+            with open(LIST_NAME_MAP, "w") as f:
                 json.dump(previous_list_names, f, indent=2)
+                
+            # Record the list name in history
+            record_list_name_history(list_id, list_name)
 
             # ─── Now use the up-to-date tag for the normal sync flow ───
             MAILCHIMP_TAG = list_name

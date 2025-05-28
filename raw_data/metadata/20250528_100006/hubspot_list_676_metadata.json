@@ -1,0 +1,24 @@
+{
+  "list": {
+    "listId": "676",
+    "listVersion": 1,
+    "createdAt": "2025-05-20T16:15:55.472Z",
+    "updatedAt": "2025-05-20T16:15:55.472Z",
+    "filtersUpdatedAt": "2025-05-20T16:15:55.472Z",
+    "processingStatus": "COMPLETE",
+    "createdById": "29366862",
+    "updatedById": "29366862",
+    "processingType": "MANUAL",
+    "objectTypeId": "0-1",
+    "name": "EJAS TESTING",
+    "size": 10,
+    "listPermissions": {
+      "teamsWithEditAccess": [],
+      "usersWithEditAccess": []
+    },
+    "membershipSettings": {
+      "membershipTeamId": null,
+      "includeUnassigned": null
+    }
+  }
+}
