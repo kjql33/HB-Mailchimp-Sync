@@ -52,6 +52,38 @@ Helps diagnose issues with:
 
 ---
 
+### `comprehensive_notification_test.py` - Teams Notification System Testing
+**Complete test suite for the notification system covering all error scenarios**
+
+**Verified Functionality:**
+- ✅ 25+ notification scenarios tested successfully
+- ✅ All Teams notifications sent to production webhook during testing
+- ✅ Multi-level severity system (INFO, WARNING, ERROR, CRITICAL)
+- ✅ Session tracking and issue accumulation
+- ✅ Rich Teams message cards with color coding
+- ✅ Dual notification system (Python + GitHub Actions)
+
+**Usage:**
+```bash
+# Run comprehensive notification test suite
+python comprehensive_notification_test.py
+```
+
+**Coverage:**
+- Environment validation failures
+- API timeout and retry scenarios
+- Contact processing issues (missing emails, invalid formats)
+- Data truncation warnings
+- Tag operation failures and recoveries
+- Contact status warnings (pending, cleaned, archived)
+- Merge field validation and creation failures
+- Contact removal failures
+- Rate limiting scenarios
+- Complete script failures
+- GitHub Actions webhook integration
+
+---
+
 ## Generated Reports
 
 **`../mailchimp_tag_analysis.json`** - Detailed analysis report containing:

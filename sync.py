@@ -21,7 +21,13 @@ from main import (
     HUBSPOT_LIST_IDS, HUBSPOT_PRIVATE_TOKEN,
     MAILCHIMP_API_KEY, MAILCHIMP_LIST_ID, MAILCHIMP_DC,
     PAGE_SIZE, TEST_CONTACT_LIMIT, MAX_RETRIES, RETRY_DELAY,
-    REQUIRED_TAGS, LOG_LEVEL, RAW_DATA_DIR, RUN_MODE
+    REQUIRED_TAGS, LOG_LEVEL, RAW_DATA_DIR, RUN_MODE, TEAMS_WEBHOOK_URL
+)
+
+# ─── TEAMS NOTIFICATION SYSTEM ─────────────────────────────────────────────
+from notifications import (
+    initialize_notifier, notify_warning, notify_error, notify_info, 
+    send_final_notification, get_notifier
 )
 
 # ─── RAW_DATA FOLDER STRUCTURE ─────────────────────────────────────────
@@ -66,6 +72,16 @@ root_logger.addHandler(summary_handler)
 # Quiet noisy libs
 logging.getLogger("urllib3").setLevel(logging.INFO)
 logging.getLogger("requests").setLevel(logging.INFO)
+
+# ── Initialize Teams notification system ────────────────────────────────────
+try:
+    if TEAMS_WEBHOOK_URL:
+        initialize_notifier(TEAMS_WEBHOOK_URL)
+        logger.info("📨 Teams notification system initialized")
+    else:
+        logger.warning("⚠️ No Teams webhook URL configured - notifications disabled")
+except Exception as e:
+    logger.warning(f"⚠️ Failed to initialize Teams notifications: {e}")
 
 # ── Ensure raw_data directory exists ────────────────────────────────────────────
 os.makedirs(RAW_DATA_DIR, exist_ok=True)
@@ -176,9 +192,14 @@ def fetch_and_dump_list_metadata(list_id: str) -> dict:
             logger.info(f"Wrote v3 list metadata to {path}")
             return body
         elif resp.status_code != 404:
+            logger.error(f"HubSpot list access failed: Status {resp.status_code}")
+            notify_error("HubSpot list access failed - possible permissions issue",
+                       {"list_id": list_id, "status_code": resp.status_code, "api_version": "v3"})
             resp.raise_for_status()
     except Exception as e:
         logger.warning(f"Error fetching v3 metadata for list {list_id}: {e}")
+        notify_warning("HubSpot v3 list metadata fetch failed",
+                     {"list_id": list_id, "error": str(e), "api_version": "v3"})
 
     # 2) v1 Static Lists API
     v1_url = f"https://api.hubapi.com/contacts/v1/lists/{list_id}"
@@ -259,6 +280,8 @@ def validate_environment() -> bool:
         missing.append('MAILCHIMP_DC')
     if missing:
         logger.error(f"Missing required config values: {', '.join(missing)}")
+        notify_error("API authentication failed - missing required configuration", 
+                    {"missing_values": missing})
         return False
     return True
 
@@ -429,6 +452,8 @@ def get_hubspot_contacts(list_id: str) -> List[Dict[str, Any]]:
                                 # Final check for email - only field we absolutely require
                                 if not email:
                                     logger.warning(f"Skipping contact with missing email: ID {contact.get('id')}")
+                                    notify_warning("Contact skipped due to missing/invalid email",
+                                                  {"contact_id": contact.get('id'), "email": email})
                                     # Log all missing properties
                                     missing_fields = [field for field in properties if field not in contact_properties or not contact_properties.get(field)]
                                     if missing_fields:
@@ -470,9 +495,14 @@ def get_hubspot_contacts(list_id: str) -> List[Dict[str, Any]]:
                 except requests.exceptions.RequestException as e:
                     if attempt < MAX_RETRIES - 1:
                         logger.warning(f"HubSpot API request failed: {e}. Retrying in {RETRY_DELAY} seconds...")
+                        notify_warning("HubSpot API retry due to network issue",
+                                     {"error": str(e), "attempt": attempt + 1, "max_retries": MAX_RETRIES,
+                                      "batch": batch_counter, "retry_delay": RETRY_DELAY})
                         time.sleep(RETRY_DELAY)
                     else:
                         logger.error(f"Error fetching contact details batch {batch_counter}: {e}")
+                        notify_error("HubSpot API failed after max retries",
+                                   {"error": str(e), "batch": batch_counter, "max_retries": MAX_RETRIES})
                         # Continue to the next batch rather than aborting everything
             
             # Increment batch counter
@@ -635,12 +665,47 @@ def upsert_mailchimp_contact(contact: Dict[str, str]) -> bool:
         "BRANCHES": contact.get("branches", "")[:255]
     }
     
+    # Check for data truncation and notify
+    truncated_fields = []
+    for field_name, (field_value, max_length) in [
+        ("COMPANY", (contact.get("company", ""), 255)),
+        ("PHONE", (contact.get("phone", ""), 50)),
+        ("ADDRESS", (contact.get("address", ""), 255)),
+        ("ADDRESS2", (contact.get("address2", ""), 255)),
+        ("CITY", (contact.get("city", ""), 50)),
+        ("STATE", (contact.get("state", ""), 50)),
+        ("POSTCODE", (contact.get("postcode", ""), 20)),
+        ("COUNTRY", (contact.get("country", ""), 50)),
+        ("BRANCHES", (contact.get("branches", ""), 255))
+    ]:
+        if len(str(field_value)) > max_length:
+            truncated_fields.append({
+                "field": field_name,
+                "original_length": len(str(field_value)),
+                "max_length": max_length,
+                "truncated_value": str(field_value)[:max_length]
+            })
+    
+    if truncated_fields:
+        notify_warning("Contact data truncated to fit Mailchimp field limits",
+                     {"email": email, "truncated_fields": truncated_fields})
+    
     # Add FNAME and LNAME if available
     if contact.get("firstname"):
-        merge_fields["FNAME"] = str(contact.get("firstname"))[:50]
+        fname_value = str(contact.get("firstname"))
+        merge_fields["FNAME"] = fname_value[:50]
+        if len(fname_value) > 50:
+            notify_warning("First name truncated to fit Mailchimp field limits",
+                         {"email": email, "field": "FNAME", "original_length": len(fname_value),
+                          "max_length": 50, "truncated_value": fname_value[:50]})
     
     if contact.get("lastname"):
-        merge_fields["LNAME"] = str(contact.get("lastname"))[:50]
+        lname_value = str(contact.get("lastname"))
+        merge_fields["LNAME"] = lname_value[:50]
+        if len(lname_value) > 50:
+            notify_warning("Last name truncated to fit Mailchimp field limits",
+                         {"email": email, "field": "LNAME", "original_length": len(lname_value),
+                          "max_length": 50, "truncated_value": lname_value[:50]})
         
     data = {
         "email_address": email,
@@ -677,6 +742,9 @@ def upsert_mailchimp_contact(contact: Dict[str, str]) -> bool:
                         logger.debug(f"Contact {email} status after upsert: {response_body['status']}")
                         if response_body["status"] not in ["subscribed", "unsubscribed"]:
                             logger.warning(f"⚠️ Contact {email} has status '{response_body['status']}' which may not be visible in Mailchimp UI")
+                            notify_warning("Contact has unexpected status in Mailchimp",
+                                         {"email": email, "status": response_body["status"],
+                                          "expected_statuses": ["subscribed", "unsubscribed"]})
                 except ValueError:
                     logger.debug(f"No JSON response body for {email}")
                 
@@ -695,8 +763,12 @@ def upsert_mailchimp_contact(contact: Dict[str, str]) -> bool:
                         contact_data = get_mailchimp_contact_status(email)
                         if not contact_data:
                             logger.error(f"❌ Failed to verify contact status for {email} after successful upsert and tagging")
+                            notify_error("Contact verification failed after upsert",
+                                       {"email": email, "step": "post_upsert_verification"})
                     else:
                         logger.warning(f"Failed to tag {email} - the contact was upserted but tagging failed")
+                        notify_warning("Contact upserted but tag application failed",
+                                     {"email": email, "tag": MAILCHIMP_TAG})
                     
                     return True
                 else:
@@ -706,8 +778,13 @@ def upsert_mailchimp_contact(contact: Dict[str, str]) -> bool:
             except requests.exceptions.RequestException as e:
                 if attempt < MAX_RETRIES - 1:
                     logger.warning(f"Mailchimp API request failed for {email}: {e}. Retrying in {RETRY_DELAY} seconds...")
+                    notify_warning("Mailchimp upsert API retry due to network issue",
+                                 {"email": email, "error": str(e), "attempt": attempt + 1, 
+                                  "max_retries": MAX_RETRIES, "retry_delay": RETRY_DELAY})
                     time.sleep(RETRY_DELAY)
                 else:
+                    notify_error("Mailchimp upsert API failed after max retries",
+                               {"email": email, "error": str(e), "max_retries": MAX_RETRIES})
                     raise
         
     except Exception as e:
@@ -803,6 +880,8 @@ def apply_mailchimp_tag(email: str) -> bool:
                             logger.debug(f"✅ Verified tag '{MAILCHIMP_TAG}' was successfully applied to {email}")
                         else:
                             logger.warning(f"⚠️ Tag '{MAILCHIMP_TAG}' not found on contact {email} despite successful API response!")
+                            notify_warning("Tag verification failed after successful application",
+                                         {"email": email, "tag": MAILCHIMP_TAG, "found_tags": tag_names})
                     
                     return True
                 
@@ -810,8 +889,13 @@ def apply_mailchimp_tag(email: str) -> bool:
             except requests.exceptions.RequestException as e:
                 if attempt < MAX_RETRIES - 1:
                     logger.warning(f"Mailchimp API request failed for tagging {email}: {e}. Retrying in {RETRY_DELAY} seconds...")
+                    notify_warning("Mailchimp tag API retry due to network issue",
+                                 {"email": email, "tag": MAILCHIMP_TAG, "error": str(e), 
+                                  "attempt": attempt + 1, "max_retries": MAX_RETRIES, "retry_delay": RETRY_DELAY})
                     time.sleep(RETRY_DELAY)
                 else:
+                    notify_error("Mailchimp tag API failed after max retries",
+                               {"email": email, "tag": MAILCHIMP_TAG, "error": str(e), "max_retries": MAX_RETRIES})
                     raise
                     
     except Exception as e:
@@ -857,8 +941,13 @@ def remove_mailchimp_contact_by_email(email: str) -> bool:
             except requests.exceptions.RequestException as e:
                 if attempt < MAX_RETRIES - 1:
                     logger.warning(f"Mailchimp API request failed for {email}: {e}. Retrying in {RETRY_DELAY} seconds...")
+                    notify_warning("Mailchimp contact removal API retry due to network issue",
+                                 {"email": email, "error": str(e), "attempt": attempt + 1, 
+                                  "max_retries": MAX_RETRIES, "retry_delay": RETRY_DELAY})
                     time.sleep(RETRY_DELAY)
                 else:
+                    notify_error("Mailchimp contact removal API failed after max retries",
+                               {"email": email, "error": str(e), "max_retries": MAX_RETRIES})
                     raise
         
     except Exception as e:
@@ -883,15 +972,33 @@ def untag_mailchimp_contact(email: str) -> bool:
     payload = {"tags": [{"name": MAILCHIMP_TAG, "status": "inactive"}]}
     try:
         for attempt in range(MAX_RETRIES):
-            response = requests.post(url, auth=auth, headers=headers, json=payload)
-            if response.status_code in (200, 204):
-                logger.debug(f"✅ Removed tag '{MAILCHIMP_TAG}' from {email}")
-                return True
-            else:
-                logger.warning(f"Failed to remove tag '{MAILCHIMP_TAG}' from {email}: {response.text}")
-                response.raise_for_status()
+            try:
+                response = requests.post(url, auth=auth, headers=headers, json=payload)
+                if response.status_code in (200, 204):
+                    logger.debug(f"✅ Removed tag '{MAILCHIMP_TAG}' from {email}")
+                    return True
+                else:
+                    logger.warning(f"Failed to remove tag '{MAILCHIMP_TAG}' from {email}: {response.text}")
+                    if attempt == MAX_RETRIES - 1:
+                        notify_error("Failed to remove tag from contact after max retries",
+                                   {"email": email, "tag": MAILCHIMP_TAG, "response": response.text, 
+                                    "status_code": response.status_code, "max_retries": MAX_RETRIES})
+                    response.raise_for_status()
+            except requests.exceptions.RequestException as e:
+                if attempt < MAX_RETRIES - 1:
+                    logger.warning(f"Mailchimp untag API request failed for {email}: {e}. Retrying in {RETRY_DELAY} seconds...")
+                    notify_warning("Mailchimp untag API retry due to network issue",
+                                 {"email": email, "tag": MAILCHIMP_TAG, "error": str(e), 
+                                  "attempt": attempt + 1, "max_retries": MAX_RETRIES, "retry_delay": RETRY_DELAY})
+                    time.sleep(RETRY_DELAY)
+                else:
+                    notify_error("Mailchimp untag API failed after max retries",
+                               {"email": email, "tag": MAILCHIMP_TAG, "error": str(e), "max_retries": MAX_RETRIES})
+                    raise
     except Exception as e:
         logger.error(f"Error untagging contact {email}: {e}")
+        notify_error("Unexpected error during contact untagging",
+                   {"email": email, "tag": MAILCHIMP_TAG, "error": str(e)})
     return False
 
 def fetch_mailchimp_merge_fields() -> Dict[str, Any]:
@@ -938,6 +1045,8 @@ def fetch_mailchimp_merge_fields() -> Dict[str, Any]:
                 
                 if missing_fields:
                     logger.warning(f"Mailchimp is missing these required merge-fields: {missing_fields}. Creating them now…")
+                    notify_warning("Missing merge fields detected - auto-creating", 
+                                 {"missing_fields": missing_fields})
                     # Map tags to human-readable names
                     display_names = {
                         "COMPANY":  "Company",
@@ -966,6 +1075,8 @@ def fetch_mailchimp_merge_fields() -> Dict[str, Any]:
                     missing_after = [f for f in REQUIRED_TAGS if f not in available]
                     if missing_after:
                         logger.error(f"Still missing merge-fields after creation: {missing_after}. Aborting.")
+                        notify_error("Merge field creation failed after retry", 
+                                   {"still_missing": missing_after})
                         sys.exit(1)
                 else:
                     logger.info("✅ All required merge fields exist in Mailchimp audience")
@@ -976,8 +1087,13 @@ def fetch_mailchimp_merge_fields() -> Dict[str, Any]:
             except requests.exceptions.RequestException as e:
                 if attempt < MAX_RETRIES - 1:
                     logger.warning(f"Mailchimp API request failed for merge fields: {e}. Retrying in {RETRY_DELAY} seconds...")
+                    notify_warning("Mailchimp merge fields API retry due to network issue",
+                                 {"error": str(e), "attempt": attempt + 1, 
+                                  "max_retries": MAX_RETRIES, "retry_delay": RETRY_DELAY})
                     time.sleep(RETRY_DELAY)
                 else:
+                    notify_error("Mailchimp merge fields API failed after max retries",
+                               {"error": str(e), "max_retries": MAX_RETRIES})
                     raise
                     
     except Exception as e:
@@ -1136,9 +1252,14 @@ def rename_mailchimp_tag_definition(old_name: str, new_name: str) -> bool:
             except requests.exceptions.RequestException as e:
                 if attempt < MAX_RETRIES - 1:
                     logger.warning(f"API request failed when searching for tag: {e}. Retrying...")
+                    notify_warning("Tag search API retry during rename",
+                                 {"old_tag": old_name, "new_tag": new_name, "error": str(e), 
+                                  "attempt": attempt + 1, "max_retries": MAX_RETRIES})
                     time.sleep(RETRY_DELAY)
                 else:
                     logger.error(f"Failed to find tag '{old_name}': {e}")
+                    notify_error("Tag search failed after max retries during rename",
+                               {"old_tag": old_name, "new_tag": new_name, "error": str(e), "max_retries": MAX_RETRIES})
                     return False
         
         # Step 2: Update the tag name
@@ -1168,10 +1289,16 @@ def rename_mailchimp_tag_definition(old_name: str, new_name: str) -> bool:
                 else:
                     if attempt < MAX_RETRIES - 1:
                         logger.warning(f"⚠️ Failed to rename tag (Status: {response.status_code}). Retrying...")
+                        notify_warning("Tag rename API retry",
+                                     {"old_tag": old_name, "new_tag": new_name, "status_code": response.status_code,
+                                      "attempt": attempt + 1, "max_retries": MAX_RETRIES})
                         time.sleep(RETRY_DELAY)
                     else:
                         logger.error(f"❌ Failed to rename tag: {response.status_code}")
                         logger.error(f"Response: {response.text}")
+                        notify_error("Tag rename failed after max retries",
+                                   {"old_tag": old_name, "new_tag": new_name, "status_code": response.status_code,
+                                    "response": response.text, "max_retries": MAX_RETRIES})
                         return False
                     
             except Exception as e:
@@ -1247,6 +1374,20 @@ def main():
     all_synced_emails: Set[str] = set()
     logger.info("Starting multi-list HubSpot → Mailchimp sync for lists: %s", HUBSPOT_LIST_IDS)
     logger.info("Configuration: PAGE_SIZE=%d, TEST_CONTACT_LIMIT=%d, MAX_RETRIES=%d, RETRY_DELAY=%d", PAGE_SIZE, TEST_CONTACT_LIMIT, MAX_RETRIES, RETRY_DELAY)
+    
+    # Send initial notification about sync start
+    try:
+        notify_info("HubSpot → Mailchimp sync started",
+                   {"lists_to_process": HUBSPOT_LIST_IDS,
+                    "total_lists": len(HUBSPOT_LIST_IDS),
+                    "configuration": {
+                        "page_size": PAGE_SIZE,
+                        "test_limit": TEST_CONTACT_LIMIT,
+                        "max_retries": MAX_RETRIES,
+                        "retry_delay": RETRY_DELAY
+                    }})
+    except Exception as e:
+        logger.warning(f"Failed to send sync start notification: {e}")
     for list_id in HUBSPOT_LIST_IDS:
         logger.info("%s Syncing list %s %s", "="*10, list_id, "="*10)
         try:
@@ -1269,6 +1410,8 @@ def main():
                         f"Failed to rename tag '{old_name}' to '{list_name}'. "
                         "Implementing fallback: untagging Mailchimp members with old tag."
                     )
+                    notify_warning("Tag rename failed - implementing fallback strategy",
+                                 {"old_tag": old_name, "new_tag": list_name, "fallback": "untag_old_members"})
                     
                     # Temporarily switch to the old tag so we can find exactly those members
                     prev_tag = MAILCHIMP_TAG
@@ -1301,6 +1444,8 @@ def main():
             logger.info("Contacts will be tagged with: '%s'", MAILCHIMP_TAG)
         except Exception as e:
             logger.exception("Failed to determine list name for %s: %s", list_id, e)
+            notify_error("List processing failed - could not determine list name",
+                       {"list_id": list_id, "error": str(e), "error_type": type(e).__name__})
             had_errors = True
             continue
 
@@ -1318,6 +1463,8 @@ def main():
         hubspot_contacts = get_hubspot_contacts(list_id)
         if not hubspot_contacts:
             logger.error("No valid contacts found for list %s or failed to fetch", list_id)
+            notify_warning("No contacts found or fetch failed for HubSpot list",
+                         {"list_id": list_id, "list_name": list_name})
             continue
 
         # Step 2: Create a set of all HubSpot emails for comparison
@@ -1358,6 +1505,16 @@ def main():
             logger.info("No contacts to untag from Mailchimp for list %s", list_id)
         
         logger.info("%s Completed sync for list %s %s", "="*10, list_id, "="*10)
+        
+        # Send list completion notification
+        try:
+            notify_info("List sync completed successfully",
+                       {"list_id": list_id, "list_name": list_name,
+                        "contacts_upserted": successful_upserts,
+                        "contacts_untagged": len(emails_to_untag),
+                        "total_emails_in_list": len(hubspot_emails)})
+        except Exception as e:
+            logger.warning(f"Failed to send list completion notification: {e}")
 
     # --- Phase 3: Global cleanup (archive any Mailchimp members not in any synced list) ---
     logger.info("Starting global archival cleanup: members not in any HubSpot list will be archived")
@@ -1377,14 +1534,25 @@ def main():
     else:
         logger.info("No Mailchimp contacts to archive; all members are in at least one HubSpot list")
     # Final summary
+    logger.info("Multi-list sync complete: %d unique contacts synced, %d contacts archived", len(all_synced_emails), len(to_archive))
+    logger.info("All configured HubSpot lists have been synced and cleanup is complete.")
+    
+    # Send final Teams notification with session summary
+    try:
+        send_final_notification({
+            "sync_status": "completed_successfully" if not had_errors else "completed_with_errors",
+            "total_contacts_synced": len(all_synced_emails),
+            "total_contacts_archived": len(to_archive),
+            "lists_processed": len(HUBSPOT_LIST_IDS),
+            "list_ids": HUBSPOT_LIST_IDS
+        })
+    except Exception as e:
+        logger.warning(f"Failed to send final Teams notification: {e}")
 
     # If any list failed, abort with non-zero exit
     if had_errors:
         logger.critical("Sync finished with errors—failing the process.")
         sys.exit(1)
-
-    logger.info("Multi-list sync complete: %d unique contacts synced, %d contacts archived", len(all_synced_emails), len(to_archive))
-    logger.info("All configured HubSpot lists have been synced and cleanup is complete.")
 
 
 if __name__ == "__main__":
@@ -1392,5 +1560,15 @@ if __name__ == "__main__":
         main()
     except Exception as e:
         logger.exception("Unhandled exception—failing CI.")
+        try:
+            notify_error("Critical sync failure - unhandled exception",
+                       {"error": str(e), "error_type": type(e).__name__})
+            send_final_notification({
+                "sync_status": "critical_failure",
+                "error": str(e),
+                "error_type": type(e).__name__
+            })
+        except Exception as notify_error:
+            logger.error(f"Failed to send failure notification: {notify_error}")
         sys.exit(1)
 
