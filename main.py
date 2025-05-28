@@ -20,7 +20,7 @@ RUN_MODE = "TEST_RUN"  # Options: "FULL_SYNC", "TEST_RUN", "TAG_RENAME_ONLY"
 
 # HubSpot lists to sync (edit here whenever you need to add/remove a list)
 HUBSPOT_LIST_IDS = [
-    "676",  # Main prospect list
+    "692",  # Main prospect list
     # Add more lists here as needed
 ]
 

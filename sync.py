@@ -10,11 +10,13 @@ import os
 import sys
 import time
 import math
-from datetime import datetime, timezone
 import json
 import logging
 import hashlib
 import requests
+from datetime import datetime, timezone
+from typing import Dict, List, Any, Optional, Set
+from tqdm import tqdm
 
 # ─── IMPORT CONFIGURATION FROM MAIN ─────────────────────────────────────────
 from main import (
@@ -44,8 +46,6 @@ RETENTION_DAYS = int(os.getenv("RAW_RETENTION_DAYS", "7"))
 # Ensure new dirs exist
 for d in (METADATA_DIR, MEM_DIR, CONT_DIR):
     os.makedirs(d, exist_ok=True)
-from tqdm import tqdm
-from typing import Dict, List, Any, Optional, Set
 
 # ── Initialize logging ─────────────────────────────────────────────────────────
 LOG_DIR = "logs"
