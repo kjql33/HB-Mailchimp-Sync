@@ -24,9 +24,9 @@ from requests.exceptions import RequestException, Timeout, ConnectionError
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import our modules
-from notifications import notify_warning, notify_error, notify_info, send_final_notification, reset_session
-import sync
-import main
+from core.notifications import notify_warning, notify_error, notify_info, send_final_notification, reset_session
+import core.sync as sync
+import core.main as main
 
 class ErrorScenarioTester:
     def __init__(self):

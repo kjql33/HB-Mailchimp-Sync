@@ -44,7 +44,7 @@ A Python-based integration that synchronizes contacts from HubSpot Active Lists 
 
 6. **Run the sync:**
    ```bash
-   python sync.py
+   python -m core.sync
    ```
 
 ## How It Works

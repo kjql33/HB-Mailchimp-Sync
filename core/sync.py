@@ -10,24 +10,14 @@ import os
 import sys
 import time
 import math
-import json
-import logging
-import hashlib
-import requests
-import os
-import sys
-import time
-import math
-import json
-import logging
-import hashlib
-import requests
 from datetime import datetime, timezone
-from typing import Dict, List, Any, Optional, Set
-from tqdm import tqdm
+import json
+import logging
+import hashlib
+import requests
 
 # ─── IMPORT CONFIGURATION FROM MAIN ─────────────────────────────────────────
-from main import (
+from .main import (
     HUBSPOT_LIST_IDS, HUBSPOT_PRIVATE_TOKEN,
     MAILCHIMP_API_KEY, MAILCHIMP_LIST_ID, MAILCHIMP_DC,
     PAGE_SIZE, TEST_CONTACT_LIMIT, MAX_RETRIES, RETRY_DELAY,
@@ -35,7 +25,7 @@ from main import (
 )
 
 # ─── TEAMS NOTIFICATION SYSTEM ─────────────────────────────────────────────
-from notifications import (
+from .notifications import (
     initialize_notifier, notify_warning, notify_error, notify_info, 
     send_final_notification, get_notifier
 )
@@ -54,6 +44,8 @@ RETENTION_DAYS = int(os.getenv("RAW_RETENTION_DAYS", "7"))
 # Ensure new dirs exist
 for d in (METADATA_DIR, MEM_DIR, CONT_DIR):
     os.makedirs(d, exist_ok=True)
+from tqdm import tqdm
+from typing import Dict, List, Any, Optional, Set
 
 # ── Initialize logging ─────────────────────────────────────────────────────────
 LOG_DIR = "logs"
@@ -872,7 +864,25 @@ def apply_mailchimp_tag(email: str) -> bool:
                         
                     response.raise_for_status()
                 else:
-                    logger.debug(f"✅ Successfully applied tag '{MAILCHIMP_TAG}' to {email}")
+                    logger.debug(f"Successfully applied tag '{MAILCHIMP_TAG}' to {email}")
+                    
+                    # Verify tag was actually applied by re-fetching the contact
+                    time.sleep(1)  # Brief delay to allow tag processing
+                    verify_url = f"https://{MAILCHIMP_DC}.api.mailchimp.com/3.0/lists/{MAILCHIMP_LIST_ID}/members/{subscriber_hash}"
+                    verify_response = requests.get(verify_url, auth=auth, headers=headers)
+                    
+                    if verify_response.status_code == 200:
+                        member_data = verify_response.json()
+                        tags = member_data.get("tags", [])
+                        tag_names = [tag.get("name") for tag in tags]
+                        
+                        if MAILCHIMP_TAG in tag_names:
+                            logger.debug(f"✅ Verified tag '{MAILCHIMP_TAG}' was successfully applied to {email}")
+                        else:
+                            logger.warning(f"⚠️ Tag '{MAILCHIMP_TAG}' not found on contact {email} despite successful API response!")
+                            notify_warning("Tag verification failed after successful application",
+                                         {"email": email, "tag": MAILCHIMP_TAG, "found_tags": tag_names})
+                    
                     return True
                 
                 break
@@ -1125,12 +1135,14 @@ def get_mailchimp_contact_status(email: str) -> Dict[str, Any]:
                     else:
                         logger.debug(f"✅ Verified Mailchimp contact status for {email}: {status}")
 
-                    # Log which tags are applied (for debugging only)
+                    # Log which tags are applied
                     tags = data.get("tags", [])
                     tag_names = [tag.get("name") for tag in tags]
                     logger.debug(f"Contact {email} has tags: {tag_names}")
                     
-                    # Note: Tag verification is done at the end of sync process, not immediately
+                    # Check if our tag is applied
+                    if MAILCHIMP_TAG not in tag_names:
+                        logger.warning(f"⚠️ Tag '{MAILCHIMP_TAG}' not found on contact {email}")
                     
                     # Return the full contact data
                     return data
@@ -1521,12 +1533,6 @@ def main():
         logger.info(f"Successfully archived {archived_count} contacts from Mailchimp")
     else:
         logger.info("No Mailchimp contacts to archive; all members are in at least one HubSpot list")
-    
-    # Final tag verification - check that all synced contacts have their expected tags
-    if all_synced_emails and MAILCHIMP_TAG:
-        verification_results = verify_final_tag_application(all_synced_emails, MAILCHIMP_TAG)
-        logger.info(f"Final tag verification completed: {verification_results['verified_count']}/{verification_results['total_expected']} contacts verified")
-    
     # Final summary
     logger.info("Multi-list sync complete: %d unique contacts synced, %d contacts archived", len(all_synced_emails), len(to_archive))
     logger.info("All configured HubSpot lists have been synced and cleanup is complete.")
@@ -1547,107 +1553,6 @@ def main():
     if had_errors:
         logger.critical("Sync finished with errors—failing the process.")
         sys.exit(1)
-
-def verify_final_tag_application(synced_emails: Set[str], expected_tag: str) -> Dict[str, Any]:
-    """
-    Perform final verification that all synced contacts have the expected tag.
-    This is done at the end of the sync process after Mailchimp has had time to process all changes.
-    
-    Returns: Dict with verification results including success count and any issues found.
-    """
-    if not synced_emails:
-        logger.debug("No emails to verify - skipping final tag verification")
-        return {"verified_count": 0, "total_expected": 0, "issues": []}
-    
-    logger.info(f"🔍 Performing final verification that {len(synced_emails)} contacts have tag '{expected_tag}'")
-    
-    # Wait a bit more to ensure Mailchimp has processed all tag changes
-    logger.debug("Waiting 5 seconds for Mailchimp to fully process all tag changes...")
-    time.sleep(5)
-    
-    auth = ("anystring", MAILCHIMP_API_KEY)
-    headers = {"Content-Type": "application/json"}
-    
-    verified_count = 0
-    issues = []
-    
-    for email in synced_emails:
-        subscriber_hash = calculate_subscriber_hash(email)
-        url = f"https://{MAILCHIMP_DC}.api.mailchimp.com/3.0/lists/{MAILCHIMP_LIST_ID}/members/{subscriber_hash}"
-        
-        try:
-            response = requests.get(url, auth=auth, headers=headers)
-            if response.status_code == 200:
-                member_data = response.json()
-                tags = member_data.get("tags", [])
-                tag_names = [tag.get("name") for tag in tags]
-                
-                # Case-insensitive tag matching to handle variations like 'Recruitment' vs 'recruitment'
-                expected_tag_lower = expected_tag.lower()
-                tag_names_lower = [name.lower() for name in tag_names]
-                
-                if expected_tag_lower in tag_names_lower:
-                    verified_count += 1
-                    logger.debug(f"✅ Verified: {email} has tag '{expected_tag}' (case-insensitive match)")
-                else:
-                    issues.append({
-                        "email": email,
-                        "issue": "tag_missing",
-                        "found_tags": tag_names,
-                        "status": member_data.get("status")
-                    })
-                    logger.debug(f"❌ Missing tag: {email} does not have tag '{expected_tag}' (has: {tag_names})")
-            else:
-                issues.append({
-                    "email": email,
-                    "issue": "member_not_found",
-                    "status_code": response.status_code
-                })
-                logger.debug(f"❌ Member not found: {email} (status: {response.status_code})")
-        except Exception as e:
-            issues.append({
-                "email": email,
-                "issue": "verification_error",
-                "error": str(e)
-            })
-            logger.debug(f"❌ Verification error for {email}: {e}")
-        
-        # Small delay to respect rate limits during verification
-        time.sleep(0.1)
-    
-    # Log final verification results
-    success_rate = (verified_count / len(synced_emails)) * 100 if synced_emails else 0
-    
-    if issues:
-        logger.warning(f"⚠️ Final verification: {verified_count}/{len(synced_emails)} contacts verified ({success_rate:.1f}%)")
-        logger.warning(f"Found {len(issues)} issues during final verification")
-        
-        # Summarize issue types
-        issue_types = {}
-        for issue in issues:
-            issue_type = issue["issue"]
-            issue_types[issue_type] = issue_types.get(issue_type, 0) + 1
-        
-        for issue_type, count in issue_types.items():
-            logger.warning(f"  - {issue_type}: {count} contacts")
-            
-        # Only send notification if verification rate is very low (less than 80%)
-        if success_rate < 80:
-            notify_warning("Final tag verification found significant issues",
-                         {"expected_tag": expected_tag,
-                          "verified_count": verified_count,
-                          "total_expected": len(synced_emails),
-                          "success_rate": f"{success_rate:.1f}%",
-                          "issue_summary": issue_types})
-    else:
-        logger.info(f"✅ Final verification: All {verified_count} contacts successfully have tag '{expected_tag}' ({success_rate:.1f}%)")
-    
-    return {
-        "verified_count": verified_count,
-        "total_expected": len(synced_emails),
-        "success_rate": success_rate,
-        "issues": issues
-    }
 
 
 if __name__ == "__main__":
