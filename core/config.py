@@ -146,9 +146,7 @@ MAILCHIMP_LIST_ID = os.getenv("MAILCHIMP_LIST_ID", "")
 MAILCHIMP_DC = os.getenv("MAILCHIMP_DC", "")
 
 # Microsoft Teams Notifications
-TEAMS_WEBHOOK_URL = os.getenv("TEAMS_WEBHOOK_URL", 
-    "https://prod-00.centralindia.logic.azure.com:443/workflows/87399a7a0ef3483a9c8a3b02d2dead4c/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=E8BgYXwIN9nve4k3-OWDRGUipkv_wSLXHZQjBf7NKOQ"
-)
+TEAMS_WEBHOOK_URL = os.getenv("TEAMS_WEBHOOK_URL", "")
 
 # =============================================================================
 # ⚙️ SYNC PARAMETERS

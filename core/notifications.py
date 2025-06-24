@@ -347,7 +347,7 @@ def send_secondary_sync_notification(stats: Dict,
         summary_report: Full summary report text
         is_error: Whether this is an error notification
     """
-    from . import main as config
+    from . import config
     
     try:
         # Determine notification type and color
@@ -460,7 +460,7 @@ def send_bidirectional_sync_notification(primary_stats: Dict,
         total_duration: Total sync duration
         has_errors: Whether either sync had errors
     """
-    from . import main as config
+    from . import config
     
     try:
         # Determine notification type
@@ -563,7 +563,7 @@ def send_configuration_validation_notification(validation_results: Dict,
         validation_results: Results from list configuration validation
         is_error: Whether validation failed
     """
-    from . import main as config
+    from . import config
     
     try:
         if is_error:
