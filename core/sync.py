@@ -16,13 +16,21 @@ import logging
 import hashlib
 import requests
 
-# ─── IMPORT CONFIGURATION FROM MAIN ─────────────────────────────────────────
-from .main import (
+# ─── IMPORT CONFIGURATION FROM CONFIG ─────────────────────────────────────────
+from .config import (
     HUBSPOT_LIST_IDS, HUBSPOT_PRIVATE_TOKEN,
     MAILCHIMP_API_KEY, MAILCHIMP_LIST_ID, MAILCHIMP_DC,
     PAGE_SIZE, TEST_CONTACT_LIMIT, MAX_RETRIES, RETRY_DELAY,
-    REQUIRED_TAGS, LOG_LEVEL, RAW_DATA_DIR, RUN_MODE, TEAMS_WEBHOOK_URL
+    REQUIRED_TAGS, LOG_LEVEL, RAW_DATA_DIR, RUN_MODE, TEAMS_WEBHOOK_URL,
+    HARD_EXCLUDE_LISTS
 )
+
+# ─── IMPORT SOURCE LIST TRACKING CONFIGURATION ─────────────────────────────
+from .config import ORI_LISTS_FIELD
+
+# ─── PERFORMANCE CONFIGURATION ─────────────────────────────────────────────
+from .config import PerformanceConfig
+perf_config = PerformanceConfig()
 
 # ─── TEAMS NOTIFICATION SYSTEM ─────────────────────────────────────────────
 from .notifications import (
@@ -286,6 +294,86 @@ def validate_environment() -> bool:
     return True
 
 
+def get_hard_exclude_contact_ids() -> Set[str]:
+    """
+    Fetch all contact IDs from hard exclude lists.
+    These contacts will never be synced to Mailchimp, regardless of which source list they're in.
+    """
+    if not HARD_EXCLUDE_LISTS:
+        logger.debug("No hard exclude lists configured")
+        return set()
+    
+    logger.info(f"🚫 HARD EXCLUDE: Fetching contacts from {len(HARD_EXCLUDE_LISTS)} exclude lists")
+    exclude_contact_ids = set()
+    
+    headers = {
+        "Authorization": f"Bearer {HUBSPOT_PRIVATE_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    
+    for exclude_list_id in HARD_EXCLUDE_LISTS:
+        logger.debug(f"Fetching exclude contacts from list {exclude_list_id}")
+        
+        # Use same method as regular contact fetching - get membership IDs
+        list_url = f"https://api.hubapi.com/crm/v3/lists/{exclude_list_id}/memberships"
+        params = {"limit": PAGE_SIZE}
+        after = None
+        
+        try:
+            while True:
+                if after:
+                    params["after"] = after
+                
+                resp = requests.get(list_url, headers=headers, params=params)
+                resp.raise_for_status()
+                body = resp.json()
+                
+                # Extract contact IDs from memberships
+                results = body.get("results", [])
+                contact_ids = [m.get("recordId") for m in results if m.get("recordId")]
+                exclude_contact_ids.update(contact_ids)
+                
+                # Check for more pages
+                paging = body.get("paging", {}).get("next", {})
+                after = paging.get("after")
+                if not after:
+                    break
+                    
+                time.sleep(perf_config.hubspot_page_delay)
+                
+        except Exception as e:
+            logger.error(f"Failed to fetch contacts from exclude list {exclude_list_id}: {e}")
+            continue
+    
+    logger.info(f"🚫 HARD EXCLUDE: Found {len(exclude_contact_ids)} contacts to exclude from sync")
+    return exclude_contact_ids
+
+
+def filter_excluded_contacts(contacts: List[Dict[str, Any]], exclude_contact_ids: Set[str]) -> List[Dict[str, Any]]:
+    """
+    Filter out contacts that are in the hard exclude lists.
+    """
+    if not exclude_contact_ids:
+        return contacts
+    
+    original_count = len(contacts)
+    filtered_contacts = []
+    excluded_count = 0
+    
+    for contact in contacts:
+        contact_id = contact.get("hubspot_id")  # Use hubspot_id field from processed contact data
+        if contact_id and str(contact_id) in exclude_contact_ids:
+            excluded_count += 1
+            logger.debug(f"🚫 EXCLUDED: Contact {contact_id} ({contact.get('email', 'no-email')}) found in hard exclude list")
+        else:
+            filtered_contacts.append(contact)
+    
+    if excluded_count > 0:
+        logger.info(f"🚫 HARD EXCLUDE: Filtered out {excluded_count} contacts from sync ({original_count} → {len(filtered_contacts)})")
+    
+    return filtered_contacts
+
+
 def get_hubspot_contacts(list_id: str) -> List[Dict[str, Any]]:
     """Fetch contacts from a specified HubSpot list using a two-step approach:
     
@@ -390,7 +478,7 @@ def get_hubspot_contacts(list_id: str) -> List[Dict[str, Any]]:
             break
 
         page += 1
-        time.sleep(1)  # respect rate limits
+        time.sleep(perf_config.hubspot_page_delay)  # respect rate limits with configurable delay
 
     logger.info(f"STEP 1 COMPLETE: collected {len(all_vids)} contact IDs")
     if not all_vids:
@@ -508,8 +596,8 @@ def get_hubspot_contacts(list_id: str) -> List[Dict[str, Any]]:
             # Increment batch counter
             batch_counter += 1
             
-            # Respect API rate limits
-            time.sleep(1)  # 1 second between batches to avoid rate limiting
+            # Respect API rate limits with configurable delay
+            time.sleep(perf_config.hubspot_page_delay)  # Configurable delay between batches to avoid rate limiting
             
         except Exception as e:
             logger.error(f"Error processing contact batch {batch_counter}: {e}")
@@ -527,6 +615,13 @@ def get_hubspot_contacts(list_id: str) -> List[Dict[str, Any]]:
     else:
         logger.warning(f"⚠️ No valid contacts retrieved from HubSpot list ID {list_id}")
         logger.warning("Please check that the list exists and contains contacts")
+    
+    # 🚫 APPLY HARD EXCLUDE FILTER - Remove contacts in exclude lists
+    if HARD_EXCLUDE_LISTS:
+        logger.info(f"🚫 HARD EXCLUDE: Checking {len(contacts)} contacts against exclude lists")
+        exclude_contact_ids = get_hard_exclude_contact_ids()
+        contacts = filter_excluded_contacts(contacts, exclude_contact_ids)
+        logger.info(f"🚫 HARD EXCLUDE: Final contact count after filtering: {len(contacts)}")
     
     return contacts
 
@@ -635,10 +730,14 @@ def get_all_mailchimp_emails() -> Set[str]:
     return emails
 
 
-def upsert_mailchimp_contact(contact: Dict[str, str]) -> bool:
+def upsert_mailchimp_contact(contact: Dict[str, str], source_list_id: str = None) -> bool:
     """
-    Add or update a contact in Mailchimp audience.
+    Add or update a contact in Mailchimp audience with source list tracking.
     Returns True if successful, False otherwise.
+    
+    Args:
+        contact: Contact data dictionary
+        source_list_id: The HubSpot list ID this contact came from (for source tracking)
     """
     if not all([MAILCHIMP_API_KEY, MAILCHIMP_LIST_ID, MAILCHIMP_DC]):
         logger.error("Mailchimp credentials not properly set")
@@ -664,6 +763,13 @@ def upsert_mailchimp_contact(contact: Dict[str, str]) -> bool:
         "COUNTRY":  contact.get("country", "")[:50],
         "BRANCHES": contact.get("branches", "")[:255]
     }
+    
+    # 🔍 SOURCE LIST TRACKING - Record the original HubSpot list ID
+    if source_list_id:
+        merge_fields[ORI_LISTS_FIELD] = source_list_id
+        logger.debug(f"Recording source list {source_list_id} for contact {email}")
+    else:
+        logger.warning(f"No source list ID provided for contact {email} - source tracking disabled")
     
     # Check for data truncation and notify
     truncated_fields = []
@@ -752,9 +858,10 @@ def upsert_mailchimp_contact(contact: Dict[str, str]) -> bool:
                 if response.status_code in (200, 201):
                     logger.debug(f"Successfully upserted contact: {email} (Status: {response.status_code})")
                     
-                    # Apply tag with increased delay to ensure the member is fully created/updated
-                    logger.debug(f"Waiting 2 seconds before applying tag to {email}")
-                    time.sleep(2)  # Increased from 1s to 2s
+                    # Apply tag with configurable delay to ensure the member is fully created/updated
+                    upsert_delay = perf_config.mailchimp_upsert_delay
+                    logger.debug(f"Waiting {upsert_delay}s before applying tag to {email}")
+                    time.sleep(upsert_delay)
                     if apply_mailchimp_tag(email):
                         logger.debug(f"Successfully tagged {email} with '{MAILCHIMP_TAG}'")
                         
@@ -866,8 +973,9 @@ def apply_mailchimp_tag(email: str) -> bool:
                 else:
                     logger.debug(f"Successfully applied tag '{MAILCHIMP_TAG}' to {email}")
                     
-                    # Verify tag was actually applied by re-fetching the contact
-                    time.sleep(1)  # Brief delay to allow tag processing
+                    # Verify tag was actually applied with configurable delay
+                    tag_delay = perf_config.mailchimp_tag_delay
+                    time.sleep(tag_delay)  # Configurable delay to allow tag processing
                     verify_url = f"https://{MAILCHIMP_DC}.api.mailchimp.com/3.0/lists/{MAILCHIMP_LIST_ID}/members/{subscriber_hash}"
                     verify_response = requests.get(verify_url, auth=auth, headers=headers)
                     
@@ -1177,10 +1285,11 @@ def fetch_hubspot_list_name(list_id: str) -> str:
     # 1) Fetch & dump metadata from API
     meta = fetch_and_dump_list_metadata(list_id)
 
-    # 2) v3 response nests data under 'list'
-    list_obj = meta.get("list") or {}
-    if isinstance(list_obj, dict):
-        name = list_obj.get("name") or list_obj.get("displayName")
+    # 2) v3 response has list data nested under "list" key
+    if "list" in meta:
+        # v3 Lists API format
+        list_data = meta.get("list", {})
+        name = list_data.get("name")
         if name:
             logger.debug(f"Parsed v3 list name for {list_id}: '{name}'")
             return name
@@ -1473,16 +1582,17 @@ def main():
         # Track these emails globally for final archival cleanup
         all_synced_emails.update(hubspot_emails)
 
-        # Step 3: Upsert all HubSpot contacts to Mailchimp
+        # Step 3: Upsert all HubSpot contacts to Mailchimp with source list tracking
         successful_upserts = 0
         # Upsert contacts with progress bar
         for contact in tqdm(hubspot_contacts,
                             desc=f"Upserting contacts for list {list_id}",
                             unit="contact"):
-            if upsert_mailchimp_contact(contact):
+            if upsert_mailchimp_contact(contact, source_list_id=list_id):
                 successful_upserts += 1
             time.sleep(0.2)
         logger.info(f"Successfully upserted {successful_upserts} contacts to Mailchimp for list {list_id}")
+        logger.debug(f"All contacts from list {list_id} tagged with source list ID for anti-remarketing")
 
         # Step 4: Get current Mailchimp members with our tag
         mailchimp_emails_dict = get_current_mailchimp_emails()

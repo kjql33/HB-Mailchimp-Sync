@@ -25,8 +25,9 @@ class NotificationLevel(Enum):
 class TeamsNotifier:
     """Enhanced Teams notification system with multiple severity levels"""
     
-    def __init__(self, webhook_url: str):
+    def __init__(self, webhook_url: str, fallback_to_console: bool = True):
         self.webhook_url = webhook_url
+        self.fallback_to_console = fallback_to_console
         self.session_warnings = []
         self.session_errors = []
         self.session_info = []
@@ -174,11 +175,43 @@ class TeamsNotifier:
                 return True
             else:
                 logger.error(f"❌ Teams notification failed: {response.status_code} - {response.text}")
+                if self.fallback_to_console:
+                    self._fallback_to_console(title, level)
                 return False
                 
         except Exception as e:
             logger.error(f"❌ Error sending Teams notification: {e}")
+            if self.fallback_to_console:
+                self._fallback_to_console(title, level)
             return False
+    
+    def _fallback_to_console(self, title: str, level: NotificationLevel):
+        """Fallback to console output when Teams webhook is unavailable"""
+        print(f"\n{'='*60}")
+        print(f"📨 NOTIFICATION FALLBACK - {level.value.upper()}")
+        print(f"📋 {title}")
+        print(f"{'='*60}")
+        
+        if self.session_errors:
+            print(f"\n❌ ERRORS ({len(self.session_errors)}):")
+            for i, error in enumerate(self.session_errors[-5:], 1):  # Last 5 errors
+                print(f"   {i}. {error['message']}")
+                if error.get('details'):
+                    print(f"      Details: {error['details']}")
+        
+        if self.session_warnings:
+            print(f"\n⚠️  WARNINGS ({len(self.session_warnings)}):")
+            for i, warning in enumerate(self.session_warnings[-3:], 1):  # Last 3 warnings
+                print(f"   {i}. {warning['message']}")
+                if warning.get('details'):
+                    print(f"      Details: {warning['details']}")
+        
+        if self.session_info:
+            print(f"\n📝 INFO ({len(self.session_info)}):")
+            for i, info in enumerate(self.session_info[-3:], 1):  # Last 3 info items
+                print(f"   {i}. {info['message']}")
+        
+        print(f"{'='*60}\n")
     
     def _get_theme_color(self, level: NotificationLevel) -> str:
         """Get Teams card color based on severity"""
@@ -205,6 +238,34 @@ class TeamsNotifier:
         self.session_errors.clear()
         self.session_info.clear()
         logger.debug("Notification session cleared")
+        
+    def _fallback_to_console(self, title: str, level: NotificationLevel):
+        """Fallback to console output when Teams webhook is unavailable"""
+        print(f"\n{'='*60}")
+        print(f"📨 NOTIFICATION FALLBACK - {level.value.upper()}")
+        print(f"📋 {title}")
+        print(f"{'='*60}")
+        
+        if self.session_errors:
+            print(f"\n❌ ERRORS ({len(self.session_errors)}):")
+            for i, error in enumerate(self.session_errors[-5:], 1):  # Last 5 errors
+                print(f"   {i}. {error['message']}")
+                if error.get('details'):
+                    print(f"      Details: {error['details']}")
+        
+        if self.session_warnings:
+            print(f"\n⚠️  WARNINGS ({len(self.session_warnings)}):")
+            for i, warning in enumerate(self.session_warnings[-3:], 1):  # Last 3 warnings
+                print(f"   {i}. {warning['message']}")
+                if warning.get('details'):
+                    print(f"      Details: {warning['details']}")
+        
+        if self.session_info:
+            print(f"\n📝 INFO ({len(self.session_info)}):")
+            for i, info in enumerate(self.session_info[-3:], 1):  # Last 3 info items
+                print(f"   {i}. {info['message']}")
+        
+        print(f"{'='*60}\n")
 
 # Global notifier instance
 _notifier: Optional[TeamsNotifier] = None
@@ -272,3 +333,314 @@ NOTIFICATION_SCENARIOS = {
     "merge_field_creation_failed": "Failed to create required merge field",
     "data_type_mismatch": "Data type conversion required for Mailchimp"
 }
+
+def send_secondary_sync_notification(stats: Dict, 
+                                   mappings: Dict[str, str], 
+                                   summary_report: str,
+                                   is_error: bool = False) -> bool:
+    """
+    Send Teams notification for secondary sync operations (Mailchimp → HubSpot)
+    
+    Args:
+        stats: Secondary sync statistics
+        mappings: Exit tag to HubSpot list mappings 
+        summary_report: Full summary report text
+        is_error: Whether this is an error notification
+    """
+    from . import main as config
+    
+    try:
+        # Determine notification type and color
+        if is_error:
+            title = "❌ Secondary Sync Failed"
+            theme_color = "dc3545"  # Red
+            severity = "ERROR"
+        elif stats.get('errors', 0) > 0:
+            title = "⚠️ Secondary Sync Completed with Issues"
+            theme_color = "ffc107"  # Yellow
+            severity = "WARNING"
+        else:
+            title = "✅ Secondary Sync Completed Successfully"
+            theme_color = "28a745"  # Green
+            severity = "SUCCESS"
+        
+        # Build facts section
+        facts = [
+            {"name": "Timestamp", "value": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")},
+            {"name": "Sync Direction", "value": "Mailchimp → HubSpot"},
+            {"name": "Mode", "value": config.SECONDARY_SYNC_MODE},
+            {"name": "Severity", "value": severity}
+        ]
+        
+        if not is_error:
+            facts.extend([
+                {"name": "Contacts Processed", "value": str(stats.get('contacts_processed', 0))},
+                {"name": "Contacts Imported", "value": str(stats.get('contacts_imported', 0))},
+                {"name": "Contacts Removed (Anti-Remarketing)", "value": str(stats.get('contacts_removed_from_source', 0))},
+                {"name": "Contacts Archived", "value": str(stats.get('contacts_archived', 0))},
+                {"name": "Errors", "value": str(stats.get('errors', 0))}
+            ])
+        
+        # Build sections
+        sections = [
+            {
+                "activityTitle": title,
+                "activitySubtitle": "Mailchimp exit tags → HubSpot lists synchronization",
+                "activityImage": "https://img.icons8.com/color/48/000000/import.png",
+                "facts": facts
+            }
+        ]
+        
+        # Add mapping details if successful
+        if not is_error and mappings:
+            mapping_text = ""
+            for exit_tag, target_list in mappings.items():
+                processed_count = 0
+                # Count contacts processed for this specific tag (would need to be passed from stats)
+                mapping_text += f"• **{exit_tag}** → HubSpot List **{target_list}** ({processed_count} contacts)\n"
+            
+            sections.append({
+                "activityTitle": "📋 Processed Mappings",
+                "text": mapping_text
+            })
+        
+        # Add summary report (truncated)
+        if summary_report and not is_error:
+            # Truncate summary for Teams (max ~1000 chars per section)
+            truncated_summary = summary_report[:800] + ("..." if len(summary_report) > 800 else "")
+            sections.append({
+                "activityTitle": "📊 Summary Report",
+                "text": f"```\n{truncated_summary}\n```"
+            })
+        elif is_error:
+            sections.append({
+                "activityTitle": "❌ Error Details",
+                "text": summary_report[:800] + ("..." if len(summary_report) > 800 else "")
+            })
+        
+        # Build Teams message card
+        card = {
+            "@type": "MessageCard",
+            "@context": "http://schema.org/extensions",
+            "themeColor": theme_color,
+            "summary": title,
+            "sections": sections
+        }
+        
+        # Send notification
+        response = requests.post(
+            config.TEAMS_WEBHOOK_URL,
+            headers={"Content-Type": "application/json"},
+            json=card,
+            timeout=30
+        )
+        
+        if response.status_code in [200, 202]:
+            logger.info(f"✅ Secondary sync Teams notification sent successfully ({severity})")
+            return True
+        else:
+            logger.error(f"❌ Secondary sync Teams notification failed: {response.status_code} - {response.text}")
+            return False
+            
+    except Exception as e:
+        logger.error(f"❌ Error sending secondary sync Teams notification: {e}")
+        return False
+
+
+def send_bidirectional_sync_notification(primary_stats: Dict,
+                                       secondary_stats: Dict,
+                                       total_duration: str,
+                                       has_errors: bool = False) -> bool:
+    """
+    Send Teams notification for bidirectional sync operations
+    
+    Args:
+        primary_stats: Primary sync (HubSpot → Mailchimp) statistics
+        secondary_stats: Secondary sync (Mailchimp → HubSpot) statistics
+        total_duration: Total sync duration
+        has_errors: Whether either sync had errors
+    """
+    from . import main as config
+    
+    try:
+        # Determine notification type
+        if has_errors:
+            title = "⚠️ Bidirectional Sync Completed with Issues"
+            theme_color = "ffc107"  # Yellow
+            severity = "WARNING"
+        else:
+            title = "✅ Bidirectional Sync Completed Successfully"
+            theme_color = "28a745"  # Green
+            severity = "SUCCESS"
+        
+        # Build facts section
+        facts = [
+            {"name": "Timestamp", "value": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")},
+            {"name": "Sync Type", "value": "Bidirectional (HubSpot ↔ Mailchimp)"},
+            {"name": "Total Duration", "value": total_duration},
+            {"name": "Severity", "value": severity},
+            {"name": "Primary Mode", "value": config.RUN_MODE},
+            {"name": "Secondary Mode", "value": config.SECONDARY_SYNC_MODE if config.ENABLE_SECONDARY_SYNC else "Disabled"}
+        ]
+        
+        # Build sections
+        sections = [
+            {
+                "activityTitle": title,
+                "activitySubtitle": "Complete bidirectional contact synchronization",
+                "activityImage": "https://img.icons8.com/color/48/000000/sync.png",
+                "facts": facts
+            }
+        ]
+        
+        # Primary sync details
+        primary_text = f"""
+**Direction:** HubSpot → Mailchimp
+**Contacts Processed:** {primary_stats.get('contacts_processed', 0)}
+**Contacts Synced:** {primary_stats.get('contacts_synced', 0)}
+**Errors:** {primary_stats.get('errors', 0)}
+"""
+        sections.append({
+            "activityTitle": "📤 Primary Sync Results",
+            "text": primary_text
+        })
+        
+        # Secondary sync details (if enabled)
+        if config.ENABLE_SECONDARY_SYNC and secondary_stats:
+            secondary_text = f"""
+**Direction:** Mailchimp → HubSpot  
+**Contacts Processed:** {secondary_stats.get('contacts_processed', 0)}
+**Contacts Imported:** {secondary_stats.get('contacts_imported', 0)}
+**Contacts Removed (Anti-Remarketing):** {secondary_stats.get('contacts_removed_from_source', 0)}
+**Contacts Archived:** {secondary_stats.get('contacts_archived', 0)}
+**Errors:** {secondary_stats.get('errors', 0)}
+"""
+            sections.append({
+                "activityTitle": "📥 Secondary Sync Results", 
+                "text": secondary_text
+            })
+        else:
+            sections.append({
+                "activityTitle": "📥 Secondary Sync",
+                "text": "Secondary sync was disabled for this operation"
+            })
+        
+        # Build Teams message card
+        card = {
+            "@type": "MessageCard",
+            "@context": "http://schema.org/extensions", 
+            "themeColor": theme_color,
+            "summary": title,
+            "sections": sections
+        }
+        
+        # Send notification
+        response = requests.post(
+            config.TEAMS_WEBHOOK_URL,
+            headers={"Content-Type": "application/json"},
+            json=card,
+            timeout=30
+        )
+        
+        if response.status_code in [200, 202]:
+            logger.info(f"✅ Bidirectional sync Teams notification sent successfully ({severity})")
+            return True
+        else:
+            logger.error(f"❌ Bidirectional sync Teams notification failed: {response.status_code} - {response.text}")
+            return False
+            
+    except Exception as e:
+        logger.error(f"❌ Error sending bidirectional sync Teams notification: {e}")
+        return False
+
+
+def send_configuration_validation_notification(validation_results: Dict,
+                                              is_error: bool = False) -> bool:
+    """
+    Send Teams notification for configuration validation results
+    
+    Args:
+        validation_results: Results from list configuration validation
+        is_error: Whether validation failed
+    """
+    from . import main as config
+    
+    try:
+        if is_error:
+            title = "❌ Configuration Validation Failed"
+            theme_color = "dc3545"  # Red
+            severity = "ERROR"
+        else:
+            title = "✅ Configuration Validation Passed"
+            theme_color = "28a745"  # Green
+            severity = "SUCCESS"
+        
+        # Build facts
+        facts = [
+            {"name": "Timestamp", "value": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")},
+            {"name": "Validation Type", "value": "Secondary Sync Configuration"},
+            {"name": "Severity", "value": severity},
+            {"name": "Target Lists", "value": str(len(config.SECONDARY_SYNC_MAPPINGS))},
+            {"name": "Source Lists", "value": str(len(config.LIST_EXCLUSION_RULES))}
+        ]
+        
+        sections = [
+            {
+                "activityTitle": title,
+                "activitySubtitle": "HubSpot list configuration validation for bidirectional sync",
+                "activityImage": "https://img.icons8.com/color/48/000000/checklist.png",
+                "facts": facts
+            }
+        ]
+        
+        # Add validation details
+        if is_error and 'errors' in validation_results:
+            error_text = ""
+            for error in validation_results['errors'][:5]:  # Show first 5 errors
+                error_text += f"• {error}\n"
+            
+            sections.append({
+                "activityTitle": "❌ Validation Errors",
+                "text": error_text
+            })
+        
+        # Add configuration summary
+        if 'summary' in validation_results:
+            summary = validation_results['summary']
+            config_text = f"""
+**Secondary Sync Mappings:** {summary.get('total_target_lists', 0)}
+**Exclusion Rules:** {summary.get('total_source_lists', 0)}
+**Status:** {'All lists validated successfully' if not is_error else 'Validation failed - check configuration'}
+"""
+            sections.append({
+                "activityTitle": "📋 Configuration Summary",
+                "text": config_text
+            })
+        
+        # Build Teams message card
+        card = {
+            "@type": "MessageCard",
+            "@context": "http://schema.org/extensions",
+            "themeColor": theme_color,
+            "summary": title,
+            "sections": sections
+        }
+        
+        # Send notification
+        response = requests.post(
+            config.TEAMS_WEBHOOK_URL,
+            headers={"Content-Type": "application/json"},
+            json=card,
+            timeout=30
+        )
+        
+        if response.status_code in [200, 202]:
+            logger.info(f"✅ Configuration validation Teams notification sent successfully ({severity})")
+            return True
+        else:
+            logger.error(f"❌ Configuration validation Teams notification failed: {response.status_code} - {response.text}")
+            return False
+            
+    except Exception as e:
+        logger.error(f"❌ Error sending configuration validation Teams notification: {e}")
+        return False
