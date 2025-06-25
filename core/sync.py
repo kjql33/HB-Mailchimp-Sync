@@ -539,13 +539,11 @@ def get_hubspot_contacts(list_id: str) -> List[Dict[str, Any]]:
                                 
                                 # Final check for email - only field we absolutely require
                                 if not email:
-                                    logger.warning(f"Skipping contact with missing email: ID {contact.get('id')}")
-                                    notify_warning("Contact skipped due to missing/invalid email",
-                                                  {"contact_id": contact.get('id'), "email": email})
-                                    # Log all missing properties
+                                    logger.info(f"ℹ️ Skipping contact with missing email: ID {contact.get('id')} (this is expected)")
+                                    # Log all missing properties for debugging
                                     missing_fields = [field for field in properties if field not in contact_properties or not contact_properties.get(field)]
                                     if missing_fields:
-                                        logger.warning(f"Contact {contact.get('id')} is missing fields: {', '.join(missing_fields)}")
+                                        logger.debug(f"Contact {contact.get('id')} is missing fields: {', '.join(missing_fields)}")
                                     continue  # Skip contacts without email
                                 
                                 # Extract required fields with empty string fallbacks
