@@ -143,7 +143,29 @@ HUBSPOT_PRIVATE_TOKEN = os.getenv("HUBSPOT_PRIVATE_TOKEN", "")
 # Mailchimp API Configuration  
 MAILCHIMP_API_KEY = os.getenv("MAILCHIMP_API_KEY", "")
 MAILCHIMP_LIST_ID = os.getenv("MAILCHIMP_LIST_ID", "")
-MAILCHIMP_DC = os.getenv("MAILCHIMP_DC", "")
+
+# Extract datacenter from API key to avoid GitHub Actions secret newline issues
+def get_mailchimp_datacenter():
+    """
+    Extract datacenter from Mailchimp API key.
+    
+    Mailchimp API keys are formatted as: <key>-<datacenter>
+    This eliminates dependency on the problematic MAILCHIMP_DC secret.
+    """
+    if not MAILCHIMP_API_KEY:
+        return ""
+    
+    if '-' in MAILCHIMP_API_KEY:
+        extracted_dc = MAILCHIMP_API_KEY.split('-')[-1].strip()
+        print(f"📍 Extracted datacenter from API key: {extracted_dc}")
+        return extracted_dc
+    else:
+        # Fallback to environment variable if API key format is unexpected
+        dc_from_env = os.getenv("MAILCHIMP_DC", "").strip()
+        print(f"⚠️  Could not extract datacenter from API key, using environment variable: {dc_from_env}")
+        return dc_from_env
+
+MAILCHIMP_DC = get_mailchimp_datacenter()
 
 # Microsoft Teams Notifications
 TEAMS_WEBHOOK_URL = os.getenv("TEAMS_WEBHOOK_URL", "")
