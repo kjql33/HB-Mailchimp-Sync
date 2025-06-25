@@ -141,8 +141,8 @@ ENABLE_DRY_RUN = False      # Set True to simulate without actual changes
 HUBSPOT_PRIVATE_TOKEN = os.getenv("HUBSPOT_PRIVATE_TOKEN", "")
 
 # Mailchimp API Configuration  
-MAILCHIMP_API_KEY = os.getenv("MAILCHIMP_API_KEY", "")
-MAILCHIMP_LIST_ID = os.getenv("MAILCHIMP_LIST_ID", "")
+MAILCHIMP_API_KEY = os.getenv("MAILCHIMP_API_KEY", "").strip()
+MAILCHIMP_LIST_ID = os.getenv("MAILCHIMP_LIST_ID", "").strip()
 
 # Extract datacenter from API key to avoid GitHub Actions secret newline issues
 def get_mailchimp_datacenter():
