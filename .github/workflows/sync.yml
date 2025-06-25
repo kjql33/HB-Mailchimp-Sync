@@ -25,10 +25,10 @@ jobs:
         run: python -m core.config
         env:
           HUBSPOT_PRIVATE_TOKEN: ${{ secrets.HUBSPOT_PRIVATE_TOKEN }}
-          MAILCHIMP_API_KEY:      ${{ secrets.MAILCHIMP_API_KEY }}
-          MAILCHIMP_LIST_ID:      ${{ secrets.MAILCHIMP_LIST_ID }}
-          MAILCHIMP_DC:           ${{ secrets.MAILCHIMP_DC }}
-          TEAMS_WEBHOOK_URL:      ${{ secrets.TEAMS_WEBHOOK_URL }}
+          MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
+          MAILCHIMP_LIST_ID: ${{ secrets.MAILCHIMP_LIST_ID }}
+          MAILCHIMP_DC: ${{ secrets.MAILCHIMP_DC }}
+          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
 
       - name: Notify Teams on failure
         if: ${{ failure() }}
