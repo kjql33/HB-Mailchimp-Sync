@@ -878,6 +878,20 @@ def upsert_mailchimp_contact(contact: Dict[str, str], source_list_id: str = None
                                      {"email": email, "tag": MAILCHIMP_TAG})
                     
                     return True
+                elif response.status_code == 400:
+                    # Handle Mailchimp compliance issues gracefully
+                    try:
+                        error_data = response.json()
+                        if error_data.get("title") == "Member In Compliance State":
+                            # This is expected for unsubscribed/bounced contacts - respect Mailchimp's decision
+                            logger.info(f"ℹ️ Respecting Mailchimp compliance state for {email}: {error_data.get('detail', 'Contact cannot be subscribed')}")
+                            return False  # Return False but don't treat as error
+                        else:
+                            # Other 400 errors should still be treated as errors
+                            response.raise_for_status()
+                    except (ValueError, KeyError):
+                        # If we can't parse the JSON, treat as regular error
+                        response.raise_for_status()
                 else:
                     response.raise_for_status()
                 
