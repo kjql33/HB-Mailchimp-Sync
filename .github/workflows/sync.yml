@@ -21,6 +21,15 @@ jobs:
       - name: Install dependencies
         run: pip install -r info/requirements.txt
 
+      - name: Debug Environment
+        run: |
+          echo "Python version: $(python --version)"
+          echo "Working directory: $(pwd)"
+          echo "Files present:"
+          ls -la
+          echo "Core module check:"
+          python -c "import core.config; print('✅ Import successful')"
+      
       - name: Run HubSpot↔Mailchimp Full Bidirectional Sync
         run: python -m core.config
         env:
