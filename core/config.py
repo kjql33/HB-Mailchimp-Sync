@@ -130,7 +130,7 @@ HARD_EXCLUDE_LISTS = [
 # Then only 97 contacts will sync to Mailchimp - the 3 VIP contacts are protected
 
 # Test/Development Settings
-TEST_CONTACT_LIMIT = 10     # For testing: limit contacts processed
+TEST_CONTACT_LIMIT = 0      # 0 = unlimited contacts (ready for production)
 ENABLE_DRY_RUN = False      # Set True to simulate without actual changes
 
 # =============================================================================

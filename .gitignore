@@ -113,3 +113,26 @@ Thumbs.db
 
 # PyPI
 .pypirc
+
+# =============================================================================
+# 🚫 HUBSPOT ↔ MAILCHIMP SYNC - PROJECT SPECIFIC IGNORES
+# =============================================================================
+
+# Raw data and snapshots (generated during sync operations)
+raw_data/metadata/
+raw_data/snapshots/
+raw_data/*.json
+
+# Logs directory
+logs/
+
+# System testing archives (generated test files)
+system_testing/
+
+# Generated test files and debug scripts
+Tests/gpt_*.py
+debug_*.py
+
+# Generated documentation and plans
+info/NEW_CLAUDE_ONBOARDING_PLAN.md
+info/RULES.md
