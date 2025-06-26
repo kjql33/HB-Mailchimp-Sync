@@ -1,39 +1,43 @@
-# HubSpot ↔ Mailchimp Bidirectional Sync
+# 🎯 HubSpot ↔ Mailchimp Bidirectional Sync
+
+**Production-ready bidirectional synchronization between HubSpot and Mailchimp with intelligent compliance handling and anti-remarketing protection.**
 
 ## 🚀 Quick Start
 
 ```bash
-# Primary sync (HubSpot → Mailchimp) - Currently operational
-python main.py
+# Run the bidirectional sync
+python -m core.config
 
 # Full documentation and setup guides
 open info/README.md
 ```
 
-## 📁 Documentation Structure
+## 📁 Project Structure
 
-- **`info/README.md`** - Complete setup and usage documentation
-- **`Tests/`** - All test scripts and validation tools
-- **`info/IMPLEMENTATION_SUMMARY.md`** - What was built and what's next
+- **`core/`** - Core sync functionality and configuration
+- **`info/README.md`** - Complete setup and usage documentation  
+- **`.github/workflows/`** - GitHub Actions automation
 
 ## 🎯 Current Status
 
-- ✅ **Primary Sync**: Operational (HubSpot → Mailchimp)  
-- ✅ **Secondary Sync**: Implemented and ready (Mailchimp → HubSpot)
-- ✅ **Anti-Remarketing**: Built-in protection against re-marketing
-- ✅ **Multiple Modes**: Test, production, bidirectional, and secondary-only modes
+- ✅ **Production Ready**: Unlimited contact processing, robust error handling
+- ✅ **Bidirectional Sync**: Full HubSpot ↔ Mailchimp synchronization
+- ✅ **Compliance Handling**: Silent processing of unsubscribed/bounced contacts
+- ✅ **Anti-Remarketing**: Automatic contact removal to prevent duplicate marketing
+- ✅ **GitHub Actions**: Automated scheduled runs with Teams notifications
 
 ## 🔧 Configuration
 
-All settings in `core/main.py`:
-- **Current Mode**: `TEST_RUN` (5 contacts, safe for testing)
-- **Primary Lists**: `["692"]` (operational)
-- **Secondary Sync**: Disabled by default for safety
+All settings in `core/config.py`:
+- **Current Lists**: `["718", "719", "720"]` (production lists)
+- **Contact Limit**: `0` (unlimited - production ready)
+- **Secondary Sync**: Enabled with comprehensive exit tag mappings
+- **Compliance**: Silent handling with no Teams notifications
 
-## 📋 Next Steps
+## 📋 Features
 
-1. **Continue current operations**: Primary sync works perfectly as-is
-2. **When ready for bidirectional**: Create HubSpot destination lists and update `SECONDARY_SYNC_MAPPINGS`
-3. **Enable secondary sync**: Set `ENABLE_SECONDARY_SYNC = True` in `core/main.py`
-
-See `IMPLEMENTATION_SUMMARY.md` for complete roadmap.
+- **Scalable**: Handles hundreds of contacts per list with proper pagination
+- **Reliable**: Comprehensive error handling and retry logic
+- **Intelligent**: Compliance state detection and silent processing
+- **Auditable**: Complete logging and notification system
+- **Flexible**: Multiple sync modes and configuration options

@@ -129,8 +129,10 @@ logs/
 # System testing archives (generated test files)
 system_testing/
 
+# Local testing directories (keep local only)
+Tests/
+
 # Generated test files and debug scripts
-Tests/gpt_*.py
 debug_*.py
 
 # Generated documentation and plans
