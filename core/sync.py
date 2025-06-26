@@ -835,20 +835,38 @@ def upsert_mailchimp_contact(contact: Dict[str, str], source_list_id: str = None
                     logger.debug(f"Mailchimp upsert response for {email}:")
                     logger.debug(json.dumps(response_body, indent=2))
                     
-                    # Check for warnings, errors or special messages in response
+                    # ─── COMPREHENSIVE COMPLIANCE DETECTION ────────────────────────
+                    detail_text = str(response_body.get("detail", "")).lower()
+                    compliance_indicators = [
+                        response_body.get("title") == "Member In Compliance State",
+                        "compliance state" in detail_text,
+                        "unsubscribe, bounce" in detail_text,
+                        response_body.get("status") == "400"
+                    ]
+
+                    if any(compliance_indicators):
+                        logger.info(
+                            f"ℹ️ Respecting Mailchimp compliance state for {email}: "
+                            f"{response_body.get('detail', 'Contact cannot be subscribed')}"
+                        )
+                        return False  # Expected behavior, no warning or Teams alert
+
+                    # ─── NON-COMPLIANCE WARNINGS (only if not compliance) ──────────
                     if "errors" in response_body:
                         logger.warning(f"⚠️ Mailchimp responded with warnings for {email}: {response_body['errors']}")
                     if "detail" in response_body:
                         logger.warning(f"⚠️ Mailchimp returned detail message for {email}: {response_body['detail']}")
-                        
-                    # Log member status explicitly if available
                     if "status" in response_body:
-                        logger.debug(f"Contact {email} status after upsert: {response_body['status']}")
-                        if response_body["status"] not in ["subscribed", "unsubscribed"]:
-                            logger.warning(f"⚠️ Contact {email} has status '{response_body['status']}' which may not be visible in Mailchimp UI")
-                            notify_warning("Contact has unexpected status in Mailchimp",
-                                         {"email": email, "status": response_body["status"],
-                                          "expected_statuses": ["subscribed", "unsubscribed"]})
+                        status = response_body["status"]
+                        logger.debug(f"Contact {email} status after upsert: {status}")
+                        if status not in ["subscribed", "unsubscribed"]:
+                            logger.warning(
+                                f"⚠️ Contact {email} has status '{status}' which may not be visible in Mailchimp UI"
+                            )
+                            notify_warning(
+                                "Contact has unexpected status in Mailchimp",
+                                {"email": email, "status": status, "expected_statuses": ["subscribed", "unsubscribed"]}
+                            )
                 except ValueError:
                     logger.debug(f"No JSON response body for {email}")
                 
@@ -877,19 +895,8 @@ def upsert_mailchimp_contact(contact: Dict[str, str], source_list_id: str = None
                     
                     return True
                 elif response.status_code == 400:
-                    # Handle Mailchimp compliance issues gracefully
-                    try:
-                        error_data = response.json()
-                        if error_data.get("title") == "Member In Compliance State":
-                            # This is expected for unsubscribed/bounced contacts - respect Mailchimp's decision
-                            logger.info(f"ℹ️ Respecting Mailchimp compliance state for {email}: {error_data.get('detail', 'Contact cannot be subscribed')}")
-                            return False  # Return False but don't treat as error
-                        else:
-                            # Other 400 errors should still be treated as errors
-                            response.raise_for_status()
-                    except (ValueError, KeyError):
-                        # If we can't parse the JSON, treat as regular error
-                        response.raise_for_status()
+                    # 400 errors should be treated as errors (compliance already handled above)
+                    response.raise_for_status()
                 else:
                     response.raise_for_status()
                 
