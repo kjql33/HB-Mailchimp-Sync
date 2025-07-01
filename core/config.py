@@ -88,7 +88,7 @@ SECONDARY_SYNC_MODE = os.environ.get("SECONDARY_SYNC_MODE", SECONDARY_SYNC_MODE)
 SECONDARY_TEST_CONTACT_LIMIT = int(os.environ.get("SECONDARY_TEST_CONTACT_LIMIT", SECONDARY_TEST_CONTACT_LIMIT))
 
 # Archive processed contacts from Mailchimp after successful import
-ENABLE_MAILCHIMP_ARCHIVAL = True  # Testing archival functionality
+ENABLE_MAILCHIMP_ARCHIVAL = True  # Production setting - archive processed contacts
 
 # =============================================================================
 # 📋 INPUT LISTS (HubSpot → Mailchimp) - EDIT HERE FOR STEP 1
@@ -97,10 +97,12 @@ ENABLE_MAILCHIMP_ARCHIVAL = True  # Testing archival functionality
 # ✅ STEP 1: ADD YOUR HUBSPOT LISTS HERE
 # These are the HubSpot lists that will sync their contacts TO Mailchimp for processing
 # Example: If you have lists 677, 123, 456 that need marketing processing, add them here
+
 HUBSPOT_LIST_IDS = [
-    "718",  # ← Production List 1
-    "719",  # ← Production List 2  
-    "720",  # ← Production List 3
+    "718",  # Production marketing list 1
+    "719",  # Production marketing list 2  
+    "720",  # Production marketing list 3
+    "751",  # Production marketing list 4
 ]
 
 # ⚠️ IMPORTANT: Each contact gets tagged with their source list ID in Mailchimp
@@ -120,7 +122,7 @@ HARD_EXCLUDE_LISTS = [
 ]
 
 # 🎯 HOW HARD EXCLUDE WORKS:
-# 1. Before syncing any contact from 718, 719, or 720 to Mailchimp
+# 1. Before syncing any contact from 718, 719, 720, or 751 to Mailchimp
 # 2. System checks if contact is also in ANY hard exclude list
 # 3. If found in exclude list → Skip completely (no sync to Mailchimp)
 # 4. If NOT found in exclude list → Proceed with normal sync
@@ -249,6 +251,7 @@ LIST_EXCLUSION_RULES = {
     "718": ["700", "701", "702", "703"], # Remove from 718 when added to ANY destination list
     "719": ["700", "701", "702", "703"], # Remove from 719 when added to ANY destination list  
     "720": ["700", "701", "702", "703"], # Remove from 720 when added to ANY destination list
+    "751": ["700", "701", "702", "703"], # Remove from 751 when added to ANY destination list
     
     # Keep test rule for reference:
     # "677": ["676"],  # TEST: If added to list 676, remove from 677

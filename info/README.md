@@ -58,7 +58,8 @@ The sync agent maintains your Mailchimp audience in perfect alignment with your 
 
 ### Multi-List Management
 - Processes each configured HubSpot list independently  
-- Contacts in multiple lists receive multiple Mailchimp tags
+- **Single-Tag Enforcement**: Contacts can only have ONE HubSpot-import tag in Mailchimp
+- First tag takes priority; subsequent list additions are skipped to prevent tag conflicts
 - Global cleanup archives contacts not present in any tracked list
 
 ### Automatic Field Management
@@ -68,7 +69,7 @@ The sync agent maintains your Mailchimp audience in perfect alignment with your 
 
 ### Core System Rules
 1. **Tag Naming**: Mailchimp tags named after HubSpot list names (dynamically fetched)
-2. **Multi-List Support**: Contacts can exist in multiple HubSpot lists = multiple Mailchimp tags
+2. **Single-Tag Enforcement**: Each contact can only have ONE HubSpot-import tag in Mailchimp (first wins)
 3. **Archival Philosophy**: Contacts not in ANY HubSpot list are archived from Mailchimp
 4. **Force Subscribe**: All synced contacts forced to "subscribed" status
 5. **Merge Field Management**: Required fields auto-created if missing
@@ -125,20 +126,30 @@ This section documents every possible contact movement and synchronization scena
 
 ### Category 3: Multi-List Scenarios
 
-#### 3.1 Contact Added to Additional List
-- **Trigger**: Existing contact appears in new HubSpot list
-- **Action**: Contact gets additional Mailchimp tag, existing tags remain
-- **Result**: Contact with multiple Mailchimp tags
+#### 3.1 Contact Added to Additional List (Single-Tag Enforcement)
+- **Trigger**: Existing contact appears in new HubSpot list but already has a HubSpot-import tag
+- **Action**: Contact data updated/refreshed, but NO additional tag applied (existing tag takes priority)
+- **Result**: Contact retains original tag, preventing tag conflicts and duplicate processing
 
-#### 3.2 Contact Removed from One List (Remains in Others)
-- **Trigger**: Contact leaves one HubSpot list but remains in others
-- **Action**: Specific list tag inactivated, other tags remain active
-- **Result**: Contact with reduced tag set but not archived
+#### 3.2 Contact Removed from Tagged List (Remains in Others)
+- **Trigger**: Contact leaves the HubSpot list that provided their current Mailchimp tag, but remains in other lists
+- **Action**: Current tag inactivated during cleanup, contact eligible for new tag from remaining lists
+- **Result**: Contact gets re-tagged with tag from one of their remaining lists
 
-#### 3.3 Contact Moves Between Lists
-- **Trigger**: Contact leaves one list and joins another in same sync
+#### 3.3 Archived Contact Re-import to Different List
+- **Trigger**: Previously archived contact re-appears in a different HubSpot list than their original
+- **Action**: All old tags cleared automatically, new tag applied from current list
+- **Result**: Contact unarchived with fresh tag reflecting their current list membership
+
+#### 3.4 Contact Moves Between Lists (Clean Transition)
+- **Trigger**: Contact leaves one list and joins another in same sync cycle
 - **Action**: Old tag inactivated, new tag applied, data updated
 - **Result**: Contact with updated tag reflecting new membership
+
+#### 3.5 Contact in Multiple Lists (Priority System)
+- **Trigger**: Contact exists in multiple HubSpot lists simultaneously during sync
+- **Action**: First list processed determines the tag, subsequent lists skip tagging
+- **Result**: Contact tagged with first-encountered list, other memberships tracked but not tagged
 
 ### Category 4: List Name Change Scenarios
 
@@ -305,6 +316,7 @@ This section documents every possible contact movement and synchronization scena
 
 ### What the System ALWAYS Ensures:
 - **Email Uniqueness**: One Mailchimp member per email address
+- **Single-Tag Enforcement**: Maximum one HubSpot-import tag per contact (prevents conflicts)
 - **Tag Consistency**: List membership accurately reflected in tags
 - **Data Freshness**: Mailchimp data updated with latest HubSpot information
 - **Status Normalization**: All synced members forced to "subscribed"
@@ -346,6 +358,16 @@ This section documents every possible contact movement and synchronization scena
 - Storage grows with historical data retention (auto-pruned after 7 days)
 
 ## Recent Updates & Improvements
+
+### Single-Tag Enforcement Enhancement
+**Major Improvement**: Implemented robust single-tag enforcement to prevent tag conflicts and duplicate processing.
+
+**Benefits**:
+- Eliminates confusion from contacts having multiple HubSpot-import tags
+- Prevents duplicate marketing to the same contact from different lists
+- Provides clean tag transitions when contacts move between lists
+- Automatically clears old tags when archived contacts are re-imported
+- Maintains data integrity with first-tag-wins priority system
 
 ### Tag Renaming Enhancement
 **Major Improvement**: Implemented proper tag renaming functionality using Mailchimp's native API instead of the previous inefficient approach.
