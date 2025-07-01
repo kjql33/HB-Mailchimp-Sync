@@ -22,7 +22,7 @@ from .config import (
     MAILCHIMP_API_KEY, MAILCHIMP_LIST_ID, MAILCHIMP_DC,
     PAGE_SIZE, TEST_CONTACT_LIMIT, MAX_RETRIES, RETRY_DELAY,
     REQUIRED_TAGS, LOG_LEVEL, RAW_DATA_DIR, RUN_MODE, TEAMS_WEBHOOK_URL,
-    HARD_EXCLUDE_LISTS
+    HARD_EXCLUDE_LISTS, ENABLE_MAILCHIMP_ARCHIVAL
 )
 
 # ─── IMPORT SOURCE LIST TRACKING CONFIGURATION ─────────────────────────────
@@ -827,6 +827,21 @@ def upsert_mailchimp_contact(contact: Dict[str, str], source_list_id: str = None
     try:
         for attempt in range(MAX_RETRIES):
             try:
+                # ── 1) Pre-flight GET to check if they were archived before upsert
+                member_url = f"https://{MAILCHIMP_DC}.api.mailchimp.com/3.0/lists/{MAILCHIMP_LIST_ID}/members/{subscriber_hash}"
+                pre = requests.get(member_url,
+                                   auth=("anystring", MAILCHIMP_API_KEY),
+                                   headers={"Content-Type": "application/json"})
+                was_archived = False
+                if pre.status_code == 200:
+                    was_archived = (pre.json().get("status") == "archived")
+                    logger.debug(f"Pre-upsert status for {email}: {pre.json().get('status')} (was_archived={was_archived})")
+                elif pre.status_code == 404:
+                    logger.debug(f"Pre-upsert: {email} not found (new contact)")
+                else:
+                    logger.debug(f"Pre-upsert check failed for {email}: {pre.status_code}")
+
+                # ── 2) Now do the PUT upsert as before
                 response = requests.put(url, auth=auth, headers=headers, json=data)
                 
                 # Always log full response for debugging
@@ -877,8 +892,7 @@ def upsert_mailchimp_contact(contact: Dict[str, str], source_list_id: str = None
                     # Apply tag with configurable delay to ensure the member is fully created/updated
                     upsert_delay = perf_config.mailchimp_upsert_delay
                     logger.debug(f"Waiting {upsert_delay}s before applying tag to {email}")
-                    time.sleep(upsert_delay)
-                    if apply_mailchimp_tag(email):
+                    if apply_mailchimp_tag(email, was_archived):
                         logger.debug(f"Successfully tagged {email} with '{MAILCHIMP_TAG}'")
                         
                         # Verify contact status after tagging
@@ -922,10 +936,14 @@ def upsert_mailchimp_contact(contact: Dict[str, str], source_list_id: str = None
     return False
 
 
-def apply_mailchimp_tag(email: str) -> bool:
+def apply_mailchimp_tag(email: str, was_archived: bool = False) -> bool:
     """
     Apply a tag to a Mailchimp contact.
     Returns True if successful, False otherwise.
+    
+    Args:
+        email: Email address of the contact
+        was_archived: True if contact was archived before the upsert (triggers tag clearing)
     """
     if not all([MAILCHIMP_API_KEY, MAILCHIMP_LIST_ID, MAILCHIMP_DC]):
         logger.error("Mailchimp credentials not properly set")
@@ -955,7 +973,26 @@ def apply_mailchimp_tag(email: str) -> bool:
         return False
     elif check_response.status_code == 200:
         member_data = check_response.json()
-        logger.debug(f"Contact {email} exists with status '{member_data.get('status')}' before tagging")
+        status = member_data.get("status")
+        logger.debug(f"Contact {email} status before tagging: '{status}'")
+
+        # ── If they were archived _before_ our upsert, clear every old tag now
+        if was_archived:
+            clear_mailchimp_tags(email)
+            logger.info(f"🧹 (unarchive) cleared all old tags for {email}")
+        else:
+            # 1) If the member is STILL archived → clear all old tags, then allow new tag
+            if status == "archived":
+                clear_mailchimp_tags(email)
+            else:
+                # 2) SINGLE-TAG RULE: skip if any other HubSpot tag is already present
+                existing_tags = [t["name"] for t in member_data.get("tags", [])]
+                for et in existing_tags:
+                    if et in get_hubspot_import_tags() and et != MAILCHIMP_TAG:
+                        logger.info(
+                          f"🔒 Skipping tag '{MAILCHIMP_TAG}' for {email}: already has '{et}'"
+                        )
+                        return True
         
         # Check if status would prevent visibility
         if member_data.get('status') not in ["subscribed", "unsubscribed"]:
@@ -1016,7 +1053,7 @@ def apply_mailchimp_tag(email: str) -> bool:
             except requests.exceptions.RequestException as e:
                 if attempt < MAX_RETRIES - 1:
                     logger.warning(f"Mailchimp API request failed for tagging {email}: {e}. Retrying in {RETRY_DELAY} seconds...")
-                    notify_warning("Mailchimp tag API retry due to network issue",
+                    notify_warning("Mailchimp untag API retry due to network issue",
                                  {"email": email, "tag": MAILCHIMP_TAG, "error": str(e), 
                                   "attempt": attempt + 1, "max_retries": MAX_RETRIES, "retry_delay": RETRY_DELAY})
                     time.sleep(RETRY_DELAY)
@@ -1487,6 +1524,51 @@ def _get_members_with_tag(tag_name: str, auth: tuple, headers: dict) -> list:
     logger.debug(f"Found {len(members_with_tag)} members with tag '{tag_name}'")
     return members_with_tag
 
+# ── SINGLE-TAG ENFORCEMENT STATE ───────────────────────────────────────────
+from typing import Set  # should already be imported; just confirm
+
+# Track which HubSpot-import tags we've applied this run
+processed_tags: Set[str] = set()
+
+def get_hubspot_import_tags() -> Set[str]:
+    """
+    Derive all possible HubSpot-import tag names (Mailchimp segment names)
+    for this sync run, based on HUBSPOT_LIST_IDS.
+    """
+    tags = set()
+    for lid in HUBSPOT_LIST_IDS:
+        # fetch_hubspot_list_name returns the segment name
+        name = fetch_hubspot_list_name(lid)
+        tags.add(name)
+    return tags
+
+def get_mailchimp_member(email: str) -> Optional[dict]:
+    """Fetch a Mailchimp member by email, or None if not found."""
+    subscriber_hash = calculate_subscriber_hash(email.lower())
+    url = f"{MAILCHIMP_BASE_URL}/lists/{MAILCHIMP_LIST_ID}/members/{subscriber_hash}"
+    resp = requests.get(url,
+                        auth=("anystring", MAILCHIMP_API_KEY),
+                        headers={"Content-Type": "application/json"})
+    return resp.json() if resp.status_code == 200 else None
+
+def clear_mailchimp_tags(email: str):
+    """
+    Remove ALL tags from an archived contact before re-tagging.
+    """
+    member = get_mailchimp_member(email)
+    if not member or not member.get("tags"):
+        return
+    subscriber_hash = calculate_subscriber_hash(email.lower())
+    url = f"{MAILCHIMP_BASE_URL}/lists/{MAILCHIMP_LIST_ID}/members/{subscriber_hash}/tags"
+    payload = {
+        "tags": [{"name": t["name"], "status": "inactive"} for t in member["tags"]]
+    }
+    requests.post(url,
+                  auth=("anystring", MAILCHIMP_API_KEY),
+                  headers={"Content-Type": "application/json"},
+                  json=payload)
+    logger.info(f"🧹 Cleared all tags for archived contact {email}")
+
 def main():
     """Main execution function."""
 
@@ -1570,6 +1652,8 @@ def main():
             MAILCHIMP_TAG = list_name
 
             logger.info("Contacts will be tagged with: '%s'", MAILCHIMP_TAG)
+            # Remember this tag so we never apply more than one per contact
+            processed_tags.add(MAILCHIMP_TAG)
         except Exception as e:
             logger.exception("Failed to determine list name for %s: %s", list_id, e)
             notify_error("List processing failed - could not determine list name",
@@ -1646,24 +1730,31 @@ def main():
             logger.warning(f"Failed to send list completion notification: {e}")
 
     # --- Phase 3: Global cleanup (archive any Mailchimp members not in any synced list) ---
-    logger.info("Starting global archival cleanup: members not in any HubSpot list will be archived")
-    all_mc_emails = get_all_mailchimp_emails()
-    to_archive = all_mc_emails - all_synced_emails
-    if to_archive:
-        logger.info(f"Found {len(to_archive)} contacts to archive (no longer in any HubSpot list)")
-        archived_count = 0
-        # Archive contacts with progress bar
-        for email in tqdm(to_archive,
-                           desc="Archiving global stale contacts",
-                           unit="contact"):
-            if remove_mailchimp_contact_by_email(email):
-                archived_count += 1
-            time.sleep(0.2)
-        logger.info(f"Successfully archived {archived_count} contacts from Mailchimp")
+    if ENABLE_MAILCHIMP_ARCHIVAL:
+        logger.info("Starting global archival cleanup: members not in any HubSpot list will be archived")
+        all_mc_emails = get_all_mailchimp_emails()
+        to_archive = all_mc_emails - all_synced_emails
+        if to_archive:
+            logger.info(f"Found {len(to_archive)} contacts to archive (no longer in any HubSpot list)")
+            archived_count = 0
+            # Archive contacts with progress bar
+            for email in tqdm(to_archive,
+                               desc="Archiving global stale contacts",
+                               unit="contact"):
+                if remove_mailchimp_contact_by_email(email):
+                    archived_count += 1
+                time.sleep(0.2)
+            logger.info(f"Successfully archived {archived_count} contacts from Mailchimp")
+        else:
+            logger.info("No Mailchimp contacts to archive; all members are in at least one HubSpot list")
+        # Define to_archive for summary
+        to_archive_count = len(to_archive)
     else:
-        logger.info("No Mailchimp contacts to archive; all members are in at least one HubSpot list")
+        logger.info("⏭️ Global archival cleanup DISABLED - Existing Mailchimp contacts preserved")
+        to_archive_count = 0
+    
     # Final summary
-    logger.info("Multi-list sync complete: %d unique contacts synced, %d contacts archived", len(all_synced_emails), len(to_archive))
+    logger.info("Multi-list sync complete: %d unique contacts synced, %d contacts archived", len(all_synced_emails), to_archive_count)
     logger.info("All configured HubSpot lists have been synced and cleanup is complete.")
     
     # Send final Teams notification with session summary
@@ -1671,7 +1762,7 @@ def main():
         send_final_notification({
             "sync_status": "completed_successfully" if not had_errors else "completed_with_errors",
             "total_contacts_synced": len(all_synced_emails),
-            "total_contacts_archived": len(to_archive),
+            "total_contacts_archived": to_archive_count,
             "lists_processed": len(HUBSPOT_LIST_IDS),
             "list_ids": HUBSPOT_LIST_IDS
         })
