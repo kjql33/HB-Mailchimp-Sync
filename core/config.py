@@ -117,6 +117,7 @@ HUBSPOT_LIST_IDS = [
 # Format: ["list_id_1", "list_id_2", "list_id_3"]
 HARD_EXCLUDE_LISTS = [
     "717",  # Active deal association - don't market to these contacts
+    "762",  # Unsubscribed contacts - must be excluded from all marketing
     # "456",  # Example: Active Sales Discussions - No marketing
     # "789",  # Example: Opted Out - Hard exclude
 ]
