@@ -22,7 +22,7 @@ from .config import (
     MAILCHIMP_API_KEY, MAILCHIMP_LIST_ID, MAILCHIMP_DC,
     PAGE_SIZE, TEST_CONTACT_LIMIT, MAX_RETRIES, RETRY_DELAY,
     REQUIRED_TAGS, LOG_LEVEL, RAW_DATA_DIR, RUN_MODE, TEAMS_WEBHOOK_URL,
-    HARD_EXCLUDE_LISTS, ENABLE_MAILCHIMP_ARCHIVAL
+    HARD_EXCLUDE_LISTS, ENABLE_MAILCHIMP_ARCHIVAL, MUTE_METADATA_FETCH_ERRORS
 )
 
 # ─── IMPORT SOURCE LIST TRACKING CONFIGURATION ─────────────────────────────
@@ -206,8 +206,9 @@ def fetch_and_dump_list_metadata(list_id: str) -> dict:
             resp.raise_for_status()
     except Exception as e:
         logger.warning(f"Error fetching v3 metadata for list {list_id}: {e}")
-        notify_warning("HubSpot v3 list metadata fetch failed",
-                     {"list_id": list_id, "error": str(e), "api_version": "v3"})
+        if not MUTE_METADATA_FETCH_ERRORS:
+            notify_warning("HubSpot v3 list metadata fetch failed",
+                         {"list_id": list_id, "error": str(e), "api_version": "v3"})
 
     # 2) v1 Static Lists API
     v1_url = f"https://api.hubapi.com/contacts/v1/lists/{list_id}"
@@ -224,6 +225,9 @@ def fetch_and_dump_list_metadata(list_id: str) -> dict:
         return body
     except Exception as e:
         logger.warning(f"Error fetching v1 metadata for list {list_id}: {e}")
+        if not MUTE_METADATA_FETCH_ERRORS:
+            notify_warning("HubSpot v1 list metadata fetch failed",
+                         {"list_id": list_id, "error": str(e), "api_version": "v1"})
 
     logger.error(f"Failed to fetch metadata for list {list_id}")
     return {}
@@ -1705,15 +1709,21 @@ def main():
         emails_to_untag = mailchimp_emails - hubspot_emails
         if emails_to_untag:
             logger.info(f"Found {len(emails_to_untag)} contacts to untag from Mailchimp for list {list_id}")
-            successful_untags = 0
-            # Untag contacts with progress bar
-            for email in tqdm(emails_to_untag,
-                               desc=f"Untagging stale contacts for list {list_id}",
-                               unit="contact"):
-                if untag_mailchimp_contact(email):
-                    successful_untags += 1
-                time.sleep(0.2)
-            logger.info(f"Successfully removed tag from {successful_untags} contacts for list {list_id}")
+            
+            # 🚨 CRITICAL SAFETY CHECK: Skip untagging in test mode to prevent accidental mass untagging
+            if TEST_CONTACT_LIMIT > 0:
+                logger.warning(f"🧪 TEST MODE: Skipping untagging of {len(emails_to_untag)} contacts to prevent accidental mass changes")
+                logger.warning(f"🧪 TEST MODE: In production, {len(emails_to_untag)} contacts would be untagged")
+            else:
+                successful_untags = 0
+                # Untag contacts with progress bar
+                for email in tqdm(emails_to_untag,
+                                   desc=f"Untagging stale contacts for list {list_id}",
+                                   unit="contact"):
+                    if untag_mailchimp_contact(email):
+                        successful_untags += 1
+                    time.sleep(0.2)
+                logger.info(f"Successfully removed tag from {successful_untags} contacts for list {list_id}")
         else:
             logger.info("No contacts to untag from Mailchimp for list %s", list_id)
         
@@ -1731,24 +1741,30 @@ def main():
 
     # --- Phase 3: Global cleanup (archive any Mailchimp members not in any synced list) ---
     if ENABLE_MAILCHIMP_ARCHIVAL:
-        logger.info("Starting global archival cleanup: members not in any HubSpot list will be archived")
-        all_mc_emails = get_all_mailchimp_emails()
-        to_archive = all_mc_emails - all_synced_emails
-        if to_archive:
-            logger.info(f"Found {len(to_archive)} contacts to archive (no longer in any HubSpot list)")
-            archived_count = 0
-            # Archive contacts with progress bar
-            for email in tqdm(to_archive,
-                               desc="Archiving global stale contacts",
-                               unit="contact"):
-                if remove_mailchimp_contact_by_email(email):
-                    archived_count += 1
-                time.sleep(0.2)
-            logger.info(f"Successfully archived {archived_count} contacts from Mailchimp")
+        # 🚨 CRITICAL SAFETY CHECK: Skip global archival in test mode
+        if TEST_CONTACT_LIMIT > 0:
+            logger.warning(f"🧪 TEST MODE: Skipping global archival cleanup to prevent accidental mass deletion")
+            logger.info("⏭️ Global archival cleanup SKIPPED in test mode - Existing Mailchimp contacts preserved")
+            to_archive_count = 0
         else:
-            logger.info("No Mailchimp contacts to archive; all members are in at least one HubSpot list")
-        # Define to_archive for summary
-        to_archive_count = len(to_archive)
+            logger.info("Starting global archival cleanup: members not in any HubSpot list will be archived")
+            all_mc_emails = get_all_mailchimp_emails()
+            to_archive = all_mc_emails - all_synced_emails
+            if to_archive:
+                logger.info(f"Found {len(to_archive)} contacts to archive (no longer in any HubSpot list)")
+                archived_count = 0
+                # Archive contacts with progress bar
+                for email in tqdm(to_archive,
+                                   desc="Archiving global stale contacts",
+                                   unit="contact"):
+                    if remove_mailchimp_contact_by_email(email):
+                        archived_count += 1
+                    time.sleep(0.2)
+                logger.info(f"Successfully archived {archived_count} contacts from Mailchimp")
+            else:
+                logger.info("No Mailchimp contacts to archive; all members are in at least one HubSpot list")
+            # Define to_archive for summary
+            to_archive_count = len(to_archive)
     else:
         logger.info("⏭️ Global archival cleanup DISABLED - Existing Mailchimp contacts preserved")
         to_archive_count = 0

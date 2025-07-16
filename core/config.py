@@ -88,7 +88,7 @@ SECONDARY_SYNC_MODE = os.environ.get("SECONDARY_SYNC_MODE", SECONDARY_SYNC_MODE)
 SECONDARY_TEST_CONTACT_LIMIT = int(os.environ.get("SECONDARY_TEST_CONTACT_LIMIT", SECONDARY_TEST_CONTACT_LIMIT))
 
 # Archive processed contacts from Mailchimp after successful import
-ENABLE_MAILCHIMP_ARCHIVAL = True  # Production setting - archive processed contacts
+ENABLE_MAILCHIMP_ARCHIVAL = True  # Enable for full production run
 
 # =============================================================================
 # 📋 INPUT LISTS (HubSpot → Mailchimp) - EDIT HERE FOR STEP 1
@@ -460,6 +460,14 @@ class PerformanceConfig:
 
 # Global performance configuration instance
 perf_config = PerformanceConfig()
+
+# =============================================================================
+# 🔇 NOTIFICATION CONTROLS
+# =============================================================================
+
+# Silence non-critical metadata fetch warnings to reduce Teams noise
+# These warnings have built-in fallback mechanisms and don't affect sync functionality
+MUTE_METADATA_FETCH_ERRORS = True  # Set to False to re-enable metadata fetch notifications
 
 # =============================================================================
 # 🚀 EXECUTION FUNCTIONS
