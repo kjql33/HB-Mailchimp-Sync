@@ -1470,8 +1470,8 @@ class MailchimpToHubSpotSync:
                     self.log(f"📭 No contacts found with exit tag '{exit_tag}'")
             
             if not all_exit_contacts:
-                self.log("📭 No exit-tagged contacts found - secondary sync complete")
-                self._send_final_notification(success=True, no_contacts=True)
+                self.log("📭 No exit-tagged contacts found - secondary sync complete (no notification)")
+                # Skip final notification for zero-contacts scenario to reduce noise
                 return
             
             self.log(f"📊 Total contacts found: {total_contacts_found}")

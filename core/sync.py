@@ -197,7 +197,7 @@ def fetch_and_dump_list_metadata(list_id: str) -> dict:
             with open(path, "w") as f:
                 json.dump(body, f, indent=2)
             # (legacy root‐level dump removed)
-            logger.info(f"Wrote v3 list metadata to {path}")
+            logger.debug(f"Wrote v3 list metadata to {path}")  # Reduced to DEBUG to minimize log noise
             return body
         elif resp.status_code != 404:
             logger.error(f"HubSpot list access failed: Status {resp.status_code}")
@@ -1691,13 +1691,23 @@ def main():
 
         # Step 3: Upsert all HubSpot contacts to Mailchimp with source list tracking
         successful_upserts = 0
-        # Upsert contacts with progress bar
+        
+        print(f"\n📤 Syncing {len(hubspot_contacts)} contacts to Mailchimp...")
+        
+        # Upsert contacts with clean progress bar
         for contact in tqdm(hubspot_contacts,
                             desc=f"Upserting contacts for list {list_id}",
-                            unit="contact"):
+                            unit="contact",
+                            ncols=80,
+                            bar_format='{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]'):
             if upsert_mailchimp_contact(contact, source_list_id=list_id):
                 successful_upserts += 1
             time.sleep(0.2)
+        
+        # Clean summary instead of verbose individual logs
+        print(f"\n📊 SYNC SUMMARY for List {list_id}:")
+        print(f"   ✅ Successfully upserted: {successful_upserts} contacts")
+        
         logger.info(f"Successfully upserted {successful_upserts} contacts to Mailchimp for list {list_id}")
         logger.debug(f"All contacts from list {list_id} tagged with source list ID for anti-remarketing")
 
@@ -1707,6 +1717,8 @@ def main():
 
         # Step 5: Find and untag stale contacts
         emails_to_untag = mailchimp_emails - hubspot_emails
+        successful_untags = 0
+        
         if emails_to_untag:
             logger.info(f"Found {len(emails_to_untag)} contacts to untag from Mailchimp for list {list_id}")
             
@@ -1714,15 +1726,21 @@ def main():
             if TEST_CONTACT_LIMIT > 0:
                 logger.warning(f"🧪 TEST MODE: Skipping untagging of {len(emails_to_untag)} contacts to prevent accidental mass changes")
                 logger.warning(f"🧪 TEST MODE: In production, {len(emails_to_untag)} contacts would be untagged")
+                successful_untags = 0  # Set to 0 for test mode
             else:
-                successful_untags = 0
-                # Untag contacts with progress bar
+                print(f"\n🧹 Cleaning up {len(emails_to_untag)} stale contacts...")
+                
+                # Untag contacts with clean progress bar
                 for email in tqdm(emails_to_untag,
                                    desc=f"Untagging stale contacts for list {list_id}",
-                                   unit="contact"):
+                                   unit="contact",
+                                   ncols=80,
+                                   bar_format='{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]'):
                     if untag_mailchimp_contact(email):
                         successful_untags += 1
                     time.sleep(0.2)
+                
+                print(f"   ✅ Successfully untagged: {successful_untags} contacts")
                 logger.info(f"Successfully removed tag from {successful_untags} contacts for list {list_id}")
         else:
             logger.info("No contacts to untag from Mailchimp for list %s", list_id)
@@ -1734,7 +1752,7 @@ def main():
             notify_info("List sync completed successfully",
                        {"list_id": list_id, "list_name": list_name,
                         "contacts_upserted": successful_upserts,
-                        "contacts_untagged": len(emails_to_untag),
+                        "contacts_untagged": successful_untags,
                         "total_emails_in_list": len(hubspot_emails)})
         except Exception as e:
             logger.warning(f"Failed to send list completion notification: {e}")
@@ -1752,19 +1770,26 @@ def main():
             to_archive = all_mc_emails - all_synced_emails
             if to_archive:
                 logger.info(f"Found {len(to_archive)} contacts to archive (no longer in any HubSpot list)")
+                
+                print(f"\n🗂️ Archiving {len(to_archive)} orphaned contacts...")
+                
                 archived_count = 0
-                # Archive contacts with progress bar
+                # Archive contacts with clean progress bar
                 for email in tqdm(to_archive,
                                    desc="Archiving global stale contacts",
-                                   unit="contact"):
+                                   unit="contact",
+                                   ncols=80,
+                                   bar_format='{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]'):
                     if remove_mailchimp_contact_by_email(email):
                         archived_count += 1
                     time.sleep(0.2)
+                
+                print(f"   ✅ Successfully archived: {archived_count} contacts")
                 logger.info(f"Successfully archived {archived_count} contacts from Mailchimp")
             else:
                 logger.info("No Mailchimp contacts to archive; all members are in at least one HubSpot list")
             # Define to_archive for summary
-            to_archive_count = len(to_archive)
+            to_archive_count = len(to_archive) if 'to_archive' in locals() else 0
     else:
         logger.info("⏭️ Global archival cleanup DISABLED - Existing Mailchimp contacts preserved")
         to_archive_count = 0

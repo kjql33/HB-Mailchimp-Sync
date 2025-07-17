@@ -281,19 +281,30 @@ def get_notifier() -> Optional[TeamsNotifier]:
     """Get the global notifier instance"""
     return _notifier
 
+def _should_suppress_message(message: str) -> bool:
+    """Check if message should be suppressed from Teams notifications"""
+    try:
+        from . import config
+        return message in getattr(config, 'IGNORED_WARNING_MESSAGES', [])
+    except ImportError:
+        return False
+
 def notify_warning(message: str, details: Optional[Dict] = None):
-    """Convenience function to add warning"""
-    if _notifier:
+    """Convenience function to add warning with filtering"""
+    logger.warning(message)  # Always log locally
+    if _notifier and not _should_suppress_message(message):
         _notifier.add_warning(message, details)
 
 def notify_error(message: str, details: Optional[Dict] = None):
     """Convenience function to add error"""
+    logger.error(message)  # Always log locally
     if _notifier:
         _notifier.add_error(message, details)
         
 def notify_info(message: str, details: Optional[Dict] = None):
-    """Convenience function to add info"""
-    if _notifier:
+    """Convenience function to add info with filtering"""
+    logger.info(message)  # Always log locally
+    if _notifier and not _should_suppress_message(message):
         _notifier.add_info(message, details)
 
 def send_final_notification(title: str = "Sync Completed") -> bool:

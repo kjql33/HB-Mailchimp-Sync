@@ -91,6 +91,20 @@ SECONDARY_TEST_CONTACT_LIMIT = int(os.environ.get("SECONDARY_TEST_CONTACT_LIMIT"
 ENABLE_MAILCHIMP_ARCHIVAL = True  # Enable for full production run
 
 # =============================================================================
+# 🔇 NOTIFICATION CONTROLS - NOISE REDUCTION
+# =============================================================================
+
+# Mute specific non-actionable metadata fetch warnings
+MUTE_METADATA_FETCH_ERRORS = True
+
+# Messages to ignore for Teams notifications (still logged locally)
+IGNORED_WARNING_MESSAGES = [
+    "HubSpot v3 list metadata fetch failed",
+    "HubSpot v1 list metadata fetch failed",
+    "Secondary sync completed - no exit-tagged contacts found"
+]
+
+# =============================================================================
 # 📋 INPUT LISTS (HubSpot → Mailchimp) - EDIT HERE FOR STEP 1
 # =============================================================================
 
