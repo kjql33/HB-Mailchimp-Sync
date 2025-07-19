@@ -913,8 +913,44 @@ def upsert_mailchimp_contact(contact: Dict[str, str], source_list_id: str = None
                     
                     return True
                 elif response.status_code == 400:
-                    # 400 errors should be treated as errors (compliance already handled above)
-                    response.raise_for_status()
+                    # Handle permanent subscription failures gracefully
+                    try:
+                        response_body = response.json()
+                        detail_text = str(response_body.get("detail", "")).lower()
+                        
+                        # Check for permanent unsubscribe/bounce rejections
+                        permanent_failure_indicators = [
+                            "cannot be subscribed" in detail_text,
+                            "unsubscribed" in detail_text and "bounced" in detail_text,
+                            "under review" in detail_text,
+                            "address is bounced" in detail_text
+                        ]
+                        
+                        if any(permanent_failure_indicators):
+                            logger.warning(f"{email} permanently unsubscribed/bounced—archiving instead of retry")
+                            
+                            # Archive the contact instead of treating as error
+                            try:
+                                archive_url = f"https://{MAILCHIMP_DC}.api.mailchimp.com/3.0/lists/{MAILCHIMP_LIST_ID}/members/{subscriber_hash}"
+                                archive_response = requests.delete(archive_url, auth=auth, headers=headers)
+                                
+                                if archive_response.status_code in [200, 204, 404]:  # 404 means already archived
+                                    logger.info(f"✅ Archived unsubscribed contact: {email}")
+                                    notify_warning("Archived unsubscribed contact", {"email": email, "reason": "permanent_failure"})
+                                    return True  # Treat as handled successfully
+                                else:
+                                    logger.warning(f"Failed to archive {email}, status: {archive_response.status_code}")
+                            except Exception as archive_error:
+                                logger.warning(f"Failed to archive {email}: {archive_error}")
+                            
+                            # Even if archival fails, don't treat as ERROR since it's a permanent state
+                            return False  # Contact not processed, but don't error
+                        else:
+                            # Other 400 errors should still be treated as errors
+                            response.raise_for_status()
+                    except (ValueError, KeyError):
+                        # If we can't parse the response, treat as regular 400 error
+                        response.raise_for_status()
                 else:
                     response.raise_for_status()
                 
