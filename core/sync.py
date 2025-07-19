@@ -15,6 +15,7 @@ import json
 import logging
 import hashlib
 import requests
+from collections import defaultdict
 
 # ─── IMPORT CONFIGURATION FROM CONFIG ─────────────────────────────────────────
 from .config import (
@@ -868,7 +869,7 @@ def upsert_mailchimp_contact(contact: Dict[str, str], source_list_id: str = None
                             f"ℹ️ Respecting Mailchimp compliance state for {email}: "
                             f"{response_body.get('detail', 'Contact cannot be subscribed')}"
                         )
-                        return False  # Expected behavior, no warning or Teams alert
+                        return "compliance_state"  # Expected behavior, no warning or Teams alert
 
                     # ─── NON-COMPLIANCE WARNINGS (only if not compliance) ──────────
                     if "errors" in response_body:
@@ -911,7 +912,7 @@ def upsert_mailchimp_contact(contact: Dict[str, str], source_list_id: str = None
                         notify_warning("Contact upserted but tag application failed",
                                      {"email": email, "tag": MAILCHIMP_TAG})
                     
-                    return True
+                    return "success"
                 elif response.status_code == 400:
                     # Handle permanent subscription failures gracefully
                     try:
@@ -937,14 +938,14 @@ def upsert_mailchimp_contact(contact: Dict[str, str], source_list_id: str = None
                                 if archive_response.status_code in [200, 204, 404]:  # 404 means already archived
                                     logger.info(f"✅ Archived unsubscribed contact: {email}")
                                     notify_warning("Archived unsubscribed contact", {"email": email, "reason": "permanent_failure"})
-                                    return True  # Treat as handled successfully
+                                    return "unsubscribed"  # Treat as handled successfully
                                 else:
                                     logger.warning(f"Failed to archive {email}, status: {archive_response.status_code}")
                             except Exception as archive_error:
                                 logger.warning(f"Failed to archive {email}: {archive_error}")
                             
                             # Even if archival fails, don't treat as ERROR since it's a permanent state
-                            return False  # Contact not processed, but don't error
+                            return "unsubscribed_failed"  # Contact not processed, but don't error
                         else:
                             # Other 400 errors should still be treated as errors
                             response.raise_for_status()
@@ -971,9 +972,9 @@ def upsert_mailchimp_contact(contact: Dict[str, str], source_list_id: str = None
         logger.error(f"Error upserting Mailchimp contact {email}: {e}")
         if hasattr(e, "response") and hasattr(e.response, "text"):
             logger.error(f"Response: {e.response.text}")
-        return False
+        return "error"
     
-    return False
+    return "error"
 
 
 def apply_mailchimp_tag(email: str, was_archived: bool = False) -> bool:
@@ -1726,25 +1727,56 @@ def main():
         all_synced_emails.update(hubspot_emails)
 
         # Step 3: Upsert all HubSpot contacts to Mailchimp with source list tracking
-        successful_upserts = 0
+        # Prepare stats buckets for summary
+        stats = defaultdict(list)
+        total = len(hubspot_contacts)
         
-        print(f"\n📤 Syncing {len(hubspot_contacts)} contacts to Mailchimp...")
-        
-        # Upsert contacts with clean progress bar
-        for contact in tqdm(hubspot_contacts,
-                            desc=f"Upserting contacts for list {list_id}",
-                            unit="contact",
-                            ncols=80,
-                            bar_format='{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]'):
-            if upsert_mailchimp_contact(contact, source_list_id=list_id):
-                successful_upserts += 1
-            time.sleep(0.2)
-        
-        # Clean summary instead of verbose individual logs
-        print(f"\n📊 SYNC SUMMARY for List {list_id}:")
-        print(f"   ✅ Successfully upserted: {successful_upserts} contacts")
-        
-        logger.info(f"Successfully upserted {successful_upserts} contacts to Mailchimp for list {list_id}")
+        # Single progress bar for the entire list
+        with tqdm(hubspot_contacts,
+                  desc=f"Syncing list {list_id}",
+                  unit="contact",
+                  ncols=80,
+                  leave=True,
+                  mininterval=2.0,
+                  bar_format='{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]') as bar:
+            for contact in bar:
+                result = upsert_mailchimp_contact(contact, source_list_id=list_id)
+                
+                # Bucket results for end-of-run summary
+                if result == "success":
+                    stats["successful"].append(contact["email"])
+                elif result == "unsubscribed":
+                    stats["unsubscribed"].append(contact["email"])
+                elif result == "unsubscribed_failed":
+                    stats["unsubscribed_failed"].append(contact["email"])
+                elif result == "compliance_state":
+                    stats["compliance_state"].append(contact["email"])
+                elif result == "error":
+                    stats["errors"].append(contact["email"])
+                else:
+                    stats["other"].append(contact["email"])
+                    
+                time.sleep(0.2)
+
+        # Emit concise end-of-run summary
+        logger.info(f"Summary for list {list_id}:")
+        logger.info(f"  • {len(stats['successful'])} successful upserts")
+        if stats['unsubscribed']:
+            sample = stats['unsubscribed'][:5]
+            suffix = f"{'...' if len(stats['unsubscribed']) > 5 else ''}"
+            logger.info(f"  • {len(stats['unsubscribed'])} unsubscribed/bounced (archived): {sample}{suffix}")
+        if stats['unsubscribed_failed']:
+            logger.warning(f"  • {len(stats['unsubscribed_failed'])} unsubscribed contacts failed to archive")
+        if stats['compliance_state']:
+            logger.info(f"  • {len(stats['compliance_state'])} contacts in compliance state (skipped)")
+        if stats['errors']:
+            sample = stats['errors'][:3]
+            suffix = f"{'...' if len(stats['errors']) > 3 else ''}"
+            logger.warning(f"  • {len(stats['errors'])} errors: {sample}{suffix}")
+        if stats['other']:
+            logger.warning(f"  • {len(stats['other'])} other outcomes")
+
+        successful_upserts = len(stats['successful'])
         logger.debug(f"All contacts from list {list_id} tagged with source list ID for anti-remarketing")
 
         # Step 4: Get current Mailchimp members with our tag
