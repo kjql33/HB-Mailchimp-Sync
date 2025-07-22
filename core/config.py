@@ -133,6 +133,13 @@ HARD_EXCLUDE_LISTS = [
     "717",  # Active deal association - don't market to these contacts
     "762",  # Unsubscribed contacts - must be excluded from all marketing
     "773",  # Manual disengagement from marketing - must be excluded
+    
+    # 🚫 EXIT LISTS - Prevent remarketing to contacts who completed the journey
+    "700",  # Handover to sales - no remarketing needed
+    "701",  # Archive: Engaged never - completed pipeline 
+    "702",  # Archive: Engaged once - completed pipeline
+    "703",  # Archive: Engaged twice+ - completed pipeline
+    
     # "456",  # Example: Active Sales Discussions - No marketing
     # "789",  # Example: Opted Out - Hard exclude
 ]
