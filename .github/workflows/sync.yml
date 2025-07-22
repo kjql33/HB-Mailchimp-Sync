@@ -1,8 +1,9 @@
-name: 10 Hourly HubSpot↔Mailchimp Bidirectional Sync
+name: HubSpot↔Mailchimp Bidirectional Sync
 
 on:
   schedule:
     - cron: '0 */10 * * *'   # every 10 hours at minute 0
+    - cron: '5 9,10 * * 3'   # Wednesday 9:05 and 10:05 UTC - script will determine correct British time
   workflow_dispatch:        # allows you to trigger manually from the Actions tab
 
 jobs:
@@ -30,13 +31,79 @@ jobs:
           echo "Core module check:"
           python -c "import core.config; print('✅ Import successful')"
       
-      - name: Run HubSpot↔Mailchimp Full Bidirectional Sync
+      - name: Determine Run Mode
+        id: run_mode
+        run: |
+          # Get current UTC time
+          CURRENT_DAY=$(date -u +%u)  # 1=Monday, 7=Sunday
+          CURRENT_HOUR=$(date -u +%H)
+          CURRENT_MINUTE=$(date -u +%M)
+          CURRENT_MONTH=$(date -u +%m)
+          CURRENT_DATE=$(date -u +%d)
+          
+          # Function to determine if we're in BST (British Summer Time)
+          is_bst() {
+            local month=$1
+            local day=$2
+            
+            # BST runs from last Sunday in March to last Sunday in October
+            if [[ $month -lt 3 || $month -gt 10 ]]; then
+              return 1  # GMT (winter)
+            elif [[ $month -gt 3 && $month -lt 10 ]]; then
+              return 0  # BST (summer)
+            elif [[ $month -eq 3 ]]; then
+              # March - need to check if we're past last Sunday
+              local last_sunday=$(date -d "$CURRENT_YEAR-03-31" +%u)
+              local last_sunday_date=$((31 - last_sunday + 1))
+              [[ $day -ge $last_sunday_date ]] && return 0 || return 1
+            elif [[ $month -eq 10 ]]; then
+              # October - need to check if we're before last Sunday
+              local last_sunday=$(date -d "$CURRENT_YEAR-10-31" +%u)
+              local last_sunday_date=$((31 - last_sunday + 1))
+              [[ $day -lt $last_sunday_date ]] && return 0 || return 1
+            fi
+          }
+          
+          # Check if this is a Wednesday sales prep run
+          if [[ "$CURRENT_DAY" == "3" && "$CURRENT_MINUTE" == "05" ]]; then
+            # Determine current British timezone
+            if is_bst $CURRENT_MONTH $CURRENT_DATE; then
+              # BST active: 9 UTC = 10 AM British Time
+              if [[ "$CURRENT_HOUR" == "09" ]]; then
+                echo "🎯 Wednesday 10am BST Sales Prep Run Detected"
+                echo "mode=SECONDARY_SYNC_ONLY" >> $GITHUB_OUTPUT
+                echo "description=Sales Prep: Secondary Sync Only (BST)" >> $GITHUB_OUTPUT
+                exit 0
+              fi
+            else
+              # GMT active: 10 UTC = 10 AM British Time  
+              if [[ "$CURRENT_HOUR" == "10" ]]; then
+                echo "🎯 Wednesday 10am GMT Sales Prep Run Detected"
+                echo "mode=SECONDARY_SYNC_ONLY" >> $GITHUB_OUTPUT
+                echo "description=Sales Prep: Secondary Sync Only (GMT)" >> $GITHUB_OUTPUT
+                exit 0
+              fi
+            fi
+            
+            # If we get here, it's Wednesday but wrong time - skip this run
+            echo "⏭️ Wednesday detected but not the correct British time - skipping"
+            echo "mode=SKIP" >> $GITHUB_OUTPUT
+            echo "description=Skipped - Wrong British Time" >> $GITHUB_OUTPUT
+          else
+            echo "🔄 Regular Bidirectional Sync Run"
+            echo "mode=BIDIRECTIONAL_SYNC" >> $GITHUB_OUTPUT
+            echo "description=Full Bidirectional Sync" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Run HubSpot↔Mailchimp Sync (${{ steps.run_mode.outputs.description }})
+        if: steps.run_mode.outputs.mode != 'SKIP'
         run: python -m core.config
         env:
           HUBSPOT_PRIVATE_TOKEN: ${{ secrets.HUBSPOT_PRIVATE_TOKEN }}
           MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
           MAILCHIMP_LIST_ID: ${{ secrets.MAILCHIMP_LIST_ID }}
           TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          RUN_MODE: ${{ steps.run_mode.outputs.mode }}
 
       - name: Notify Teams on failure
         if: ${{ failure() }}

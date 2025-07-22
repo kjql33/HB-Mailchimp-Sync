@@ -70,7 +70,7 @@ load_dotenv(override=True)
 # =============================================================================
 
 # Run Mode Selection
-RUN_MODE = "BIDIRECTIONAL_SYNC"  # Options: "FULL_SYNC", "TEST_RUN", "TAG_RENAME_ONLY", "SECONDARY_SYNC_ONLY", "BIDIRECTIONAL_SYNC"
+RUN_MODE = os.environ.get("RUN_MODE", "BIDIRECTIONAL_SYNC")  # Can be overridden by environment variable
 
 # =============================================================================
 # 🔄 BIDIRECTIONAL SYNC CONTROLS
