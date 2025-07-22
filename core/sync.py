@@ -924,11 +924,12 @@ def upsert_mailchimp_contact(contact: Dict[str, str], source_list_id: str = None
                             "cannot be subscribed" in detail_text,
                             "unsubscribed" in detail_text and "bounced" in detail_text,
                             "under review" in detail_text,
-                            "address is bounced" in detail_text
+                            "address is bounced" in detail_text,
+                            "looks fake or invalid" in detail_text  # catch invalid email rejects
                         ]
                         
                         if any(permanent_failure_indicators):
-                            logger.warning(f"{email} permanently unsubscribed/bounced—archiving instead of retry")
+                            logger.warning(f"{email} permanently unsubscribed/bounced/invalid—archiving instead of retry")
                             
                             # Archive the contact instead of treating as error
                             try:
@@ -1738,6 +1739,7 @@ def main():
                   ncols=80,
                   leave=True,
                   mininterval=2.0,
+                  miniters=100,
                   bar_format='{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]') as bar:
             for contact in bar:
                 result = upsert_mailchimp_contact(contact, source_list_id=list_id)
