@@ -101,7 +101,8 @@ MUTE_METADATA_FETCH_ERRORS = True
 IGNORED_WARNING_MESSAGES = [
     "HubSpot v3 list metadata fetch failed",
     "HubSpot v1 list metadata fetch failed",
-    "Secondary sync completed - no exit-tagged contacts found"
+    "Secondary sync completed - no exit-tagged contacts found",
+    "Contact has unexpected status in Mailchimp"  # suppress repetitive status warnings
 ]
 
 # =============================================================================

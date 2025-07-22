@@ -914,22 +914,24 @@ def upsert_mailchimp_contact(contact: Dict[str, str], source_list_id: str = None
                     
                     return "success"
                 elif response.status_code == 400:
-                    # Handle permanent subscription failures gracefully
+                    # Handle 400 errors - check for permanent failures BEFORE raising exceptions
                     try:
                         response_body = response.json()
                         detail_text = str(response_body.get("detail", "")).lower()
                         
-                        # Check for permanent unsubscribe/bounce rejections
+                        # Expanded permanent failure indicators to catch all non-critical rejections
                         permanent_failure_indicators = [
                             "cannot be subscribed" in detail_text,
-                            "unsubscribed" in detail_text and "bounced" in detail_text,
+                            ("unsubscribed" in detail_text and "bounced" in detail_text),
                             "under review" in detail_text,
                             "address is bounced" in detail_text,
-                            "looks fake or invalid" in detail_text  # catch invalid email rejects
+                            "looks fake or invalid" in detail_text,  # catch invalid email rejects
+                            "fake email" in detail_text,
+                            "invalid email" in detail_text
                         ]
                         
                         if any(permanent_failure_indicators):
-                            logger.warning(f"{email} permanently unsubscribed/bounced/invalid—archiving instead of retry")
+                            logger.warning(f"Non-critical Mailchimp rejection for {email}: {detail_text} - archiving instead of erroring")
                             
                             # Archive the contact instead of treating as error
                             try:
@@ -937,21 +939,23 @@ def upsert_mailchimp_contact(contact: Dict[str, str], source_list_id: str = None
                                 archive_response = requests.delete(archive_url, auth=auth, headers=headers)
                                 
                                 if archive_response.status_code in [200, 204, 404]:  # 404 means already archived
-                                    logger.info(f"✅ Archived unsubscribed contact: {email}")
-                                    notify_warning("Archived unsubscribed contact", {"email": email, "reason": "permanent_failure"})
+                                    logger.info(f"✅ Archived rejected contact: {email} (reason: permanent failure)")
+                                    notify_warning("Archived contact due to permanent Mailchimp rejection", 
+                                                 {"email": email, "reason": detail_text[:100], "status": "archived"})
                                     return "unsubscribed"  # Treat as handled successfully
                                 else:
-                                    logger.warning(f"Failed to archive {email}, status: {archive_response.status_code}")
+                                    logger.warning(f"Failed to archive {email}, archive response status: {archive_response.status_code}")
+                                    return "unsubscribed_failed"  # Failed to archive but still non-critical
                             except Exception as archive_error:
-                                logger.warning(f"Failed to archive {email}: {archive_error}")
-                            
-                            # Even if archival fails, don't treat as ERROR since it's a permanent state
-                            return "unsubscribed_failed"  # Contact not processed, but don't error
+                                logger.warning(f"Exception during archival of {email}: {archive_error}")
+                                return "unsubscribed_failed"  # Failed to archive but still non-critical
                         else:
-                            # Other 400 errors should still be treated as errors
+                            # Truly unexpected 400 errors should still be treated as errors and trigger retries
+                            logger.error(f"Unexpected 400 error for {email}: {detail_text}")
                             response.raise_for_status()
-                    except (ValueError, KeyError):
-                        # If we can't parse the response, treat as regular 400 error
+                    except (ValueError, KeyError) as parse_error:
+                        # If we can't parse the response JSON, treat as regular 400 error
+                        logger.error(f"Could not parse 400 response for {email}: {parse_error}")
                         response.raise_for_status()
                 else:
                     response.raise_for_status()
@@ -1805,6 +1809,7 @@ def main():
                                    desc=f"Untagging stale contacts for list {list_id}",
                                    unit="contact",
                                    ncols=80,
+                                   miniters=100,
                                    bar_format='{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]'):
                     if untag_mailchimp_contact(email):
                         successful_untags += 1
@@ -1849,6 +1854,7 @@ def main():
                                    desc="Archiving global stale contacts",
                                    unit="contact",
                                    ncols=80,
+                                   miniters=100,
                                    bar_format='{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]'):
                     if remove_mailchimp_contact_by_email(email):
                         archived_count += 1
