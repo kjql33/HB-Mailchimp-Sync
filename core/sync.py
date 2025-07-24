@@ -445,8 +445,26 @@ def get_hubspot_contacts(list_id: str) -> List[Dict[str, Any]]:
             params["after"] = after
 
         logger.debug(f"Fetching CRM v3 memberships page {page}")  # Detailed pagination info
-        resp = requests.get(list_url, headers=headers, params=params)
-        resp.raise_for_status()
+        
+        # ─── Transient‑safe wrapper ───────────────────────────
+        for attempt in range(MAX_RETRIES):
+            resp = requests.get(list_url, headers=headers, params=params)
+            try:
+                resp.raise_for_status()
+                break  # success
+            except requests.exceptions.RequestException as e:
+                if attempt < MAX_RETRIES - 1:
+                    logger.warning(
+                        f"HubSpot API request failed on list {list_id}, page {page}: {e}. "
+                        f"Retrying in {RETRY_DELAY}s (attempt {attempt+1}/{MAX_RETRIES})"
+                    )
+                    time.sleep(RETRY_DELAY)
+                else:
+                    # Exhausted retries → critical failure
+                    logger.error(f"Exhausted retries fetching list {list_id}: {e}")
+                    raise  # halt the sync
+        # ───────────────────────────────────────────────────────
+        
         body = resp.json()
         # On first page, log total and expected page count
         if page == 1:
