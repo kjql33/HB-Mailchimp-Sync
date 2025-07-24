@@ -958,8 +958,20 @@ def upsert_mailchimp_contact(contact: Dict[str, str], source_list_id: str = None
                                 
                                 if archive_response.status_code in [200, 204, 404]:  # 404 means already archived
                                     logger.info(f"✅ Archived rejected contact: {email} (reason: permanent failure)")
-                                    notify_warning("Archived contact due to permanent Mailchimp rejection", 
-                                                 {"email": email, "reason": detail_text[:100], "status": "archived"})
+                                    
+                                    # Only send Teams notification for non-fake email rejections
+                                    fake_email_indicators = [
+                                        "looks fake or invalid" in detail_text,
+                                        "fake email" in detail_text,
+                                        "invalid email" in detail_text
+                                    ]
+                                    
+                                    if not any(fake_email_indicators):
+                                        notify_warning("Archived contact due to permanent Mailchimp rejection", 
+                                                     {"email": email, "reason": detail_text[:100], "status": "archived"})
+                                    else:
+                                        logger.debug(f"Skipping Teams notification for fake/invalid email rejection: {email}")
+                                    
                                     return "unsubscribed"  # Treat as handled successfully
                                 else:
                                     logger.warning(f"Failed to archive {email}, archive response status: {archive_response.status_code}")
