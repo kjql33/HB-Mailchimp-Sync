@@ -106,6 +106,13 @@ IGNORED_WARNING_MESSAGES = [
 ]
 
 # =============================================================================
+# 📋 CUSTOM PROPERTY FIELDS - HubSpot Contact Properties
+# =============================================================================
+
+# ✅ IMPORT LIST TRACKING: Custom property to store original list name
+IMPORT_LIST_PROPERTY = "import_list"  # HubSpot internal property name (lowercase, underscores)
+
+# =============================================================================
 # 📋 INPUT LISTS (HubSpot → Mailchimp) - EDIT HERE FOR STEP 1
 # =============================================================================
 

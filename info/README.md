@@ -320,6 +320,7 @@ This section documents every possible contact movement and synchronization scena
 - **Tag Consistency**: List membership accurately reflected in tags
 - **Data Freshness**: Mailchimp data updated with latest HubSpot information
 - **Status Normalization**: All synced members forced to "subscribed"
+- **Import Source Tracking**: "import_list" custom property populated for all migrated contacts
 - **Audit Trail**: Complete logging of all operations and changes
 
 ### What the System NEVER Does:
@@ -358,6 +359,21 @@ This section documents every possible contact movement and synchronization scena
 - Storage grows with historical data retention (auto-pruned after 7 days)
 
 ## Recent Updates & Improvements
+
+### Import List Custom Property Enhancement
+**New Feature**: Automatic tracking of original import list source for contacts migrating through the secondary sync system.
+
+**Implementation**:
+- **Custom Property**: "import_list" automatically populated during secondary sync
+- **Value**: Friendly name of the destination HubSpot list (e.g., "Recruitment", "Directors")
+- **Population**: Occurs when contacts migrate from import lists to exit lists during Phase 4 of secondary sync
+- **Benefits**: Provides audit trail and source tracking for sales team follow-up
+
+**Technical Details**:
+- Uses HubSpot v3 CRM API for property updates with retry logic
+- Processes contacts in batches of 50 to respect rate limits
+- Includes comprehensive logging for monitoring and debugging
+- Graceful error handling - failed property updates don't block migration
 
 ### Single-Tag Enforcement Enhancement
 **Major Improvement**: Implemented robust single-tag enforcement to prevent tag conflicts and duplicate processing.

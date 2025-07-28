@@ -93,8 +93,19 @@ Contacts are tagged based on their email engagement:
 
 1. **Tag Detection**: System identifies contacts with engagement tags
 2. **List Routing**: Contacts moved to appropriate sales lists in HubSpot
-3. **Categorization**: Organized by engagement level for sales prioritization
-4. **Cleanup**: Contacts removed from marketing lists to prevent duplicate outreach
+3. **Import List Tracking**: System automatically sets "Import List" custom property to track original source list name
+4. **Categorization**: Organized by engagement level for sales prioritization
+5. **Cleanup**: Contacts removed from marketing lists to prevent duplicate outreach
+
+### Phase 5: Data Tracking & Audit Trail
+**Automated Enhancement**: Import List Property Management
+
+The system now automatically maintains an audit trail of contact movement:
+- **Import List Property**: Each contact receives a custom property showing their original import list name
+- **Automatic Population**: Property set during contact migration from import lists to exit lists
+- **Audit Benefits**: Sales teams can see which campaign type originally sourced each contact
+- **Reporting**: Enables tracking of campaign effectiveness by original source
+
 ---
 
 ## 📊 Technical Configuration
@@ -185,11 +196,17 @@ Once contacts are tagged and moved to sales lists, they are automatically remove
 
 ### Data Flow Monitoring
 The system maintains complete tracking of:
-- Original contact source (which import list)
+- Original contact source (which import list) - **NEW: Stored in "Import List" custom property**
 - Campaign participation history
 - Engagement tag application
 - Final destination list placement
 - Processing timestamps for audit purposes
+
+**Import List Custom Property Enhancement**
+- **Property Name**: "import_list" (HubSpot custom property)
+- **Population**: Automatically set when contacts migrate from import lists to exit lists
+- **Value**: Contains the friendly name of the original import list (e.g., "Recruitment", "Directors")
+- **Benefits**: Enables sales teams to understand contact source and tailor their approach accordingly
 
 ---
 
@@ -217,13 +234,14 @@ The system maintains complete tracking of:
 **Week 5: Tag Application & Lead Delivery**
 - Marketing applies appropriate tags based on engagement
 - System automatically processes tags every 10 hours
+- **NEW**: System sets "Import List" custom property to "Recruitment" for audit tracking
 - Contacts delivered to sales team in organized lists:
   - List 703: High engagement recruitment leads (priority calls)
   - List 702: Medium engagement recruitment leads (follow-up calls)
   - List 701: Low engagement recruitment leads (future nurturing)
   - List 700: Immediate sales handover (direct response leads)
 
-**Result**: Sales team receives organized, qualified leads with complete engagement history, ready for targeted follow-up calls.
+**Result**: Sales team receives organized, qualified leads with complete engagement history AND original source tracking via the "Import List" property, ready for targeted follow-up calls.
 
 ### Data Organization for Sales Teams
 
@@ -300,6 +318,7 @@ The system maintains complete tracking of:
 **Contact Information Available**
 - Complete contact details (name, email, company, phone)
 - Original campaign source (recruitment, competition, general, directors)
+- **NEW**: "Import List" custom property showing original import list name
 - Engagement level from email campaign
 - Historical activity for context
 

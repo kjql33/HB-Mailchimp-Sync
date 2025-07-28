@@ -329,7 +329,8 @@ class MailchimpToHubSpotSync:
                 return 0
             
             list_info = validation_result.get("list_info", {})
-            logger.info(f"✅ Target list validated: {list_info.get('name')} ({list_info.get('processingType')})")
+            list_name = list_info.get('name', f'List-{target_list_id}')
+            logger.info(f"✅ Target list validated: {list_name} ({list_info.get('processingType')})")
             
             # Phase 2: Find existing HubSpot contacts in bulk (Phase 5 optimization)
             logger.debug("🔍 Phase 2: Finding existing contacts in HubSpot using batch lookup")
@@ -385,6 +386,37 @@ class MailchimpToHubSpotSync:
             if migration_result.get("success"):
                 imported_count = migration_result.get("total_added", 0)
                 logger.info(f"✅ Bulk migration successful: {imported_count} contacts added to list {target_list_id}")
+                
+                # Phase 4: Update Import List custom property for tracking
+                if imported_count > 0:
+                    logger.info(f"🏷️ Phase 4: Setting Import List property to '{list_name}' for {imported_count} contacts")
+                    
+                    # Update contacts with Import List property in batches to avoid rate limits
+                    property_update_count = 0
+                    batch_size = 50  # Conservative batch size for property updates
+                    
+                    for i in range(0, len(contact_ids), batch_size):
+                        batch_contact_ids = contact_ids[i:i + batch_size]
+                        
+                        for contact_id in batch_contact_ids:
+                            try:
+                                # Update the Import List custom property
+                                properties = {config.IMPORT_LIST_PROPERTY: list_name}
+                                
+                                if self.list_manager.update_contact_properties(contact_id, properties):
+                                    property_update_count += 1
+                                    logger.debug(f"✅ Set import_list='{list_name}' for contact {contact_id}")
+                                else:
+                                    logger.warning(f"⚠️ Failed to set import_list property for contact {contact_id}")
+                                    
+                            except Exception as e:
+                                logger.warning(f"⚠️ Error updating import_list property for contact {contact_id}: {e}")
+                        
+                        # Small delay between batches to respect rate limits
+                        if i + batch_size < len(contact_ids):
+                            time.sleep(0.2)
+                    
+                    logger.info(f"✅ Import List property updated for {property_update_count}/{imported_count} contacts")
                 
                 # Log any failed batches for audit
                 failed_batches = migration_result.get("failed_batches", [])

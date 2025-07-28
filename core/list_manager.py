@@ -204,6 +204,57 @@ class HubSpotListManager:
         
         return False
     
+    def update_contact_properties(self, contact_id: str, properties: Dict[str, str]) -> bool:
+        """
+        Update custom properties for a contact in HubSpot using v3 CRM API
+        
+        Args:
+            contact_id: HubSpot contact ID
+            properties: Dictionary of property_name -> value pairs to update
+            
+        Returns:
+            bool: True if properties were successfully updated, False otherwise
+        """
+        url = f"{self.base_url}/crm/v3/objects/contacts/{contact_id}"
+        
+        payload = {
+            "properties": properties
+        }
+        
+        self.log(f"🔄 Updating properties for contact {contact_id}: {list(properties.keys())}")
+        
+        for attempt in range(self.max_retries):
+            try:
+                response = self.session.patch(url, json=payload)
+                
+                if response.status_code in (200, 201, 204):
+                    self.log(f"✅ Updated properties for contact {contact_id}")
+                    return True
+                elif response.status_code == 404:
+                    self.log(f"❌ Contact {contact_id} not found", "ERROR")
+                    return False
+                else:
+                    self.log(f"⚠️ Unexpected response updating contact properties: {response.status_code}", "WARN")
+                    self.log(f"⚠️ Response: {response.text}", "WARN")
+                    
+                    if attempt < self.max_retries - 1:
+                        self.log(f"⚠️ Retry {attempt + 1}/{self.max_retries} for updating contact properties", "WARN")
+                        time.sleep(self.retry_delay)
+                        continue
+                    else:
+                        return False
+                
+            except requests.exceptions.RequestException as e:
+                if attempt < self.max_retries - 1:
+                    self.log(f"⚠️ Retry {attempt + 1}/{self.max_retries} for updating contact properties", "WARN")
+                    time.sleep(self.retry_delay)
+                    continue
+                else:
+                    self.log(f"❌ Failed to update properties for contact {contact_id}: {str(e)}", "ERROR")
+                    return False
+        
+        return False
+    
     # =========================================================================
     # DEPRECATED METHODS - Kept for backward compatibility only
     # =========================================================================
