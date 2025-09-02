@@ -16,6 +16,8 @@ import logging
 import hashlib
 import requests
 from collections import defaultdict
+from typing import List, Dict, Set, Any, Optional
+from tqdm import tqdm
 
 # ─── IMPORT CONFIGURATION FROM CONFIG ─────────────────────────────────────────
 from .config import (
@@ -23,7 +25,9 @@ from .config import (
     MAILCHIMP_API_KEY, MAILCHIMP_LIST_ID, MAILCHIMP_DC,
     PAGE_SIZE, TEST_CONTACT_LIMIT, MAX_RETRIES, RETRY_DELAY,
     REQUIRED_TAGS, LOG_LEVEL, RAW_DATA_DIR, RUN_MODE, TEAMS_WEBHOOK_URL,
-    HARD_EXCLUDE_LISTS, ENABLE_MAILCHIMP_ARCHIVAL, MUTE_METADATA_FETCH_ERRORS
+    HARD_EXCLUDE_LISTS, ENABLE_MAILCHIMP_ARCHIVAL, MUTE_METADATA_FETCH_ERRORS,
+    # Manual inclusion override configuration
+    MANUAL_INCLUSION_OVERRIDE_LISTS, OVERRIDE_CAMPAIGN_INJECTION
 )
 
 # ─── IMPORT SOURCE LIST TRACKING CONFIGURATION ─────────────────────────────
@@ -637,12 +641,17 @@ def get_hubspot_contacts(list_id: str) -> List[Dict[str, Any]]:
         logger.warning(f"⚠️ No valid contacts retrieved from HubSpot list ID {list_id}")
         logger.warning("Please check that the list exists and contains contacts")
     
-    # 🚫 APPLY HARD EXCLUDE FILTER - Remove contacts in exclude lists
+    # 🚫 APPLY HARD EXCLUDE FILTER - with manual inclusion bypass
     if HARD_EXCLUDE_LISTS:
-        logger.info(f"🚫 HARD EXCLUDE: Checking {len(contacts)} contacts against exclude lists")
-        exclude_contact_ids = get_hard_exclude_contact_ids()
-        contacts = filter_excluded_contacts(contacts, exclude_contact_ids)
-        logger.info(f"🚫 HARD EXCLUDE: Final contact count after filtering: {len(contacts)}")
+        # Check if this is a manual inclusion override list
+        if list_id in MANUAL_INCLUSION_OVERRIDE_LISTS:
+            logger.info(f"🎯 MANUAL OVERRIDE: List {list_id} bypassing ALL exclusion rules")
+            logger.info(f"🎯 MANUAL OVERRIDE: {len(contacts)} contacts will bypass exclusions")
+        else:
+            logger.info(f"🚫 HARD EXCLUDE: Checking {len(contacts)} contacts against exclude lists")
+            exclude_contact_ids = get_hard_exclude_contact_ids()
+            contacts = filter_excluded_contacts(contacts, exclude_contact_ids)
+            logger.info(f"🚫 HARD EXCLUDE: Final contact count after filtering: {len(contacts)}")
     
     return contacts
 
@@ -1010,6 +1019,87 @@ def upsert_mailchimp_contact(contact: Dict[str, str], source_list_id: str = None
         return "error"
     
     return "error"
+
+
+def process_manual_inclusion_override(list_id: str, contacts: List[Dict], list_name: str):
+    """
+    Process manual inclusion override list with special handling.
+    Contacts from override lists bypass ALL exclusions and get special source tracking.
+    
+    Args:
+        list_id: The manual inclusion list ID (e.g., "784")
+        contacts: List of contacts from the override list
+        list_name: Display name for logging
+    """
+    if not contacts:
+        logger.info(f"🎯 MANUAL OVERRIDE: No contacts in override list {list_id}")
+        return
+    
+    # Determine target campaign injection 
+    target_campaign_id = OVERRIDE_CAMPAIGN_INJECTION.get(list_id, "720")
+    override_source_marker = f"{list_id}_via_{target_campaign_id}"
+    
+    logger.info(f"🎯 MANUAL OVERRIDE: Processing {len(contacts)} contacts from {list_name}")
+    logger.info(f"🎯 MANUAL OVERRIDE: Injecting as campaign type {target_campaign_id}")
+    logger.info(f"🎯 MANUAL OVERRIDE: Using source marker: {override_source_marker}")
+    
+    # Process contacts with special source marking
+    stats = defaultdict(list)
+    total = len(contacts)
+    
+    with tqdm(contacts,
+              desc=f"Override {list_id}→{target_campaign_id}",
+              unit="contact", 
+              ncols=80,
+              leave=True) as bar:
+        for contact in bar:
+            # Use special source marker for tracking
+            result = upsert_mailchimp_contact(contact, source_list_id=override_source_marker)
+            
+            # Bucket results for summary
+            if result == "success":
+                stats["successful"].append(contact["email"])
+            elif result == "error":
+                stats["errors"].append(contact["email"]) 
+            else:
+                stats["other"].append(contact["email"])
+                
+            time.sleep(0.2)  # Respect rate limits
+    
+    # Report comprehensive results
+    logger.info(f"🎯 MANUAL OVERRIDE Summary for {list_id} ({list_name}):")
+    logger.info(f"  • {len(stats['successful'])} contacts successfully injected as {target_campaign_id}")
+    if stats['errors']:
+        logger.warning(f"  • {len(stats['errors'])} contacts failed injection")
+    if stats['other']:
+        logger.info(f"  • {len(stats['other'])} contacts had other outcomes")
+    
+    # Apply campaign tags to make them appear as target campaign type
+    if stats["successful"]:
+        apply_manual_override_campaign_tags(stats["successful"], target_campaign_id, list_name)
+
+
+def apply_manual_override_campaign_tags(successful_emails: List[str], target_campaign_id: str, override_list_name: str):
+    """Apply campaign tags to manual override contacts."""
+    if not successful_emails:
+        return
+        
+    # Campaign name mapping
+    campaign_names = {
+        "718": "Recruitment",
+        "719": "Competition", 
+        "720": "General",
+        "751": "Directors"
+    }
+    
+    target_campaign_name = campaign_names.get(target_campaign_id, "General")
+    
+    logger.info(f"🏷️ Manual override contacts from {override_list_name} will appear as '{target_campaign_name}' campaign members")
+    logger.info(f"🏷️ Standard tagging already applied during upsert process for {len(successful_emails)} contacts")
+    
+    # Note: Standard Mailchimp tags are already applied during upsert_mailchimp_contact()
+    # Manual override contacts get the same tags as regular contacts, making them indistinguishable
+    # in the campaign flow while preserving their special source tracking via ORI_LISTS field
 
 
 def apply_mailchimp_tag(email: str, was_archived: bool = False) -> bool:
@@ -1676,6 +1766,22 @@ def main():
         logger.warning(f"Failed to send sync start notification: {e}")
     for list_id in HUBSPOT_LIST_IDS:
         logger.info("%s Syncing list %s %s", "="*10, list_id, "="*10)
+        
+        # 🎯 CHECK FOR MANUAL INCLUSION OVERRIDE
+        if list_id in MANUAL_INCLUSION_OVERRIDE_LISTS:
+            logger.info(f"🎯 MANUAL INCLUSION OVERRIDE: Detected override list {list_id}")
+            
+            # Get contacts without any exclusion filtering
+            hubspot_contacts = get_hubspot_contacts(list_id)
+            
+            if hubspot_contacts:
+                list_name = fetch_hubspot_list_name(list_id)
+                process_manual_inclusion_override(list_id, hubspot_contacts, list_name)
+            else:
+                logger.info(f"🎯 MANUAL OVERRIDE: No contacts found in override list {list_id}")
+            
+            continue  # Skip regular processing for override lists
+        
         try:
             # ─── Fetch current HubSpot list name ───
             list_name = fetch_hubspot_list_name(list_id)

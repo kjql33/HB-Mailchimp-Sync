@@ -113,6 +113,25 @@ IGNORED_WARNING_MESSAGES = [
 IMPORT_LIST_PROPERTY = "import_list"  # HubSpot internal property name (lowercase, underscores)
 
 # =============================================================================
+# 🎯 MANUAL INCLUSION OVERRIDE - Priority Bypass System
+# =============================================================================
+
+# ✅ MANUAL INCLUSION OVERRIDE: Bypass all exclusion rules and inject into campaigns
+# These lists allow manual insertion of contacts that would normally be excluded
+MANUAL_INCLUSION_OVERRIDE_LISTS = [
+    "784",  # Manual inclusion - bypasses all exclusions, appears as General
+]
+
+# Special source tracking value for manual overrides
+# Format: "original_list_via_target_campaign"
+MANUAL_OVERRIDE_SOURCE_MARKER = "784_via_720"  # Manual override appearing as General
+
+# Campaign injection mapping for override lists
+OVERRIDE_CAMPAIGN_INJECTION = {
+    "784": "720",  # List 784 contacts appear as General (720) contacts
+}
+
+# =============================================================================
 # 📋 INPUT LISTS (HubSpot → Mailchimp) - EDIT HERE FOR STEP 1
 # =============================================================================
 
@@ -125,6 +144,7 @@ HUBSPOT_LIST_IDS = [
     "719",  # Production marketing list 2  
     "720",  # Production marketing list 3
     "751",  # Production marketing list 4
+    "784",  # Manual inclusion override - bypasses all exclusions
 ]
 
 # ⚠️ IMPORTANT: Each contact gets tagged with their source list ID in Mailchimp

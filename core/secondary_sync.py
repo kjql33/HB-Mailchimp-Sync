@@ -389,23 +389,79 @@ class MailchimpToHubSpotSync:
                 
                 # Phase 4: Update Import List custom property for tracking
                 if imported_count > 0:
-                    logger.info(f"🏷️ Phase 4: Setting Import List property to '{list_name}' for {imported_count} contacts")
+                    logger.info(f"🏷️ Phase 4: Setting Import List property based on source lists for {imported_count} contacts")
+                    
+                    # Create mapping of source_list_id to friendly name for efficient lookup
+                    source_name_cache = {}
+                    
+                    # Helper function to get friendly source list name
+                    def get_source_list_name(source_list_id: str) -> str:
+                        if not source_list_id:
+                            return "Unknown"
+                        
+                        # Check cache first
+                        if source_list_id in source_name_cache:
+                            return source_name_cache[source_list_id]
+                        
+                        # Handle manual override markers (e.g., "784_via_720")
+                        if "_via_" in source_list_id:
+                            # For manual overrides, show the target campaign name
+                            target_list_id = source_list_id.split("_via_")[1]
+                            campaign_names = {
+                                "718": "Recruitment",
+                                "719": "Competition", 
+                                "720": "General",
+                                "751": "Directors"
+                            }
+                            name = campaign_names.get(target_list_id, "General")
+                            source_name_cache[source_list_id] = name
+                            return name
+                        
+                        # Regular source list ID - resolve to friendly name
+                        try:
+                            from .sync import fetch_hubspot_list_name
+                            name = fetch_hubspot_list_name(source_list_id)
+                            source_name_cache[source_list_id] = name
+                            return name
+                        except Exception:
+                            # Fallback to basic mapping for known lists
+                            known_lists = {
+                                "718": "Recruitment",
+                                "719": "Competition", 
+                                "720": "General",
+                                "751": "Directors"
+                            }
+                            name = known_lists.get(source_list_id, f"List-{source_list_id}")
+                            source_name_cache[source_list_id] = name
+                            return name
                     
                     # Update contacts with Import List property in batches to avoid rate limits
                     property_update_count = 0
                     batch_size = 50  # Conservative batch size for property updates
+                    
+                    # Create mapping of contact_id to source_list_id for this batch
+                    contact_source_mapping = {}
+                    for contact in contacts:
+                        email = contact['email'].lower()
+                        contact_id = email_to_id.get(email)
+                        if contact_id:
+                            contact_source_mapping[contact_id] = contact.get('source_list_id', '')
                     
                     for i in range(0, len(contact_ids), batch_size):
                         batch_contact_ids = contact_ids[i:i + batch_size]
                         
                         for contact_id in batch_contact_ids:
                             try:
-                                # Update the Import List custom property
-                                properties = {config.IMPORT_LIST_PROPERTY: list_name}
+                                # Get the source list ID for this contact
+                                source_list_id = contact_source_mapping.get(contact_id, '')
+                                source_list_name = get_source_list_name(source_list_id)
+                                
+                                # Update the Import List custom property with source list name
+                                properties = {config.IMPORT_LIST_PROPERTY: source_list_name}
                                 
                                 if self.list_manager.update_contact_properties(contact_id, properties):
                                     property_update_count += 1
-                                    logger.debug(f"✅ Set import_list='{list_name}' for contact {contact_id}")
+                                    logger.debug(f"✅ Set import_list='{source_list_name}' for contact {contact_id} (source: {source_list_id})")
                                 else:
                                     logger.warning(f"⚠️ Failed to set import_list property for contact {contact_id}")
                                     
@@ -416,7 +472,12 @@ class MailchimpToHubSpotSync:
                         if i + batch_size < len(contact_ids):
                             time.sleep(0.2)
                     
-                    logger.info(f"✅ Import List property updated for {property_update_count}/{imported_count} contacts")
+                    logger.info(f"✅ Import List property updated for {property_update_count}/{imported_count} contacts with source list names")
+                    
+                    # Log summary of source lists processed
+                    if source_name_cache:
+                        logger.info(f"📊 Source list name mapping: {dict(source_name_cache)}")
+                
                 
                 # Log any failed batches for audit
                 failed_batches = migration_result.get("failed_batches", [])
@@ -587,6 +648,7 @@ class MailchimpToHubSpotSync:
         logger.info(f"🎯 Source-aware anti-remarketing: Removing contacts from their original source lists")
         
         total_removed = 0
+        protected_count = 0  # Track manual override protections
         source_list_groups = {}  # Group contacts by their source list ID
         
         # Phase 1: Group contacts by their original source list ID
@@ -596,6 +658,17 @@ class MailchimpToHubSpotSync:
             
             for contact in contacts:
                 source_list_id = contact.get('source_list_id', '')
+                
+                # 🛡️ PROTECTION: Skip removal for manual inclusion overrides
+                if source_list_id and "_via_" in source_list_id:
+                    original_override_list = source_list_id.split("_via_")[0]
+                    from .config import MANUAL_INCLUSION_OVERRIDE_LISTS
+                    if original_override_list in MANUAL_INCLUSION_OVERRIDE_LISTS:
+                        logger.info(f"🛡️ PROTECTING manual override contact {contact['email']} from source removal")
+                        logger.debug(f"🛡️ Contact originated from manual inclusion list {original_override_list}")
+                        logger.debug(f"🛡️ Source marker: {source_list_id}")
+                        protected_count += 1
+                        continue
                 
                 if not source_list_id:
                     logger.warning(f"⚠️ Contact {contact['email']} has no source list information - skipping removal")
@@ -698,6 +771,10 @@ class MailchimpToHubSpotSync:
         self.stats['contacts_removed_from_source'] = self.stats.get('contacts_removed_from_source', 0) + total_removed
         
         logger.info(f"🎯 Source-aware anti-remarketing complete: {total_removed} total removals across {len(source_list_groups)} source lists")
+        
+        # Manual override protection summary
+        if protected_count > 0:
+            logger.info(f"🛡️ PROTECTION SUMMARY: Protected {protected_count} manual inclusion override contacts from source removal")
         
         # Phase 4: Validation summary
         if total_removed > 0:
