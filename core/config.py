@@ -132,6 +132,29 @@ OVERRIDE_CAMPAIGN_INJECTION = {
 }
 
 # =============================================================================
+# 🏢 COMPANY LISTS - Special Handling for Company-to-Contact Conversion
+# =============================================================================
+
+# Lists that contain companies instead of contacts
+# These will be converted to contact format for Mailchimp processing
+COMPANY_LIST_IDS = [
+    "843",  # Webinar companies - converted to contacts for Mailchimp
+]
+
+# Company-to-contact field mapping for Mailchimp
+COMPANY_TO_CONTACT_MAPPING = {
+    "name": "firstname",        # Company name becomes first name
+    "domain": "company",        # Domain becomes company field
+    "website": "website",       # Website field
+    "phone": "phone",          # Phone field
+    "city": "city",            # City field
+    "state": "state",          # State field
+}
+
+# Email construction for companies (when no direct email available)
+COMPANY_EMAIL_PREFIXES = ["info", "contact", "hello", "enquiries"]  # Try these @ domain
+
+# =============================================================================
 # 📋 INPUT LISTS (HubSpot → Mailchimp) - EDIT HERE FOR STEP 1
 # =============================================================================
 
@@ -140,10 +163,13 @@ OVERRIDE_CAMPAIGN_INJECTION = {
 # Example: If you have lists 677, 123, 456 that need marketing processing, add them here
 
 HUBSPOT_LIST_IDS = [
-    "718",  # Production marketing list 1
-    "719",  # Production marketing list 2  
-    "720",  # Production marketing list 3
-    "751",  # Production marketing list 4
+    "843",  # Webinar Main - Companies (converted to contacts) [WEBINAR - BYPASS EXIT EXCLUSIONS]
+    "844",  # Webinar Main Associated Contacts - Contact list [WEBINAR - BYPASS EXIT EXCLUSIONS]
+    "846",  # Webinar Main Contacts - Contact list [WEBINAR - BYPASS EXIT EXCLUSIONS]
+    "718",  # General - Production marketing list
+    "719",  # Recruitment - Production marketing list
+    "720",  # Competition - Production marketing list
+    "751",  # Directors - Production marketing list
     "784",  # Manual inclusion override - bypasses all exclusions
 ]
 
@@ -152,6 +178,15 @@ HUBSPOT_LIST_IDS = [
 
 # =============================================================================
 # 🚫 HARD EXCLUDE LISTS (Pre-sync Filter) - EDIT HERE FOR EXCLUSIONS
+# =============================================================================
+
+# 🎯 WEBINAR-SPECIFIC EXCLUSION RULES
+# For webinar lists (843, 844, 846), we want different exclude behavior
+WEBINAR_LIST_IDS = ["843", "844", "846"]  # Companies, Associated Contacts, Main Contacts
+
+# Exit lists that should be excluded for regular campaigns but NOT for webinars
+EXIT_LISTS = ["700", "701", "702", "703"]  # Archive and handover lists
+
 # =============================================================================
 
 # ✅ HARD EXCLUDE: Contacts in these HubSpot lists will NEVER be synced to Mailchimp

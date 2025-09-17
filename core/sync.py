@@ -27,7 +27,11 @@ from .config import (
     REQUIRED_TAGS, LOG_LEVEL, RAW_DATA_DIR, RUN_MODE, TEAMS_WEBHOOK_URL,
     HARD_EXCLUDE_LISTS, ENABLE_MAILCHIMP_ARCHIVAL, MUTE_METADATA_FETCH_ERRORS,
     # Manual inclusion override configuration
-    MANUAL_INCLUSION_OVERRIDE_LISTS, OVERRIDE_CAMPAIGN_INJECTION
+    MANUAL_INCLUSION_OVERRIDE_LISTS, OVERRIDE_CAMPAIGN_INJECTION,
+    # Company list handling configuration
+    COMPANY_LIST_IDS, COMPANY_EMAIL_PREFIXES, COMPANY_TO_CONTACT_MAPPING,
+    # Webinar-specific exclusion configuration
+    WEBINAR_LIST_IDS, EXIT_LISTS
 )
 
 # ─── IMPORT SOURCE LIST TRACKING CONFIGURATION ─────────────────────────────
@@ -303,16 +307,39 @@ def validate_environment() -> bool:
     return True
 
 
-def get_hard_exclude_contact_ids() -> Set[str]:
+def get_exclude_lists_for_list(list_id: str) -> List[str]:
+    """
+    Get the appropriate exclude lists for a given HubSpot list ID.
+    
+    For webinar lists (843, 844), exclude exit lists but keep other excludes.
+    For regular lists, use all exclude lists.
+    """
+    if list_id in WEBINAR_LIST_IDS:
+        # For webinar lists, exclude exit lists from the hard excludes
+        webinar_excludes = [exclude_id for exclude_id in HARD_EXCLUDE_LISTS if exclude_id not in EXIT_LISTS]
+        logger.info(f"🎯 WEBINAR LIST {list_id}: Using custom excludes (exit lists disabled)")
+        logger.info(f"🎯 Excluding: {webinar_excludes} (removed exit lists: {EXIT_LISTS})")
+        return webinar_excludes
+    else:
+        # For regular lists, use all exclude lists
+        logger.info(f"📋 REGULAR LIST {list_id}: Using standard excludes: {HARD_EXCLUDE_LISTS}")
+        return HARD_EXCLUDE_LISTS
+
+def get_hard_exclude_contact_ids(exclude_lists=None) -> Set[str]:
     """
     Fetch all contact IDs from hard exclude lists.
     These contacts will never be synced to Mailchimp, regardless of which source list they're in.
+    
+    Args:
+        exclude_lists: Custom list of exclude list IDs. If None, uses HARD_EXCLUDE_LISTS.
     """
-    if not HARD_EXCLUDE_LISTS:
+    lists_to_check = exclude_lists if exclude_lists is not None else HARD_EXCLUDE_LISTS
+    
+    if not lists_to_check:
         logger.debug("No hard exclude lists configured")
         return set()
     
-    logger.info(f"🚫 HARD EXCLUDE: Fetching contacts from {len(HARD_EXCLUDE_LISTS)} exclude lists")
+    logger.info(f"🚫 HARD EXCLUDE: Fetching contacts from {len(lists_to_check)} exclude lists")
     exclude_contact_ids = set()
     
     headers = {
@@ -320,7 +347,7 @@ def get_hard_exclude_contact_ids() -> Set[str]:
         "Content-Type": "application/json"
     }
     
-    for exclude_list_id in HARD_EXCLUDE_LISTS:
+    for exclude_list_id in lists_to_check:
         logger.debug(f"Fetching exclude contacts from list {exclude_list_id}")
         
         # Use same method as regular contact fetching - get membership IDs
@@ -649,11 +676,242 @@ def get_hubspot_contacts(list_id: str) -> List[Dict[str, Any]]:
             logger.info(f"🎯 MANUAL OVERRIDE: {len(contacts)} contacts will bypass exclusions")
         else:
             logger.info(f"🚫 HARD EXCLUDE: Checking {len(contacts)} contacts against exclude lists")
-            exclude_contact_ids = get_hard_exclude_contact_ids()
+            # Get list-specific exclude lists (webinar lists exclude exit lists)
+            exclude_lists = get_exclude_lists_for_list(list_id)
+            exclude_contact_ids = get_hard_exclude_contact_ids(exclude_lists)
             contacts = filter_excluded_contacts(contacts, exclude_contact_ids)
             logger.info(f"🚫 HARD EXCLUDE: Final contact count after filtering: {len(contacts)}")
     
     return contacts
+
+
+def get_hubspot_companies(list_id: str) -> List[Dict[str, Any]]:
+    """Fetch companies from a specified HubSpot list and convert to contact format.
+    
+    This function handles company lists by:
+    1. Fetching company IDs from the list
+    2. Getting company details via batch read
+    3. Converting company data to contact format for Mailchimp
+    """
+    if not HUBSPOT_PRIVATE_TOKEN:
+        logger.error("HubSpot Private Token not set")
+        return []
+    
+    if not list_id:
+        logger.error("HubSpot List ID not provided")
+        return []
+
+    companies = []
+    
+    headers = {
+        "Authorization": f"Bearer {HUBSPOT_PRIVATE_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    
+    # Company properties we want to retrieve
+    company_properties = [
+        "name",
+        "domain", 
+        "website",
+        "phone",
+        "city",
+        "state",
+        "country",
+        "industry"
+    ]
+    
+    # STEP 1: Fetch company IDs from the list
+    logger.info(f"🏢 STEP 1: Fetching company IDs from list {list_id}")
+    list_url = f"https://api.hubapi.com/crm/v3/lists/{list_id}/memberships"
+    params = {"limit": PAGE_SIZE}
+    after = None
+    all_company_ids: List[str] = []
+    page = 1
+
+    while True:
+        if after:
+            params["after"] = after
+
+        logger.debug(f"Fetching company memberships page {page}")
+        
+        for attempt in range(MAX_RETRIES):
+            resp = requests.get(list_url, headers=headers, params=params)
+            try:
+                resp.raise_for_status()
+                break
+            except requests.exceptions.RequestException as e:
+                if attempt < MAX_RETRIES - 1:
+                    logger.warning(f"HubSpot API request failed on company list {list_id}, page {page}: {e}. Retrying...")
+                    time.sleep(RETRY_DELAY)
+                else:
+                    logger.error(f"Exhausted retries fetching company list {list_id}: {e}")
+                    raise
+        
+        body = resp.json()
+        results = body.get("results", [])
+        company_ids = [m.get("recordId") for m in results if m.get("recordId")]
+        logger.debug(f"Retrieved {len(company_ids)} company IDs from page {page}")
+        all_company_ids.extend(company_ids)
+        
+        # Early exit if test cap reached
+        if TEST_CONTACT_LIMIT > 0 and len(all_company_ids) >= TEST_CONTACT_LIMIT:
+            logger.debug(f"TEST_CONTACT_LIMIT={TEST_CONTACT_LIMIT} reached; ending company fetch early")
+            all_company_ids = all_company_ids[:TEST_CONTACT_LIMIT]
+            break
+            
+        # Check for more pages
+        paging = body.get("paging", {}).get("next", {})
+        after = paging.get("after")
+        if not after:
+            logger.debug("No further paging cursor returned – ending company ID fetch")
+            break
+
+        page += 1
+        time.sleep(perf_config.hubspot_page_delay)
+
+    logger.info(f"🏢 STEP 1 COMPLETE: collected {len(all_company_ids)} company IDs")
+    if not all_company_ids:
+        logger.warning("No companies found in list – aborting")
+        return []
+        
+    # STEP 2: Retrieve company details using batch read
+    logger.info("🏢 STEP 2: Fetching company details using Batch Read API")
+    batch_url = "https://api.hubapi.com/crm/v3/objects/companies/batch/read"
+    
+    # Process company IDs in batches of 100
+    batch_size = 100
+    id_batches = [all_company_ids[i:i + batch_size] for i in range(0, len(all_company_ids), batch_size)]
+    
+    batch_counter = 1
+    
+    for id_batch in id_batches:
+        logger.debug(f"Processing company batch {batch_counter} of {len(id_batches)} with {len(id_batch)} companies")
+        
+        batch_payload = {
+            "properties": company_properties,
+            "inputs": [{"id": str(company_id)} for company_id in id_batch]
+        }
+        
+        try:
+            for attempt in range(MAX_RETRIES):
+                try:
+                    batch_response = requests.post(batch_url, headers=headers, json=batch_payload)
+                    batch_response.raise_for_status()
+                    break
+                except requests.exceptions.RequestException as e:
+                    if attempt < MAX_RETRIES - 1:
+                        logger.warning(f"Company batch request failed: {e}. Retrying...")
+                        time.sleep(RETRY_DELAY)
+                    else:
+                        logger.error(f"Exhausted retries on company batch: {e}")
+                        raise
+            
+            batch_data = batch_response.json()
+            batch_companies = batch_data.get("results", [])
+            
+            # Convert companies to contact format
+            for company in batch_companies:
+                contact_data = convert_company_to_contact(company, list_id)
+                if contact_data:
+                    companies.append(contact_data)
+                    
+            logger.debug(f"Batch {batch_counter}: Converted {len(batch_companies)} companies to contact format")
+            
+        except Exception as e:
+            logger.error(f"Error processing company batch {batch_counter}: {e}")
+            continue
+            
+        batch_counter += 1
+        time.sleep(perf_config.hubspot_page_delay)
+
+    logger.info(f"🏢 Successfully converted {len(companies)} companies to contact format from list {list_id}")
+    return companies
+
+
+def convert_company_to_contact(company: Dict[str, Any], list_id: str) -> Dict[str, Any]:
+    """Convert a company record to contact format for Mailchimp processing."""
+    
+    properties = company.get("properties", {})
+    
+    # Extract company data
+    company_name = properties.get("name", "Unknown Company")
+    domain = properties.get("domain", "")
+    website = properties.get("website", "")
+    phone = properties.get("phone", "")
+    city = properties.get("city", "")
+    state = properties.get("state", "")
+    country = properties.get("country", "")
+    industry = properties.get("industry", "")
+    
+    # Construct email address
+    email = construct_company_email(domain, company_name)
+    
+    if not email:
+        logger.warning(f"⚠️ Could not construct email for company: {company_name}")
+        return None
+    
+    # Create contact-format record
+    contact_data = {
+        "email": email,
+        "firstname": company_name,  # Company name as first name
+        "lastname": "",             # Empty last name for companies
+        "company": domain or website,  # Domain or website as company field
+        "phone": phone,
+        "address": "",              # Companies don't have personal addresses
+        "address2": "",
+        "city": city,
+        "state_region": state,
+        "postal_code": "",
+        "country_region": country,
+        "branches": industry,       # Use industry as branch info
+        "source_list_id": list_id,
+        "source_type": "company"    # Mark this as converted from company
+    }
+    
+    # Clean up empty fields
+    contact_data = {k: v for k, v in contact_data.items() if v is not None}
+    
+    logger.debug(f"📧 Converted company '{company_name}' to contact: {email}")
+    return contact_data
+
+
+def construct_company_email(domain: str, company_name: str) -> str:
+    """Construct a company email address from domain and company name."""
+    
+    if not domain:
+        return ""
+    
+    # Clean domain (remove http/https, www)
+    clean_domain = domain.lower()
+    clean_domain = clean_domain.replace("http://", "").replace("https://", "")
+    clean_domain = clean_domain.replace("www.", "")
+    clean_domain = clean_domain.strip("/")
+    
+    # Split on first slash to get just the domain
+    clean_domain = clean_domain.split("/")[0]
+    
+    # Validate domain format
+    if "." not in clean_domain or len(clean_domain) < 4:
+        return ""
+    
+    # Try standard prefixes
+    for prefix in COMPANY_EMAIL_PREFIXES:
+        email = f"{prefix}@{clean_domain}"
+        return email  # Return first constructed email
+    
+    # Fallback to info@domain
+    return f"info@{clean_domain}"
+
+
+def get_hubspot_data(list_id: str) -> List[Dict[str, Any]]:
+    """Get data from HubSpot list - handles both contacts and companies."""
+    
+    if list_id in COMPANY_LIST_IDS:
+        logger.info(f"🏢 Processing company list {list_id}")
+        return get_hubspot_companies(list_id)
+    else:
+        logger.info(f"👥 Processing contact list {list_id}")
+        return get_hubspot_contacts(list_id)
 
 
 """
@@ -1772,7 +2030,7 @@ def main():
             logger.info(f"🎯 MANUAL INCLUSION OVERRIDE: Detected override list {list_id}")
             
             # Get contacts without any exclusion filtering
-            hubspot_contacts = get_hubspot_contacts(list_id)
+            hubspot_contacts = get_hubspot_data(list_id)
             
             if hubspot_contacts:
                 list_name = fetch_hubspot_list_name(list_id)
@@ -1854,7 +2112,7 @@ def main():
 
         # Step 1: Fetch contacts
         logger.info("Fetching contacts from HubSpot list %s...", list_id)
-        hubspot_contacts = get_hubspot_contacts(list_id)
+        hubspot_contacts = get_hubspot_data(list_id)
         if not hubspot_contacts:
             logger.error("No valid contacts found for list %s or failed to fetch", list_id)
             notify_warning("No contacts found or fetch failed for HubSpot list",
@@ -2027,10 +2285,50 @@ def main():
         logger.critical("Sync finished with errors—failing the process.")
         sys.exit(1)
 
+    # Return summary for bidirectional sync orchestration
+    return {
+        "sync_type": "primary",
+        "contacts_processed": len(all_synced_emails),
+        "contacts_archived": to_archive_count,
+        "lists_processed": len(HUBSPOT_LIST_IDS),
+        "had_errors": had_errors
+    }
+
+
+def run_bidirectional_sync():
+    """Execute bidirectional sync when called from sync.py directly"""
+    from . import config
+    
+    # Import here to avoid circular imports
+    if config.RUN_MODE == "BIDIRECTIONAL_SYNC" and config.ENABLE_SECONDARY_SYNC:
+        logger.info("🔄 BIDIRECTIONAL SYNC: Starting primary sync phase")
+        primary_result = main()
+        
+        if not primary_result.get("had_errors", False):
+            logger.info("🔄 BIDIRECTIONAL SYNC: Starting secondary sync phase") 
+            from . import secondary_sync
+            
+            try:
+                secondary_sync.main()
+                logger.info("✅ BIDIRECTIONAL SYNC: Both phases completed successfully")
+            except Exception as e:
+                logger.error(f"❌ BIDIRECTIONAL SYNC: Secondary sync failed: {e}")
+                raise
+        else:
+            logger.error("❌ BIDIRECTIONAL SYNC: Skipping secondary sync due to primary sync errors")
+    else:
+        # Just run primary sync
+        main()
+
 
 if __name__ == "__main__":
     try:
-        main()
+        # Check if we should run bidirectional sync
+        from . import config
+        if config.RUN_MODE == "BIDIRECTIONAL_SYNC":
+            run_bidirectional_sync()
+        else:
+            main()
     except Exception as e:
         logger.exception("Unhandled exception—failing CI.")
         try:
