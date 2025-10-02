@@ -30,8 +30,9 @@ from .config import (
     MANUAL_INCLUSION_OVERRIDE_LISTS, OVERRIDE_CAMPAIGN_INJECTION,
     # Company list handling configuration
     COMPANY_LIST_IDS, COMPANY_EMAIL_PREFIXES, COMPANY_TO_CONTACT_MAPPING,
-    # Webinar-specific exclusion configuration
-    WEBINAR_LIST_IDS, EXIT_LISTS
+    # Import stream exclusion configuration
+    WEBINAR_CAMPAIGN_LISTS, EXIT_EXCLUDE_LISTS,
+    CRITICAL_EXCLUDE_LISTS, GENERAL_MARKETING_LISTS
 )
 
 # ─── IMPORT SOURCE LIST TRACKING CONFIGURATION ─────────────────────────────
@@ -45,6 +46,13 @@ perf_config = PerformanceConfig()
 from .notifications import (
     initialize_notifier, notify_warning, notify_error, notify_info, 
     send_final_notification, get_notifier
+)
+
+# ─── SMART ARCHIVAL SYSTEM ─────────────────────────────────────────────────
+from .tag_mapping_data import (
+    SmartArchivalDecision, MANAGED_MAILCHIMP_TAGS, HUBSPOT_TO_MAILCHIMP_TAG_MAP,
+    MAILCHIMP_TAG_TO_HUBSPOT_LISTS, get_managed_tags_for_list, 
+    get_hubspot_lists_for_tag, is_managed_tag, should_preserve_by_pattern
 )
 
 # ─── RAW_DATA FOLDER STRUCTURE ─────────────────────────────────────────
@@ -309,20 +317,25 @@ def validate_environment() -> bool:
 
 def get_exclude_lists_for_list(list_id: str) -> List[str]:
     """
-    Get the appropriate exclude lists for a given HubSpot list ID.
+    Get the appropriate exclude lists for a given HubSpot list ID based on import stream group.
     
-    For webinar lists (843, 844), exclude exit lists but keep other excludes.
-    For regular lists, use all exclude lists.
+    GROUP 1 (General Marketing): Exclude ALL lists (critical + exit)
+    GROUP 2 (Webinars): Exclude CRITICAL lists only (bypass exit lists for re-engagement)
+    GROUP 3 (Manual Override): Exclude NOTHING (manual judgment overrides all rules)
     """
-    if list_id in WEBINAR_LIST_IDS:
-        # For webinar lists, exclude exit lists from the hard excludes
-        webinar_excludes = [exclude_id for exclude_id in HARD_EXCLUDE_LISTS if exclude_id not in EXIT_LISTS]
-        logger.info(f"🎯 WEBINAR LIST {list_id}: Using custom excludes (exit lists disabled)")
-        logger.info(f"🎯 Excluding: {webinar_excludes} (removed exit lists: {EXIT_LISTS})")
-        return webinar_excludes
+    if list_id in WEBINAR_CAMPAIGN_LISTS:
+        # GROUP 2: Webinar campaigns - exclude critical lists only
+        logger.info(f"🎯 WEBINAR LIST {list_id}: Using critical excludes only (bypassing exit lists)")
+        logger.info(f"🎯 Excluding: {CRITICAL_EXCLUDE_LISTS} (bypassed: {EXIT_EXCLUDE_LISTS})")
+        return CRITICAL_EXCLUDE_LISTS
+    elif list_id in MANUAL_INCLUSION_OVERRIDE_LISTS:
+        # GROUP 3: Manual override - no exclusions
+        logger.info(f"🔐 MANUAL OVERRIDE {list_id}: Bypassing ALL exclusions (manual judgment)")
+        return []
     else:
-        # For regular lists, use all exclude lists
-        logger.info(f"📋 REGULAR LIST {list_id}: Using standard excludes: {HARD_EXCLUDE_LISTS}")
+        # GROUP 1: General marketing - exclude all lists
+        logger.info(f"📋 GENERAL MARKETING {list_id}: Using full exclusions (critical + exit)")
+        logger.info(f"📋 Excluding: {HARD_EXCLUDE_LISTS}")
         return HARD_EXCLUDE_LISTS
 
 def get_hard_exclude_contact_ids(exclude_lists=None) -> Set[str]:
@@ -385,29 +398,256 @@ def get_hard_exclude_contact_ids(exclude_lists=None) -> Set[str]:
     return exclude_contact_ids
 
 
-def filter_excluded_contacts(contacts: List[Dict[str, Any]], exclude_contact_ids: Set[str]) -> List[Dict[str, Any]]:
+def filter_excluded_contacts(contacts: List[Dict[str, Any]], exclude_contact_ids: Set[str], list_id: str = None) -> List[Dict[str, Any]]:
     """
-    Filter out contacts that are in the hard exclude lists.
+    Filter out contacts that are in the hard exclude lists and optionally clean them from source list.
     """
     if not exclude_contact_ids:
         return contacts
     
     original_count = len(contacts)
     filtered_contacts = []
+    excluded_contacts = []
     excluded_count = 0
     
     for contact in contacts:
         contact_id = contact.get("hubspot_id")  # Use hubspot_id field from processed contact data
         if contact_id and str(contact_id) in exclude_contact_ids:
             excluded_count += 1
+            excluded_contacts.append(contact)
             logger.debug(f"🚫 EXCLUDED: Contact {contact_id} ({contact.get('email', 'no-email')}) found in hard exclude list")
         else:
             filtered_contacts.append(contact)
     
     if excluded_count > 0:
         logger.info(f"🚫 HARD EXCLUDE: Filtered out {excluded_count} contacts from sync ({original_count} → {len(filtered_contacts)})")
+        
+        # 🧹 SOURCE LIST CLEANUP: Remove hard excluded contacts from source list
+        if list_id and excluded_contacts:
+            try:
+                excluded_contact_ids_list = [c.get("hubspot_id") for c in excluded_contacts if c.get("hubspot_id")]
+                if excluded_contact_ids_list:
+                    cleanup_count = cleanup_excluded_contacts_from_source_list(list_id, excluded_contact_ids_list)
+                    logger.info(f"🧹 HARD EXCLUDE CLEANUP: Removed {cleanup_count} hard excluded contacts from source list {list_id}")
+            except Exception as e:
+                logger.warning(f"Failed to cleanup hard excluded contacts from source list {list_id}: {e}")
     
     return filtered_contacts
+
+
+def check_and_prevent_critical_contacts(contacts: List[Dict[str, Any]], list_id: str) -> List[Dict[str, Any]]:
+    """
+    Check contacts against critical exclude lists and prevent/archive any that shouldn't be synced.
+    Critical contacts (Active Deal, Unsubscribed, Manual Disengagement) are NEVER allowed to sync.
+    
+    Args:
+        contacts: List of contacts to check
+        list_id: Source HubSpot list ID for logging
+        
+    Returns:
+        Filtered list with critical contacts removed and archived
+    """
+    if not contacts:
+        return contacts
+    
+    logger.info(f"🔍 CRITICAL CONTACT PREVENTION: Checking {len(contacts)} contacts from list {list_id}")
+    
+    # Get critical exclude contact IDs
+    critical_exclude_ids = get_hard_exclude_contact_ids(CRITICAL_EXCLUDE_LISTS)
+    
+    if not critical_exclude_ids:
+        logger.debug("No critical exclude contacts found - all contacts cleared for sync")
+        return contacts
+    
+    prevented_contacts = []
+    allowed_contacts = []
+    
+    for contact in contacts:
+        contact_id = contact.get("hubspot_id")
+        email = contact.get("email", "no-email")
+        
+        if contact_id and str(contact_id) in critical_exclude_ids:
+            prevented_contacts.append(contact)
+            logger.warning(f"🚫 CRITICAL PREVENTION: Contact {email} (ID: {contact_id}) found in critical exclude lists")
+            
+            # Attempt to archive this contact if they exist in Mailchimp
+            try:
+                logger.info(f"🗑️ PREVENTATIVE ARCHIVAL: Archiving {email} from Mailchimp (critical exclude detected)")
+                if remove_mailchimp_contact_by_email(email):
+                    logger.info(f"✅ Successfully archived critical contact {email}")
+                else:
+                    logger.debug(f"Contact {email} not in Mailchimp or already archived")
+            except Exception as e:
+                logger.error(f"Error during preventative archival for {email}: {e}")
+        else:
+            allowed_contacts.append(contact)
+    
+    if prevented_contacts:
+        logger.warning(f"🚫 CRITICAL PREVENTION SUMMARY: Blocked {len(prevented_contacts)} contacts from sync")
+        logger.warning(f"   • Active Deal Association (717): Check for sales process conflicts")
+        logger.warning(f"   • Unsubscribed/Opted Out (762): Compliance protection active")
+        logger.warning(f"   • Manual Disengagement (773): User opt-out respected")
+        
+        # Send Teams notification for critical prevention
+        try:
+            notify_warning("Critical contacts prevented from sync", {
+                "list_id": list_id,
+                "contacts_blocked": len(prevented_contacts),
+                "total_contacts": len(contacts),
+                "critical_exclude_lists": CRITICAL_EXCLUDE_LISTS,
+                "blocked_emails": [c.get("email") for c in prevented_contacts[:10]]  # First 10 emails
+            })
+        except Exception as e:
+            logger.warning(f"Failed to send critical prevention notification: {e}")
+            
+        # 🧹 SOURCE LIST CLEANUP: Remove excluded contacts from source list to prevent accumulation
+        try:
+            excluded_contact_ids = [c.get("hubspot_id") for c in prevented_contacts if c.get("hubspot_id")]
+            if excluded_contact_ids:
+                cleanup_count = cleanup_excluded_contacts_from_source_list(list_id, excluded_contact_ids)
+                logger.info(f"🧹 SOURCE CLEANUP: Removed {cleanup_count} excluded contacts from source list {list_id}")
+        except Exception as e:
+            logger.warning(f"Failed to cleanup excluded contacts from source list {list_id}: {e}")
+    
+    logger.info(f"✅ CRITICAL PREVENTION COMPLETE: {len(allowed_contacts)}/{len(contacts)} contacts cleared for sync")
+    return allowed_contacts
+
+
+def cleanup_excluded_contacts_from_source_list(list_id: str, excluded_contact_ids: List[str]) -> int:
+    """
+    Remove excluded contacts from the source HubSpot list to prevent accumulation.
+    
+    This prevents excluded contacts from building up in import lists over time,
+    reducing the number of excludes we need to process on each sync.
+    
+    Args:
+        list_id: Source HubSpot list ID to clean up
+        excluded_contact_ids: List of HubSpot contact IDs to remove
+        
+    Returns:
+        int: Number of contacts successfully removed
+    """
+    if not excluded_contact_ids:
+        return 0
+        
+    logger.info(f"🧹 SOURCE CLEANUP: Removing {len(excluded_contact_ids)} excluded contacts from list {list_id}")
+    
+    # Import the list manager for removal operations
+    from core.list_manager import HubSpotListManager
+    list_manager = HubSpotListManager()
+    
+    try:
+        # Use batch removal for efficiency (returns dict with success details)
+        result = list_manager.batch_remove_contacts_v3(list_id, excluded_contact_ids)
+        
+        successful_count = result.get("total_removed", 0)
+        failed_batches = len(result.get("failed_batches", []))
+        
+        if successful_count > 0:
+            logger.info(f"✅ Successfully removed {successful_count} excluded contacts from source list {list_id}")
+            if failed_batches > 0:
+                logger.warning(f"⚠️ {failed_batches} batches failed to remove from list {list_id}")
+            return successful_count
+        else:
+            logger.warning(f"⚠️ Batch removal from list {list_id} failed - attempting individual removals")
+            
+            # Fallback to individual removal
+            removed_count = 0
+            for contact_id in excluded_contact_ids:
+                try:
+                    if list_manager.remove_contact_from_list(contact_id, list_id):
+                        removed_count += 1
+                except Exception as e:
+                    logger.debug(f"Failed to remove contact {contact_id} from list {list_id}: {e}")
+                    
+            logger.info(f"✅ Individual removal completed: {removed_count}/{len(excluded_contact_ids)} contacts removed")
+            return removed_count
+            
+    except Exception as e:
+        logger.error(f"Error during source list cleanup for list {list_id}: {e}")
+        return 0
+
+
+def sync_mailchimp_unsubscribes_to_hubspot() -> int:
+    """
+    Sync unsubscribed contacts from Mailchimp to HubSpot using Communication Preferences API.
+    
+    This ensures that when people unsubscribe in Mailchimp, they are automatically
+    unsubscribed from Marketing Information in HubSpot for compliance protection.
+    Uses Communication Preferences API instead of adding to dynamic list 762.
+    
+    Returns:
+        int: Number of contacts successfully unsubscribed in HubSpot
+    """
+    logger.info("🔄 MAILCHIMP → HUBSPOT UNSUBSCRIBE SYNC: Starting unsubscribe synchronization")
+    
+    try:
+        # Get all unsubscribed contacts from Mailchimp
+        unsubscribed_url = f"{MAILCHIMP_BASE_URL}/lists/{MAILCHIMP_LIST_ID}/members"
+        params = {
+            "status": "unsubscribed",
+            "count": 1000,  # Max batch size for Mailchimp
+            "fields": "members.email_address,members.id"
+        }
+        
+        headers = {
+            "Authorization": f"apikey {MAILCHIMP_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        
+        response = requests.get(unsubscribed_url, headers=headers, params=params)
+        response.raise_for_status()
+        
+        mailchimp_data = response.json()
+        unsubscribed_emails = [member["email_address"] for member in mailchimp_data.get("members", [])]
+        
+        if not unsubscribed_emails:
+            logger.info("📭 No unsubscribed contacts found in Mailchimp")
+            return 0
+            
+        logger.info(f"📧 Found {len(unsubscribed_emails)} unsubscribed contacts in Mailchimp")
+        
+        # Import secondary sync for HubSpot operations
+        from core.secondary_sync import MailchimpToHubSpotSync
+        secondary_sync = MailchimpToHubSpotSync()
+        
+        # Process each unsubscribed email
+        synced_count = 0
+        for email in unsubscribed_emails:
+            try:
+                # First try to find existing contact
+                contact_id = secondary_sync._find_hubspot_contact_by_email(email)
+                
+                # If not found, create a new contact
+                if not contact_id:
+                    contact_data = {
+                        "email": email,
+                        "hs_lead_status": "UNQUALIFIED"  # Mark as unqualified since they opted out
+                    }
+                    contact_id = secondary_sync._create_or_update_hubspot_contact(contact_data, email)
+                
+                # Use Communication Preferences API to unsubscribe instead of adding to list 762
+                if secondary_sync._unsubscribe_hubspot_contact(email):
+                    synced_count += 1
+                    logger.debug(f"✅ Unsubscribed contact {email} in HubSpot via Communication Preferences API")
+                else:
+                    logger.warning(f"⚠️ Failed to unsubscribe {email} in HubSpot")
+                    
+                    # If unsubscribe failed but we have a contact ID, log for investigation
+                    if contact_id:
+                        logger.warning(f"⚠️ Contact ID {contact_id} found but unsubscribe failed for {email}")
+                    else:
+                        logger.warning(f"⚠️ Could not find or create HubSpot contact for {email}")
+                    
+            except Exception as e:
+                logger.warning(f"Error syncing unsubscribed contact {email}: {e}")
+                
+        logger.info(f"✅ UNSUBSCRIBE SYNC COMPLETE: {synced_count}/{len(unsubscribed_emails)} contacts synced to HubSpot")
+        return synced_count
+        
+    except Exception as e:
+        logger.error(f"Error during Mailchimp unsubscribe sync: {e}")
+        return 0
 
 
 def get_hubspot_contacts(list_id: str) -> List[Dict[str, Any]]:
@@ -668,18 +908,23 @@ def get_hubspot_contacts(list_id: str) -> List[Dict[str, Any]]:
         logger.warning(f"⚠️ No valid contacts retrieved from HubSpot list ID {list_id}")
         logger.warning("Please check that the list exists and contains contacts")
     
+    # 🚫 CRITICAL CONTACT PREVENTION (PHASE 1) - Always check critical lists first
+    # This runs BEFORE standard exclusion logic to ensure critical contacts never sync
+    contacts = check_and_prevent_critical_contacts(contacts, list_id)
+    
     # 🚫 APPLY HARD EXCLUDE FILTER - with manual inclusion bypass
     if HARD_EXCLUDE_LISTS:
         # Check if this is a manual inclusion override list
         if list_id in MANUAL_INCLUSION_OVERRIDE_LISTS:
-            logger.info(f"🎯 MANUAL OVERRIDE: List {list_id} bypassing ALL exclusion rules")
-            logger.info(f"🎯 MANUAL OVERRIDE: {len(contacts)} contacts will bypass exclusions")
+            logger.info(f"🎯 MANUAL OVERRIDE: List {list_id} bypassing standard exclusion rules")
+            logger.info(f"🔐 NOTE: Critical exclusions (717,762,773) were already applied above")
+            logger.info(f"🎯 MANUAL OVERRIDE: {len(contacts)} contacts cleared after critical prevention")
         else:
             logger.info(f"🚫 HARD EXCLUDE: Checking {len(contacts)} contacts against exclude lists")
             # Get list-specific exclude lists (webinar lists exclude exit lists)
             exclude_lists = get_exclude_lists_for_list(list_id)
             exclude_contact_ids = get_hard_exclude_contact_ids(exclude_lists)
-            contacts = filter_excluded_contacts(contacts, exclude_contact_ids)
+            contacts = filter_excluded_contacts(contacts, exclude_contact_ids, list_id)
             logger.info(f"🚫 HARD EXCLUDE: Final contact count after filtering: {len(contacts)}")
     
     return contacts
@@ -974,7 +1219,7 @@ def get_current_mailchimp_emails() -> Dict[str, str]:
                 
             # Respect API rate limits
             if has_more:
-                time.sleep(0.5)
+                time.sleep(perf_config.hubspot_page_delay)  # Use configurable delay for Mailchimp pagination
                 
     except Exception as e:
         logger.error(f"Error fetching Mailchimp members: {e}")
@@ -1011,7 +1256,7 @@ def get_all_mailchimp_emails() -> Set[str]:
             else:
                 has_more = False
             if has_more:
-                time.sleep(0.5)
+                time.sleep(perf_config.hubspot_page_delay)  # Use configurable delay for Mailchimp pagination
     except Exception as e:
         logger.error(f"Error fetching all Mailchimp members: {e}")
     logger.info(f"Found {len(emails)} total Mailchimp audience members")
@@ -1101,10 +1346,15 @@ def upsert_mailchimp_contact(contact: Dict[str, str], source_list_id: str = None
                          {"email": email, "field": "LNAME", "original_length": len(lname_value),
                           "max_length": 50, "truncated_value": lname_value[:50]})
         
+    # 🛡️ RESUBSCRIPTION SAFETY CHECK - Prevent resubscribing unsubscribed contacts
+    if not check_mailchimp_resubscription_safety(email):
+        logger.warning(f"🚫 COMPLIANCE PROTECTION: Skipping upsert for {email} - resubscription blocked")
+        return "compliance_blocked"
+    
     data = {
         "email_address": email,
         "status_if_new": "subscribed",
-        # FORCE-SUBSCRIBE / unarchive any existing member
+        # FORCE-SUBSCRIBE / unarchive any existing member (only if safe)
         "status": "subscribed",
         "merge_fields": merge_fields
         # Tags are applied separately in a dedicated API call
@@ -1179,19 +1429,25 @@ def upsert_mailchimp_contact(contact: Dict[str, str], source_list_id: str = None
                 if response.status_code in (200, 201):
                     logger.debug(f"Successfully upserted contact: {email} (Status: {response.status_code})")
                     
-                    # Apply tag with configurable delay to ensure the member is fully created/updated
+                    # Configurable delay after upsert to prevent rate limiting
                     upsert_delay = perf_config.mailchimp_upsert_delay
-                    logger.debug(f"Waiting {upsert_delay}s before applying tag to {email}")
+                    logger.debug(f"Waiting {upsert_delay}s after upsert before applying tag to {email}")
+                    time.sleep(upsert_delay)
+                    
                     if apply_mailchimp_tag(email, was_archived):
                         logger.debug(f"Successfully tagged {email} with '{MAILCHIMP_TAG}'")
                         
-                        # Verify contact status after tagging
-                        logger.debug(f"Verifying contact status for {email} after tagging")
-                        contact_data = get_mailchimp_contact_status(email)
-                        if not contact_data:
-                            logger.error(f"❌ Failed to verify contact status for {email} after successful upsert and tagging")
-                            notify_error("Contact verification failed after upsert",
-                                       {"email": email, "step": "post_upsert_verification"})
+                        # Skip verification if performance optimization is enabled
+                        if not perf_config.skip_success_verification:
+                            # Verify contact status after tagging
+                            logger.debug(f"Verifying contact status for {email} after tagging")
+                            contact_data = get_mailchimp_contact_status(email)
+                            if not contact_data:
+                                logger.error(f"❌ Failed to verify contact status for {email} after successful upsert and tagging")
+                                notify_error("Contact verification failed after upsert",
+                                           {"email": email, "step": "post_upsert_verification"})
+                        else:
+                            logger.debug(f"Skipping verification for {email} (performance optimization enabled)")
                     else:
                         logger.warning(f"Failed to tag {email} - the contact was upserted but tagging failed")
                         notify_warning("Contact upserted but tag application failed",
@@ -1322,7 +1578,7 @@ def process_manual_inclusion_override(list_id: str, contacts: List[Dict], list_n
             else:
                 stats["other"].append(contact["email"])
                 
-            time.sleep(0.2)  # Respect rate limits
+            time.sleep(perf_config.mailchimp_tag_delay)  # Configurable delay for rate limiting
     
     # Report comprehensive results
     logger.info(f"🎯 MANUAL OVERRIDE Summary for {list_id} ({list_name}):")
@@ -1453,23 +1709,29 @@ def apply_mailchimp_tag(email: str, was_archived: bool = False) -> bool:
                 else:
                     logger.debug(f"Successfully applied tag '{MAILCHIMP_TAG}' to {email}")
                     
-                    # Verify tag was actually applied with configurable delay
-                    tag_delay = perf_config.mailchimp_tag_delay
-                    time.sleep(tag_delay)  # Configurable delay to allow tag processing
-                    verify_url = f"https://{MAILCHIMP_DC}.api.mailchimp.com/3.0/lists/{MAILCHIMP_LIST_ID}/members/{subscriber_hash}"
-                    verify_response = requests.get(verify_url, auth=auth, headers=headers)
-                    
-                    if verify_response.status_code == 200:
-                        member_data = verify_response.json()
-                        tags = member_data.get("tags", [])
-                        tag_names = [tag.get("name") for tag in tags]
+                    # Skip verification if performance optimization is enabled
+                    if not perf_config.skip_success_verification:
+                        # Verify tag was actually applied with configurable delay
+                        tag_delay = perf_config.mailchimp_tag_delay
+                        time.sleep(tag_delay)  # Configurable delay to allow tag processing
+                        verify_url = f"https://{MAILCHIMP_DC}.api.mailchimp.com/3.0/lists/{MAILCHIMP_LIST_ID}/members/{subscriber_hash}"
+                        verify_response = requests.get(verify_url, auth=auth, headers=headers)
                         
-                        if MAILCHIMP_TAG in tag_names:
-                            logger.debug(f"✅ Verified tag '{MAILCHIMP_TAG}' was successfully applied to {email}")
-                        else:
-                            logger.warning(f"⚠️ Tag '{MAILCHIMP_TAG}' not found on contact {email} despite successful API response!")
-                            notify_warning("Tag verification failed after successful application",
-                                         {"email": email, "tag": MAILCHIMP_TAG, "found_tags": tag_names})
+                        if verify_response.status_code == 200:
+                            member_data = verify_response.json()
+                            tags = member_data.get("tags", [])
+                            tag_names = [tag.get("name") for tag in tags]
+                            
+                            if MAILCHIMP_TAG in tag_names:
+                                logger.debug(f"✅ Verified tag '{MAILCHIMP_TAG}' was successfully applied to {email}")
+                            else:
+                                logger.warning(f"⚠️ Tag '{MAILCHIMP_TAG}' not found on contact {email} despite successful API response!")
+                                notify_warning("Tag verification failed after successful application",
+                                             {"email": email, "tag": MAILCHIMP_TAG, "found_tags": tag_names})
+                    else:
+                        # Just add minimal delay for API rate limiting
+                        time.sleep(perf_config.mailchimp_tag_delay)
+                        logger.debug(f"Skipping tag verification for {email} (performance optimization enabled)")
                     
                     return True
                 
@@ -1497,8 +1759,9 @@ def apply_mailchimp_tag(email: str, was_archived: bool = False) -> bool:
 
 def remove_mailchimp_contact_by_email(email: str) -> bool:
     """
-    Remove a contact from Mailchimp audience.
-    Returns True if successful, False otherwise.
+    Archive a contact in Mailchimp audience (set status to 'archived').
+    First checks if contact is already archived to avoid unnecessary API calls.
+    Returns True if successful or already archived, False otherwise.
     """
     if not all([MAILCHIMP_API_KEY, MAILCHIMP_LIST_ID, MAILCHIMP_DC]):
         logger.error("Mailchimp credentials not properly set")
@@ -1507,39 +1770,57 @@ def remove_mailchimp_contact_by_email(email: str) -> bool:
     email = email.lower()
     subscriber_hash = calculate_subscriber_hash(email)
     
-    auth = ("anystring", MAILCHIMP_API_KEY)
+    headers = {
+        "Authorization": f"Bearer {MAILCHIMP_API_KEY}",
+        "Content-Type": "application/json"
+    }
 
-    # Archive the member (DELETE) in Mailchimp
+    # First check current status to avoid unnecessary archival attempts
+    check_url = f"{MAILCHIMP_BASE_URL}/lists/{MAILCHIMP_LIST_ID}/members/{subscriber_hash}"
+    
+    try:
+        response = requests.get(check_url, headers=headers)
+        if response.status_code == 200:
+            current_status = response.json().get('status', '')
+            if current_status == 'archived':
+                logger.debug(f"✅ Contact already archived in Mailchimp: {email}")
+                return True
+        elif response.status_code == 404:
+            logger.debug(f"Contact not found in Mailchimp: {email}")
+            return True
+    except Exception as e:
+        logger.debug(f"Could not check status for {email}, proceeding with archival: {e}")
+
+    # Archive the member using PATCH with status='archived'
     archive_url = f"{MAILCHIMP_BASE_URL}/lists/{MAILCHIMP_LIST_ID}/members/{subscriber_hash}"
+    archive_data = {"status": "archived"}
     
     try:
         for attempt in range(MAX_RETRIES):
             try:
-                response = requests.delete(archive_url, auth=auth)
+                response = requests.patch(archive_url, headers=headers, json=archive_data)
                 
-                if response.status_code in (204, 200):
+                if response.status_code in (200, 204):
                     logger.debug(f"✅ Archived contact in Mailchimp: {email}")
                     return True
                 elif response.status_code == 404:
-                    logger.warning(f"Contact already archived/not found: {email}")
+                    logger.debug(f"Contact not found in Mailchimp (already archived): {email}")
                     return True
                 else:
                     response.raise_for_status()
                 break
             except requests.exceptions.RequestException as e:
                 if attempt < MAX_RETRIES - 1:
-                    logger.warning(f"Mailchimp API request failed for {email}: {e}. Retrying in {RETRY_DELAY} seconds...")
-                    notify_warning("Mailchimp contact removal API retry due to network issue",
-                                 {"email": email, "error": str(e), "attempt": attempt + 1, 
-                                  "max_retries": MAX_RETRIES, "retry_delay": RETRY_DELAY})
+                    logger.debug(f"Mailchimp archival retry {attempt + 1}/{MAX_RETRIES} for {email}: {e}")
                     time.sleep(RETRY_DELAY)
                 else:
-                    notify_error("Mailchimp contact removal API failed after max retries",
+                    logger.error(f"Mailchimp archival failed for {email} after {MAX_RETRIES} attempts: {e}")
+                    notify_error("Mailchimp contact archival API failed after max retries",
                                {"email": email, "error": str(e), "max_retries": MAX_RETRIES})
                     raise
         
     except Exception as e:
-        logger.error(f"Error removing Mailchimp contact {email}: {e}")
+        logger.error(f"Error archiving Mailchimp contact {email}: {e}")
         return False
     
     return False
@@ -1717,25 +1998,18 @@ def get_mailchimp_contact_status(email: str) -> Dict[str, Any]:
                     data = response.json()
                     status = data.get("status", "unknown")
 
-                    # Check if the status might cause UI visibility issues
-                    if status not in ["subscribed", "unsubscribed"]:
-                        logger.warning(f"⚠️ Contact {email} has status '{status}' which may not be visible in Mailchimp UI")
-                    else:
-                        logger.debug(f"✅ Verified Mailchimp contact status for {email}: {status}")
+                    # Log status for debugging (reduced verbosity)
+                    logger.debug(f"Mailchimp contact {email} status: {status}")
 
-                    # Log which tags are applied
+                    # Log which tags are applied (debug level only)
                     tags = data.get("tags", [])
                     tag_names = [tag.get("name") for tag in tags]
                     logger.debug(f"Contact {email} has tags: {tag_names}")
                     
-                    # Check if our tag is applied
-                    if MAILCHIMP_TAG not in tag_names:
-                        logger.warning(f"⚠️ Tag '{MAILCHIMP_TAG}' not found on contact {email}")
-                    
                     # Return the full contact data
                     return data
                 elif response.status_code == 404:
-                    logger.error(f"❌ Contact {email} not found in Mailchimp despite successful upsert!")
+                    logger.warning(f"⚠️ Contact {email} not yet available in Mailchimp (eventual consistency delay)")
                     return {}
                 else:
                     logger.error(f"Failed to check contact status for {email}: Status {response.status_code}")
@@ -1993,6 +2267,618 @@ def clear_mailchimp_tags(email: str):
                   json=payload)
     logger.info(f"🧹 Cleared all tags for archived contact {email}")
 
+# =============================================================================
+# 🎯 SMART ARCHIVAL SYSTEM - Tag-Aware Contact Management
+# =============================================================================
+
+def get_mailchimp_contacts_with_tags() -> Dict[str, Dict[str, any]]:
+    """
+    Fetch all Mailchimp contacts with their complete tag information.
+    
+    Returns:
+        Dict mapping email -> {tags: List[str], status: str, merge_fields: Dict}
+    """
+    logger.info("🏷️ Fetching all Mailchimp contacts with tag information for smart archival")
+    
+    contacts_with_tags = {}
+    
+    try:
+        # Fetch all audience members with tags
+        url = f"https://{MAILCHIMP_DC}.api.mailchimp.com/3.0/lists/{MAILCHIMP_LIST_ID}/members"
+        
+        params = {
+            'count': 1000,  # Maximum allowed by Mailchimp API
+            'offset': 0,
+            'fields': 'members.email_address,members.status,members.tags,members.merge_fields,total_items'
+        }
+        
+        has_more = True
+        total_fetched = 0
+        
+        while has_more:
+            response = requests.get(url, auth=('apikey', MAILCHIMP_API_KEY), params=params)
+            
+            if response.status_code == 200:
+                data = response.json()
+                members = data.get('members', [])
+                
+                for member in members:
+                    email = member.get('email_address', '').lower()
+                    if email:
+                        # Extract tag names from tag objects
+                        tags = [tag.get('name', '') for tag in member.get('tags', [])]
+                        
+                        contacts_with_tags[email] = {
+                            'tags': tags,
+                            'status': member.get('status', 'unknown'),
+                            'merge_fields': member.get('merge_fields', {}),
+                            'ori_lists': member.get('merge_fields', {}).get(ORI_LISTS_FIELD, '')
+                        }
+                
+                total_fetched += len(members)
+                logger.debug(f"Fetched {len(members)} contacts (total: {total_fetched})")
+                
+                # Check if more pages available
+                total_items = data.get('total_items', 0)
+                if total_fetched < total_items:
+                    params['offset'] = total_fetched
+                    time.sleep(perf_config.hubspot_page_delay)  # Rate limiting
+                else:
+                    has_more = False
+            else:
+                logger.error(f"Failed to fetch Mailchimp contacts with tags: {response.status_code} - {response.text}")
+                break
+    
+    except Exception as e:
+        logger.error(f"Error fetching Mailchimp contacts with tags: {e}")
+        return {}
+    
+    logger.info(f"🏷️ Successfully fetched {len(contacts_with_tags)} contacts with tag information")
+    return contacts_with_tags
+
+def determine_smart_archival_candidates(all_hubspot_contacts: Dict[str, List[str]]) -> Dict[str, any]:
+    """
+    Determine which contacts should be archived using smart tag-aware logic.
+    
+    Args:
+        all_hubspot_contacts: Dict mapping email -> list of HubSpot list IDs they're in
+        
+    Returns:
+        Dict with archival analysis and decisions
+    """
+    logger.info("🧠 Analyzing contacts for smart archival decisions")
+    
+    # Get all Mailchimp contacts with their tags
+    mailchimp_contacts = get_mailchimp_contacts_with_tags()
+    
+    if not mailchimp_contacts:
+        logger.error("❌ Could not fetch Mailchimp contact data - skipping smart archival")
+        return {"candidates": [], "preserved": [], "analysis": {}}
+    
+    archival_candidates = []
+    preserved_contacts = []
+    analysis_details = []
+    
+    # Analyze each Mailchimp contact
+    for email, mc_data in mailchimp_contacts.items():
+        tags = mc_data.get('tags', [])
+        
+        # Prepare HubSpot status for this contact
+        hubspot_status = {
+            "member_of_lists": all_hubspot_contacts.get(email, []),
+            "in_any_hubspot_list": email in all_hubspot_contacts
+        }
+        
+        # Run smart archival decision engine
+        decision = SmartArchivalDecision.should_preserve_contact(
+            email=email,
+            tags=tags, 
+            hubspot_status=hubspot_status
+        )
+        
+        # Add Mailchimp-specific data to decision
+        decision.update({
+            "email": email,
+            "mailchimp_status": mc_data.get('status'),
+            "ori_lists": mc_data.get('ori_lists')
+        })
+        
+        analysis_details.append(decision)
+        
+        if decision.get("preserve", True):
+            preserved_contacts.append({
+                "email": email,
+                "reason": decision.get("reason"),
+                "category": decision.get("archival_category"),
+                "tags": tags
+            })
+        else:
+            archival_candidates.append({
+                "email": email,
+                "reason": decision.get("reason"),
+                "category": decision.get("archival_category"),
+                "tags": tags,
+                "orphaned_tags": decision.get("orphaned_tags", [])
+            })
+    
+    # Generate comprehensive analysis summary
+    summary = SmartArchivalDecision.get_archival_summary(analysis_details)
+    
+    results = {
+        "candidates": archival_candidates,
+        "preserved": preserved_contacts,
+        "analysis": summary,
+        "total_mailchimp_contacts": len(mailchimp_contacts),
+        "total_hubspot_contacts": len(all_hubspot_contacts),
+        "decisions": analysis_details
+    }
+    
+    logger.info(f"🧠 Smart archival analysis complete:")
+    logger.info(f"   📊 Total analyzed: {summary['total_contacts']}")
+    logger.info(f"   ✅ Preserved: {summary['preserved_count']}")
+    logger.info(f"   🗑️ Archive candidates: {summary['archived_count']}")
+    
+    # Log category breakdown
+    for category, count in summary["categories"].items():
+        logger.info(f"   📋 {category}: {count}")
+    
+    return results
+
+def execute_smart_archival(archival_analysis: Dict[str, any]) -> Dict[str, int]:
+    """
+    Execute smart archival based on analysis results.
+    
+    Args:
+        archival_analysis: Results from determine_smart_archival_candidates()
+        
+    Returns:
+        Dict with execution statistics
+    """
+    candidates = archival_analysis.get("candidates", [])
+    
+    if not candidates:
+        logger.info("✅ Smart archival: No candidates for archival - all contacts preserved")
+        return {"archived": 0, "failed": 0, "skipped": 0}
+    
+    logger.info(f"🗑️ Executing smart archival for {len(candidates)} candidates")
+    
+    archived_count = 0
+    failed_count = 0
+    
+    # Group candidates by category for better reporting
+    by_category = {}
+    for candidate in candidates:
+        category = candidate.get("category", "unknown")
+        if category not in by_category:
+            by_category[category] = []
+        by_category[category].append(candidate)
+    
+    # Log archival plan
+    for category, items in by_category.items():
+        logger.info(f"   📋 {category}: {len(items)} contacts")
+    
+    print(f"\n🗑️ Smart Archival: Processing {len(candidates)} tag-orphaned contacts...")
+    
+    # Execute archival with progress tracking
+    for candidate in tqdm(candidates,
+                         desc="Smart archival processing",
+                         unit="contact",
+                         ncols=80,
+                         miniters=10,
+                         bar_format='{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]'):
+        
+        email = candidate["email"]
+        reason = candidate.get("reason", "Unknown reason")
+        category = candidate.get("category", "unknown")
+        
+        try:
+            if remove_mailchimp_contact_by_email(email):
+                archived_count += 1
+                logger.debug(f"✅ Archived {email} - {reason}")
+            else:
+                failed_count += 1
+                logger.warning(f"❌ Failed to archive {email} - {reason}")
+        except Exception as e:
+            failed_count += 1
+            logger.error(f"❌ Error archiving {email}: {e}")
+        
+        # Configurable delay between operations
+        time.sleep(perf_config.mailchimp_tag_delay)
+    
+    print(f"   ✅ Smart archival complete: {archived_count} archived, {failed_count} failed")
+    
+    logger.info(f"🗑️ Smart archival execution complete:")
+    logger.info(f"   ✅ Successfully archived: {archived_count}")
+    logger.info(f"   ❌ Failed to archive: {failed_count}")
+    
+    return {
+        "archived": archived_count,
+        "failed": failed_count,
+        "skipped": 0
+    }
+
+def log_smart_archival_report(analysis: Dict[str, any], execution: Dict[str, int]):
+    """
+    Generate comprehensive report of smart archival operation.
+    
+    Args:
+        analysis: Analysis results from determine_smart_archival_candidates()
+        execution: Execution results from execute_smart_archival()
+    """
+    logger.info("📊 SMART ARCHIVAL REPORT")
+    logger.info("=" * 50)
+    
+    # Analysis Summary
+    summary = analysis.get("analysis", {})
+    logger.info(f"🔍 Analysis Summary:")
+    logger.info(f"   Total Mailchimp contacts analyzed: {analysis.get('total_mailchimp_contacts', 0)}")
+    logger.info(f"   Total HubSpot contacts referenced: {analysis.get('total_hubspot_contacts', 0)}")
+    logger.info(f"   Contacts preserved: {summary.get('preserved_count', 0)}")
+    logger.info(f"   Contacts identified for archival: {summary.get('archived_count', 0)}")
+    
+    # Category Breakdown
+    logger.info(f"📋 Preservation Categories:")
+    for category, count in summary.get("categories", {}).items():
+        logger.info(f"   • {category}: {count}")
+    
+    # Execution Summary
+    logger.info(f"⚡ Execution Summary:")
+    logger.info(f"   Successfully archived: {execution.get('archived', 0)}")
+    logger.info(f"   Failed to archive: {execution.get('failed', 0)}")
+    
+    # Preservation Reasons
+    if summary.get("preserved_reasons"):
+        logger.info(f"✅ Top Preservation Reasons:")
+        for reason, count in list(summary["preserved_reasons"].items())[:5]:
+            logger.info(f"   • {reason}: {count}")
+    
+    # Send Teams notification for significant archival operations
+    if execution.get('archived', 0) > 0:
+        try:
+            notify_info("Smart archival operation completed", {
+                "contacts_analyzed": analysis.get('total_mailchimp_contacts', 0),
+                "contacts_archived": execution.get('archived', 0),
+                "contacts_preserved": summary.get('preserved_count', 0),
+                "operation_type": "tag_aware_archival"
+            })
+        except Exception as e:
+            logger.warning(f"Failed to send smart archival Teams notification: {e}")
+    
+    logger.info("=" * 50)
+
+# =============================================================================
+# 🔄 BIDIRECTIONAL COMPLIANCE SYNC - Mailchimp → HubSpot
+# =============================================================================
+
+def sync_unsubscribed_to_hubspot() -> Dict[str, int]:
+    """
+    Sync unsubscribed contacts from Mailchimp back to HubSpot list 762.
+    This ensures that contacts who unsubscribe in Mailchimp are automatically
+    added to the HubSpot unsubscribed list to prevent future marketing.
+    
+    Returns:
+        Dict with sync statistics
+    """
+    logger.info("🔄 BIDIRECTIONAL COMPLIANCE: Starting Mailchimp → HubSpot unsubscribed sync")
+    
+    # Get all unsubscribed contacts from Mailchimp
+    unsubscribed_contacts = get_mailchimp_unsubscribed_contacts()
+    
+    if not unsubscribed_contacts:
+        logger.info("✅ No unsubscribed contacts found in Mailchimp")
+        return {"processed": 0, "added_to_hubspot": 0, "already_in_hubspot": 0, "errors": 0}
+    
+    logger.info(f"🔄 Found {len(unsubscribed_contacts)} unsubscribed contacts in Mailchimp")
+    
+    # Get current members of HubSpot unsubscribed list (762)
+    current_unsubscribed_ids = get_hubspot_list_members("762")
+    
+    stats = {
+        "processed": 0,
+        "added_to_hubspot": 0,
+        "already_in_hubspot": 0,
+        "errors": 0
+    }
+    
+    for contact in unsubscribed_contacts:
+        email = contact.get("email_address", "").lower()
+        stats["processed"] += 1
+        
+        try:
+            # Look up contact in HubSpot by email
+            hubspot_contact = find_hubspot_contact_by_email(email)
+            
+            if not hubspot_contact:
+                logger.debug(f"Contact {email} not found in HubSpot - skipping")
+                continue
+            
+            contact_id = hubspot_contact.get("id")
+            
+            # Check if already in unsubscribed list
+            if contact_id in current_unsubscribed_ids:
+                stats["already_in_hubspot"] += 1
+                logger.debug(f"Contact {email} already in HubSpot unsubscribed list")
+                continue
+            
+            # Add to HubSpot unsubscribed list (762)
+            if add_contact_to_hubspot_list(contact_id, "762"):
+                stats["added_to_hubspot"] += 1
+                logger.info(f"✅ Added unsubscribed contact {email} to HubSpot list 762")
+            else:
+                stats["errors"] += 1
+                logger.warning(f"❌ Failed to add {email} to HubSpot unsubscribed list")
+                
+        except Exception as e:
+            stats["errors"] += 1
+            logger.error(f"Error processing unsubscribed contact {email}: {e}")
+    
+    logger.info("🔄 BIDIRECTIONAL COMPLIANCE COMPLETE:")
+    logger.info(f"   📊 Processed: {stats['processed']} contacts")
+    logger.info(f"   ✅ Added to HubSpot: {stats['added_to_hubspot']} contacts")
+    logger.info(f"   📋 Already in HubSpot: {stats['already_in_hubspot']} contacts")
+    logger.info(f"   ❌ Errors: {stats['errors']} contacts")
+    
+    # Send Teams notification for significant sync operations
+    if stats["added_to_hubspot"] > 0:
+        try:
+            notify_info("Bidirectional compliance sync completed", {
+                "contacts_processed": stats["processed"],
+                "contacts_added_to_hubspot": stats["added_to_hubspot"],
+                "hubspot_list_id": "762",
+                "operation_type": "mailchimp_to_hubspot_unsubscribe_sync"
+            })
+        except Exception as e:
+            logger.warning(f"Failed to send bidirectional sync Teams notification: {e}")
+    
+    return stats
+
+def get_mailchimp_unsubscribed_contacts() -> List[Dict[str, any]]:
+    """
+    Get all contacts with unsubscribed status from Mailchimp.
+    
+    Returns:
+        List of unsubscribed contact data
+    """
+    logger.info("📧 Fetching unsubscribed contacts from Mailchimp")
+    
+    unsubscribed_contacts = []
+    
+    try:
+        url = f"https://{MAILCHIMP_DC}.api.mailchimp.com/3.0/lists/{MAILCHIMP_LIST_ID}/members"
+        
+        params = {
+            'status': 'unsubscribed',  # Only get unsubscribed contacts
+            'count': 1000,
+            'offset': 0,
+            'fields': 'members.email_address,members.status,members.unsubscribe_reason,members.timestamp_opt,total_items'
+        }
+        
+        has_more = True
+        total_fetched = 0
+        
+        while has_more:
+            response = requests.get(url, auth=('apikey', MAILCHIMP_API_KEY), params=params)
+            
+            if response.status_code == 200:
+                data = response.json()
+                members = data.get('members', [])
+                
+                unsubscribed_contacts.extend(members)
+                total_fetched += len(members)
+                
+                logger.debug(f"Fetched {len(members)} unsubscribed contacts (total: {total_fetched})")
+                
+                # Check if more pages available
+                total_items = data.get('total_items', 0)
+                if total_fetched < total_items:
+                    params['offset'] = total_fetched
+                    time.sleep(perf_config.hubspot_page_delay)  # Rate limiting
+                else:
+                    has_more = False
+            else:
+                logger.error(f"Failed to fetch unsubscribed contacts: {response.status_code} - {response.text}")
+                break
+    
+    except Exception as e:
+        logger.error(f"Error fetching unsubscribed contacts: {e}")
+        return []
+    
+    logger.info(f"📧 Found {len(unsubscribed_contacts)} unsubscribed contacts in Mailchimp")
+    return unsubscribed_contacts
+
+def find_hubspot_contact_by_email(email: str) -> Optional[Dict[str, any]]:
+    """
+    Find a HubSpot contact by email address.
+    
+    Args:
+        email: Contact email address
+        
+    Returns:
+        Contact data dict or None if not found
+    """
+    if not HUBSPOT_PRIVATE_TOKEN:
+        logger.error("HubSpot Private Token not set")
+        return None
+    
+    headers = {
+        "Authorization": f"Bearer {HUBSPOT_PRIVATE_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    
+    # Search for contact by email
+    search_url = "https://api.hubapi.com/crm/v3/objects/contacts/search"
+    
+    search_payload = {
+        "filterGroups": [
+            {
+                "filters": [
+                    {
+                        "propertyName": "email",
+                        "operator": "EQ",
+                        "value": email
+                    }
+                ]
+            }
+        ],
+        "properties": ["id", "email", "firstname", "lastname"],
+        "limit": 1
+    }
+    
+    try:
+        response = requests.post(search_url, headers=headers, json=search_payload)
+        
+        if response.status_code == 200:
+            data = response.json()
+            results = data.get("results", [])
+            
+            if results:
+                return results[0]
+            else:
+                logger.debug(f"Contact with email {email} not found in HubSpot")
+                return None
+        else:
+            logger.warning(f"HubSpot contact search failed for {email}: {response.status_code}")
+            return None
+            
+    except Exception as e:
+        logger.error(f"Error searching for HubSpot contact {email}: {e}")
+        return None
+
+def get_hubspot_list_members(list_id: str) -> Set[str]:
+    """
+    Get all contact IDs that are members of a specific HubSpot list.
+    
+    Args:
+        list_id: HubSpot list ID
+        
+    Returns:
+        Set of contact IDs in the list
+    """
+    if not HUBSPOT_PRIVATE_TOKEN:
+        logger.error("HubSpot Private Token not set")
+        return set()
+    
+    headers = {
+        "Authorization": f"Bearer {HUBSPOT_PRIVATE_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    
+    member_ids = set()
+    
+    try:
+        url = f"https://api.hubapi.com/crm/v3/lists/{list_id}/memberships"
+        params = {"limit": PAGE_SIZE}
+        after = None
+        
+        while True:
+            if after:
+                params["after"] = after
+            
+            response = requests.get(url, headers=headers, params=params)
+            
+            if response.status_code == 200:
+                data = response.json()
+                results = data.get("results", [])
+                
+                for membership in results:
+                    record_id = membership.get("recordId")
+                    if record_id:
+                        member_ids.add(record_id)
+                
+                # Check for more pages
+                paging = data.get("paging", {}).get("next", {})
+                after = paging.get("after")
+                if not after:
+                    break
+                    
+                time.sleep(perf_config.hubspot_page_delay)
+            else:
+                logger.warning(f"Failed to get HubSpot list {list_id} members: {response.status_code}")
+                break
+                
+    except Exception as e:
+        logger.error(f"Error getting HubSpot list {list_id} members: {e}")
+    
+    logger.debug(f"Found {len(member_ids)} members in HubSpot list {list_id}")
+    return member_ids
+
+def add_contact_to_hubspot_list(contact_id: str, list_id: str) -> bool:
+    """
+    Add a contact to a HubSpot list.
+    
+    Args:
+        contact_id: HubSpot contact ID
+        list_id: HubSpot list ID to add contact to
+        
+    Returns:
+        True if successful, False otherwise
+    """
+    if not HUBSPOT_PRIVATE_TOKEN:
+        logger.error("HubSpot Private Token not set")
+        return False
+    
+    headers = {
+        "Authorization": f"Bearer {HUBSPOT_PRIVATE_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    
+    url = f"https://api.hubapi.com/crm/v3/lists/{list_id}/memberships/add"
+    
+    payload = [{"recordId": contact_id}]
+    
+    try:
+        response = requests.post(url, headers=headers, json=payload)
+        
+        if response.status_code in [200, 204]:
+            logger.debug(f"Successfully added contact {contact_id} to HubSpot list {list_id}")
+            return True
+        else:
+            logger.warning(f"Failed to add contact {contact_id} to list {list_id}: {response.status_code}")
+            return False
+            
+    except Exception as e:
+        logger.error(f"Error adding contact {contact_id} to HubSpot list {list_id}: {e}")
+        return False
+
+def check_mailchimp_resubscription_safety(email: str) -> bool:
+    """
+    Check if a contact is safe to resubscribe in Mailchimp.
+    This prevents resubscription of contacts who have explicitly unsubscribed.
+    
+    Args:
+        email: Contact email address
+        
+    Returns:
+        True if safe to resubscribe, False if contact should not be resubscribed
+    """
+    try:
+        # Get current contact status in Mailchimp
+        contact_status = get_mailchimp_contact_status(email)
+        
+        if not contact_status:
+            # Contact doesn't exist - safe to create
+            return True
+        
+        current_status = contact_status.get("status", "").lower()
+        
+        # Never resubscribe contacts who are explicitly unsubscribed
+        if current_status == "unsubscribed":
+            logger.warning(f"🚫 RESUBSCRIPTION BLOCKED: {email} is unsubscribed - will not force resubscribe")
+            return False
+        
+        # Check for other compliance states that should block resubscription
+        if current_status in ["cleaned", "pending"]:
+            logger.warning(f"🚫 RESUBSCRIPTION BLOCKED: {email} has status '{current_status}' - will not force resubscribe")
+            return False
+        
+        # Safe to proceed with subscription
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error checking resubscription safety for {email}: {e}")
+        # Err on the side of caution - don't resubscribe if we can't check
+        return False
+
 def main():
     """Main execution function."""
 
@@ -2151,12 +3037,15 @@ def main():
                     stats["unsubscribed_failed"].append(contact["email"])
                 elif result == "compliance_state":
                     stats["compliance_state"].append(contact["email"])
+                elif result == "compliance_blocked":
+                    stats["compliance_blocked"].append(contact["email"])
                 elif result == "error":
                     stats["errors"].append(contact["email"])
                 else:
                     stats["other"].append(contact["email"])
                     
-                time.sleep(0.2)
+                # Configurable delay between contacts to prevent rate limiting
+                time.sleep(perf_config.mailchimp_tag_delay)
 
         # Emit concise end-of-run summary
         logger.info(f"Summary for list {list_id}:")
@@ -2169,6 +3058,8 @@ def main():
             logger.warning(f"  • {len(stats['unsubscribed_failed'])} unsubscribed contacts failed to archive")
         if stats['compliance_state']:
             logger.info(f"  • {len(stats['compliance_state'])} contacts in compliance state (skipped)")
+        if stats['compliance_blocked']:
+            logger.warning(f"🚫 {len(stats['compliance_blocked'])} contacts blocked by resubscription safety (compliance protection)")
         if stats['errors']:
             sample = stats['errors'][:3]
             suffix = f"{'...' if len(stats['errors']) > 3 else ''}"
@@ -2207,7 +3098,8 @@ def main():
                                    bar_format='{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]'):
                     if untag_mailchimp_contact(email):
                         successful_untags += 1
-                    time.sleep(0.2)
+                    # Configurable delay between untag operations
+                    time.sleep(perf_config.mailchimp_tag_delay)
                 
                 print(f"   ✅ Successfully untagged: {successful_untags} contacts")
                 logger.info(f"Successfully removed tag from {successful_untags} contacts for list {list_id}")
@@ -2226,46 +3118,91 @@ def main():
         except Exception as e:
             logger.warning(f"Failed to send list completion notification: {e}")
 
-    # --- Phase 3: Global cleanup (archive any Mailchimp members not in any synced list) ---
+    # --- Phase 3: Smart Global Archival (tag-aware contact management) ---
     if ENABLE_MAILCHIMP_ARCHIVAL:
         # 🚨 CRITICAL SAFETY CHECK: Skip global archival in test mode
         if TEST_CONTACT_LIMIT > 0:
-            logger.warning(f"🧪 TEST MODE: Skipping global archival cleanup to prevent accidental mass deletion")
-            logger.info("⏭️ Global archival cleanup SKIPPED in test mode - Existing Mailchimp contacts preserved")
-            to_archive_count = 0
+            logger.warning(f"🧪 TEST MODE: Skipping smart archival to prevent accidental mass deletion")
+            logger.info("⏭️ Smart archival SKIPPED in test mode - Existing Mailchimp contacts preserved")
+            archival_stats = {"archived": 0, "failed": 0, "skipped": 0}
         else:
-            logger.info("Starting global archival cleanup: members not in any HubSpot list will be archived")
-            all_mc_emails = get_all_mailchimp_emails()
-            to_archive = all_mc_emails - all_synced_emails
-            if to_archive:
-                logger.info(f"Found {len(to_archive)} contacts to archive (no longer in any HubSpot list)")
-                
-                print(f"\n🗂️ Archiving {len(to_archive)} orphaned contacts...")
-                
-                archived_count = 0
-                # Archive contacts with clean progress bar
-                for email in tqdm(to_archive,
-                                   desc="Archiving global stale contacts",
-                                   unit="contact",
-                                   ncols=80,
-                                   miniters=100,
-                                   bar_format='{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]'):
-                    if remove_mailchimp_contact_by_email(email):
-                        archived_count += 1
-                    time.sleep(0.2)
-                
-                print(f"   ✅ Successfully archived: {archived_count} contacts")
-                logger.info(f"Successfully archived {archived_count} contacts from Mailchimp")
-            else:
-                logger.info("No Mailchimp contacts to archive; all members are in at least one HubSpot list")
-            # Define to_archive for summary
-            to_archive_count = len(to_archive) if 'to_archive' in locals() else 0
+            logger.info("🧠 Starting smart tag-aware archival system")
+            logger.info("🎯 Smart archival will preserve:")
+            logger.info("   • Contacts with manual/custom tags (Manual_, Custom_, etc.)")
+            logger.info("   • Contacts with exempt tags (VIP, Partner, etc.)")
+            logger.info("   • Untagged contacts (manual additions)")
+            logger.info("   • Contacts with valid HubSpot list membership")
+            logger.info("🗑️ Smart archival will only remove:")
+            logger.info("   • Contacts with HubSpot-managed tags but no longer in corresponding lists")
+            
+            # Build comprehensive HubSpot contact mapping
+            all_hubspot_contacts = {}
+            
+            # Process each synced list to build master contact mapping
+            logger.info("🔍 Building HubSpot contact reference data...")
+            for list_id in HUBSPOT_LIST_IDS:
+                try:
+                    # Get contacts from this list (same method as main sync)
+                    list_contacts = []
+                    
+                    if list_id in COMPANY_LIST_IDS:
+                        # Handle company lists
+                        companies = get_hubspot_companies(list_id)
+                        for company in companies:
+                            contact_data = convert_company_to_contact(company, list_id)
+                            if contact_data:
+                                list_contacts.append(contact_data)
+                        logger.debug(f"List {list_id}: {len(companies)} companies → {len(list_contacts)} contacts")
+                    else:
+                        # Handle regular contact lists
+                        exclude_lists = get_exclude_lists_for_list(list_id)
+                        contacts = get_hubspot_contacts(list_id, exclude_lists)
+                        list_contacts = contacts  # Assign instead of extend
+                        logger.debug(f"List {list_id}: {len(contacts)} contacts")
+                    
+                    # Add to master mapping
+                    for contact in list_contacts:
+                        email = contact.get("email", "").lower()
+                        if email:
+                            if email not in all_hubspot_contacts:
+                                all_hubspot_contacts[email] = []
+                            all_hubspot_contacts[email].append(list_id)
+                    
+                except Exception as e:
+                    logger.error(f"Error building reference data for list {list_id}: {e}")
+                    continue
+            
+            logger.info(f"🔍 Built reference data: {len(all_hubspot_contacts)} unique contacts across {len(HUBSPOT_LIST_IDS)} lists")
+            
+            # Execute smart archival analysis
+            archival_analysis = determine_smart_archival_candidates(all_hubspot_contacts)
+            
+            # Execute archival based on analysis
+            archival_stats = execute_smart_archival(archival_analysis)
+            
+            # Generate comprehensive report
+            log_smart_archival_report(archival_analysis, archival_stats)
+            
+        to_archive_count = archival_stats.get("archived", 0)
+        
     else:
-        logger.info("⏭️ Global archival cleanup DISABLED - Existing Mailchimp contacts preserved")
+        logger.info("⏭️ Smart archival DISABLED - Existing Mailchimp contacts preserved")
         to_archive_count = 0
     
+    # --- Phase 4: Bidirectional Compliance Sync (Mailchimp → HubSpot) ---
+    logger.info("🔄 Starting bidirectional compliance sync phase")
+    
+    try:
+        synced_count = sync_mailchimp_unsubscribes_to_hubspot()
+        compliance_stats = {"processed": synced_count, "added_to_hubspot": synced_count, "already_in_hubspot": 0, "errors": 0}
+        logger.info(f"🔄 Bidirectional compliance sync complete: {synced_count} contacts added to HubSpot unsubscribed list")
+    except Exception as e:
+        logger.error(f"Error during bidirectional compliance sync: {e}")
+        compliance_stats = {"processed": 0, "added_to_hubspot": 0, "already_in_hubspot": 0, "errors": 1}
+    
     # Final summary
-    logger.info("Multi-list sync complete: %d unique contacts synced, %d contacts archived", len(all_synced_emails), to_archive_count)
+    logger.info("Multi-list sync complete: %d unique contacts synced, %d contacts archived, %d compliance syncs", 
+                len(all_synced_emails), to_archive_count, compliance_stats.get('added_to_hubspot', 0))
     logger.info("All configured HubSpot lists have been synced and cleanup is complete.")
     
     # Send final Teams notification with session summary
@@ -2274,6 +3211,7 @@ def main():
             "sync_status": "completed_successfully" if not had_errors else "completed_with_errors",
             "total_contacts_synced": len(all_synced_emails),
             "total_contacts_archived": to_archive_count,
+            "compliance_contacts_synced": compliance_stats.get('added_to_hubspot', 0),
             "lists_processed": len(HUBSPOT_LIST_IDS),
             "list_ids": HUBSPOT_LIST_IDS
         })
@@ -2290,6 +3228,7 @@ def main():
         "sync_type": "primary",
         "contacts_processed": len(all_synced_emails),
         "contacts_archived": to_archive_count,
+        "compliance_synced": compliance_stats.get('added_to_hubspot', 0),
         "lists_processed": len(HUBSPOT_LIST_IDS),
         "had_errors": had_errors
     }

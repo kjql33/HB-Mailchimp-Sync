@@ -9,6 +9,7 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    timeout-minutes: 300  # 5 hour timeout to prevent runaway jobs
 
     steps:
       - name: Checkout code
@@ -40,6 +41,7 @@ jobs:
           CURRENT_MINUTE=$(date -u +%M)
           CURRENT_MONTH=$(date -u +%m)
           CURRENT_DATE=$(date -u +%d)
+          CURRENT_YEAR=$(date -u +%Y)
           
           # Function to determine if we're in BST (British Summer Time)
           is_bst() {
@@ -97,17 +99,114 @@ jobs:
       
       - name: Run HubSpot↔Mailchimp Sync (${{ steps.run_mode.outputs.description }})
         if: steps.run_mode.outputs.mode != 'SKIP'
-        run: python -m core.config
+        run: |
+          # Start timing the sync
+          SYNC_START=$(date +%s)
+          echo "🚀 Starting sync at $(date -u)"
+          
+          # Capture both stdout and stderr, and save errors for failure notification
+          python -m core.config 2>&1 | tee /tmp/sync_output.log || {
+            # Calculate duration for timeout analysis
+            SYNC_END=$(date +%s)
+            DURATION=$((SYNC_END - SYNC_START))
+            
+            # If sync fails, extract last error lines for Teams notification
+            tail -n 20 /tmp/sync_output.log > /tmp/sync_error.log
+            echo "❌ Sync failed after ${DURATION} seconds - error details captured for notification"
+            
+            # Add duration info to error log for Teams notification
+            echo "SYNC_DURATION_SECONDS: $DURATION" >> /tmp/sync_error.log
+            echo "SYNC_TIMEOUT_LIMIT: 18000 seconds (5 hours)" >> /tmp/sync_error.log
+            
+            exit 1
+          }
+          
+          # Success - log completion time
+          SYNC_END=$(date +%s)
+          DURATION=$((SYNC_END - SYNC_START))
+          echo "✅ Sync completed successfully in ${DURATION} seconds"
         env:
           HUBSPOT_PRIVATE_TOKEN: ${{ secrets.HUBSPOT_PRIVATE_TOKEN }}
           MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
           MAILCHIMP_LIST_ID: ${{ secrets.MAILCHIMP_LIST_ID }}
           TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
           RUN_MODE: ${{ steps.run_mode.outputs.mode }}
+          # Performance optimizations (Phase-1: Safe immediate speedup)
+          HUBSPOT_PAGE_DELAY: "0.1"        # Reduced from 0.5s to 0.1s (80% faster HubSpot pagination)
+          MAILCHIMP_TAG_DELAY: "0.05"      # Reduced from 1.0s to 0.05s (95% faster tag operations)  
+          MAILCHIMP_UPSERT_DELAY: "0.05"   # New configurable delay after upserts (prevents rate limits)
 
       - name: Notify Teams on failure
         if: ${{ failure() }}
         run: |
+          # Get the current timestamp
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
+          
+          # Try to extract timing and error details
+          if [ -f /tmp/sync_error.log ]; then
+            # Extract duration if available
+            DURATION_INFO=$(grep "SYNC_DURATION_SECONDS" /tmp/sync_error.log 2>/dev/null | head -1)
+            
+            # Get last few error lines, escaping quotes and newlines for JSON
+            ERROR_DETAILS=$(tail -n 15 /tmp/sync_error.log | grep -v "SYNC_" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
+            
+            if [ -n "$DURATION_INFO" ]; then
+              DURATION=$(echo "$DURATION_INFO" | cut -d: -f2 | tr -d ' ')
+              DURATION_TEXT="**Runtime:** $DURATION seconds (timeout at 18,000s)\\n"
+            else
+              DURATION_TEXT="**Runtime:** Unknown (job may have been terminated)\\n"
+            fi
+          else
+            ERROR_DETAILS="No detailed error log found. The job may have failed during setup or been terminated by GitHub Actions due to timeout/resource limits."
+            DURATION_TEXT="**Runtime:** Unable to determine\\n"
+          fi
+          
+          # Extract likely cause from error patterns
+          LIKELY_CAUSE="Unknown error"
+          if echo "$ERROR_DETAILS" | grep -qi "timeout"; then
+            LIKELY_CAUSE="⏱️ **Timeout Error** - Sync took too long to complete"
+          elif echo "$ERROR_DETAILS" | grep -qi "rate limit\|429"; then
+            LIKELY_CAUSE="🚦 **API Rate Limiting** - Too many requests to HubSpot/Mailchimp"
+          elif echo "$ERROR_DETAILS" | grep -qi "connection\|network\|ssl"; then
+            LIKELY_CAUSE="🌐 **Network/Connection Issue** - API connectivity problems"
+          elif echo "$ERROR_DETAILS" | grep -qi "authentication\|401\|403"; then
+            LIKELY_CAUSE="🔐 **Authentication Error** - Invalid API keys or permissions"
+          elif echo "$ERROR_DETAILS" | grep -qi "contact/s"; then
+            LIKELY_CAUSE="🐌 **Performance Issue** - Sync processing too slowly (likely cause of timeout)"
+          fi
+          
+          # Send detailed error notification
           curl -X POST "${{ secrets.TEAMS_WEBHOOK_URL }}" \
             -H "Content-Type: application/json" \
-            -d '{"text": "🚨 ALERT: HubSpot↔Mailchimp bidirectional sync failed in GitHub Actions! Check logs immediately.", "themeColor": "FF0000"}'
+            -d '{
+              "@type": "MessageCard",
+              "@context": "http://schema.org/extensions",
+              "themeColor": "FF0000",
+              "summary": "❗ HubSpot → Mailchimp Sync Failed",
+              "sections": [
+                {
+                  "activityTitle": "❗ HubSpot → Mailchimp Sync Failed",
+                  "activitySubtitle": "The scheduled sync encountered an error and was terminated.",
+                  "facts": [
+                    {"name": "Repository", "value": "${{ github.repository }}"},
+                    {"name": "Workflow", "value": "${{ github.workflow }}"},
+                    {"name": "Run Number", "value": "#${{ github.run_number }}"},
+                    {"name": "Timestamp", "value": "'$TIMESTAMP'"},
+                    {"name": "Trigger", "value": "${{ github.event_name }}"},
+                    {"name": "Branch", "value": "${{ github.ref_name }}"}
+                  ]
+                },
+                {
+                  "activityTitle": "🔍 Error Analysis",
+                  "text": "'$LIKELY_CAUSE'\\n\\n'$DURATION_TEXT'**Last Error Output:**\\n```\\n'$ERROR_DETAILS'\\n```"
+                },
+                {
+                  "activityTitle": "🔗 Investigation Links", 
+                  "text": "• [**View Full Logs**](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) ← Start here\\n• [Workflow Configuration](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/.github/workflows/sync.yml)\\n• [Repository Dashboard](https://github.com/${{ github.repository }})"
+                },
+                {
+                  "activityTitle": "⚡ Next Steps",
+                  "text": "**Immediate Actions:**\\n• Check the [full logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) for complete error context\\n• Verify API keys are still valid in repository secrets\\n• Check HubSpot/Mailchimp service status\\n\\n**If Performance Issue:**\\n• Consider reducing batch sizes in sync configuration\\n• Review contact data complexity (large text fields, etc.)\\n• Check if specific lists are causing slowdowns"
+                }
+              ]
+            }'

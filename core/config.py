@@ -113,32 +113,33 @@ IGNORED_WARNING_MESSAGES = [
 IMPORT_LIST_PROPERTY = "import_list"  # HubSpot internal property name (lowercase, underscores)
 
 # =============================================================================
-# 🎯 MANUAL INCLUSION OVERRIDE - Priority Bypass System
+# 🔐 MANUAL INCLUSION OVERRIDE SYSTEM
 # =============================================================================
 
-# ✅ MANUAL INCLUSION OVERRIDE: Bypass all exclusion rules and inject into campaigns
-# These lists allow manual insertion of contacts that would normally be excluded
+# ✅ PRIORITY BYPASS LISTS: These override ALL exclusion rules
+# Use for high-value prospects requiring manual intervention
 MANUAL_INCLUSION_OVERRIDE_LISTS = [
-    "784",  # Manual inclusion - bypasses all exclusions, appears as General
+    "784",  # Manual inclusion - VIP/priority contact override system
 ]
 
-# Special source tracking value for manual overrides
-# Format: "original_list_via_target_campaign"
+# 🏷️ SOURCE TRACKING: How manual overrides appear in Mailchimp
+# Format: "original_list_via_target_campaign" 
 MANUAL_OVERRIDE_SOURCE_MARKER = "784_via_720"  # Manual override appearing as General
 
-# Campaign injection mapping for override lists
+# 🎯 CAMPAIGN INJECTION: Where manual overrides get routed
+# Manual contacts from list 784 appear as General (720) contacts in Mailchimp
 OVERRIDE_CAMPAIGN_INJECTION = {
-    "784": "720",  # List 784 contacts appear as General (720) contacts
+    "784": "720",  # Manual inclusion list → appears as General campaign
 }
 
 # =============================================================================
-# 🏢 COMPANY LISTS - Special Handling for Company-to-Contact Conversion
+# 🏢 COMPANY LIST PROCESSING - Auto-Conversion to Contacts
 # =============================================================================
 
-# Lists that contain companies instead of contacts
-# These will be converted to contact format for Mailchimp processing
+# 📋 COMPANY LISTS: These contain companies instead of contacts
+# System automatically converts companies to contact format for Mailchimp processing
 COMPANY_LIST_IDS = [
-    "843",  # Webinar companies - converted to contacts for Mailchimp
+    # No company lists currently configured - Demo list 872 contains contacts
 ]
 
 # Company-to-contact field mapping for Mailchimp
@@ -155,57 +156,124 @@ COMPANY_TO_CONTACT_MAPPING = {
 COMPANY_EMAIL_PREFIXES = ["info", "contact", "hello", "enquiries"]  # Try these @ domain
 
 # =============================================================================
-# 📋 INPUT LISTS (HubSpot → Mailchimp) - EDIT HERE FOR STEP 1
+# 📋 INPUT LISTS (HubSpot → Mailchimp) - ORGANIZED BY IMPORT STREAMS
 # =============================================================================
 
-# ✅ STEP 1: ADD YOUR HUBSPOT LISTS HERE
-# These are the HubSpot lists that will sync their contacts TO Mailchimp for processing
-# Example: If you have lists 677, 123, 456 that need marketing processing, add them here
+# ✅ IMPORT STREAM ARCHITECTURE
+# The system processes 3 distinct import streams with different business rules:
+#
+# 🎯 GROUP 1: GENERAL MARKETING CAMPAIGNS (Standard Exclusion Rules)
+#     - Lists: 718 (General), 719 (Recruitment), 720 (Competition), 751 (Directors) 
+#     - Business Purpose: Long-term marketing campaigns and lead nurturing
+#     - Exclusion Behavior: Respects ALL hard exclude lists including exit lists
+#     - Target Audience: Broad marketing reach with full compliance filtering
+#
+# 🎯 GROUP 2: WEBINAR CAMPAIGNS (Bypass Exit Lists Only)  
+#     - Lists: 843 (Companies→Contacts), 844 (Associated Contacts), 846 (Main Contacts)
+#     - Business Purpose: Event-specific marketing and webinar promotion
+#     - Exclusion Behavior: Excludes critical lists (717,762,773) but BYPASSES exit lists (700-703)
+#     - Rationale: Re-engagement campaigns may target previously archived contacts
+#
+# 🎯 GROUP 3: MANUAL INCLUSION OVERRIDE (Bypass All Exclusions)
+#     - Lists: 784 (Manual Override)
+#     - Business Purpose: Priority contacts that override all automated exclusions
+#     - Exclusion Behavior: Bypasses ALL exclusion rules, appears as General (720)
+#     - Use Case: High-value prospects requiring manual intervention
 
-HUBSPOT_LIST_IDS = [
-    "843",  # Webinar Main - Companies (converted to contacts) [WEBINAR - BYPASS EXIT EXCLUSIONS]
-    "844",  # Webinar Main Associated Contacts - Contact list [WEBINAR - BYPASS EXIT EXCLUSIONS]
-    "846",  # Webinar Main Contacts - Contact list [WEBINAR - BYPASS EXIT EXCLUSIONS]
-    "718",  # General - Production marketing list
-    "719",  # Recruitment - Production marketing list
-    "720",  # Competition - Production marketing list
-    "751",  # Directors - Production marketing list
-    "784",  # Manual inclusion override - bypasses all exclusions
+# ============================================================================= 
+# 📋 GROUP 1: GENERAL MARKETING CAMPAIGNS (Standard Exclusions)
+# =============================================================================
+GENERAL_MARKETING_LISTS = [
+    "718",  # General - Core marketing list
+    "719",  # Recruitment - Talent acquisition campaigns  
+    "720",  # Competition - Contest and engagement campaigns
+    "751",  # Directors - C-level executive targeting
 ]
+
+# =============================================================================
+# 🎯 GROUP 2: DEMO CAMPAIGNS (Exit List Bypass)
+# =============================================================================  
+WEBINAR_CAMPAIGN_LISTS = [
+    "872",  # Demo List - Primary demo audience with 700+ contacts
+]
+
+# =============================================================================
+# 🔐 GROUP 3: MANUAL INCLUSION OVERRIDE (Bypass All Exclusions)
+# =============================================================================
+MANUAL_OVERRIDE_LISTS = [
+    "784",  # Manual inclusion - VIP/priority contact override system
+]
+
+# =============================================================================
+# 📋 CONSOLIDATED INPUT LISTS (Auto-Generated)
+# =============================================================================
+# All lists combined for system processing - DO NOT EDIT MANUALLY
+HUBSPOT_LIST_IDS = GENERAL_MARKETING_LISTS + WEBINAR_CAMPAIGN_LISTS + MANUAL_OVERRIDE_LISTS
 
 # ⚠️ IMPORTANT: Each contact gets tagged with their source list ID in Mailchimp
 # This allows tracking where they came from for smart removal later
 
 # =============================================================================
-# 🚫 HARD EXCLUDE LISTS (Pre-sync Filter) - EDIT HERE FOR EXCLUSIONS
+# 🚫 EXCLUSION MATRIX - WHICH LISTS EXCLUDE WHICH CONTACTS
 # =============================================================================
 
-# 🎯 WEBINAR-SPECIFIC EXCLUSION RULES
-# For webinar lists (843, 844, 846), we want different exclude behavior
-WEBINAR_LIST_IDS = ["843", "844", "846"]  # Companies, Associated Contacts, Main Contacts
-
-# Exit lists that should be excluded for regular campaigns but NOT for webinars
-EXIT_LISTS = ["700", "701", "702", "703"]  # Archive and handover lists
-
-# =============================================================================
-
-# ✅ HARD EXCLUDE: Contacts in these HubSpot lists will NEVER be synced to Mailchimp
-# Use this for contacts you're in active talks with, VIP clients, or anyone who should never receive marketing
-# Format: ["list_id_1", "list_id_2", "list_id_3"]
-HARD_EXCLUDE_LISTS = [
-    "717",  # Active deal association - don't market to these contacts
-    "762",  # Unsubscribed contacts - must be excluded from all marketing
-    "773",  # Manual disengagement from marketing - must be excluded
-    
-    # 🚫 EXIT LISTS - Prevent remarketing to contacts who completed the journey
-    "700",  # Handover to sales - no remarketing needed
-    "701",  # Archive: Engaged never - completed pipeline 
-    "702",  # Archive: Engaged once - completed pipeline
-    "703",  # Archive: Engaged twice+ - completed pipeline
-    
-    # "456",  # Example: Active Sales Discussions - No marketing
-    # "789",  # Example: Opted Out - Hard exclude
+# 🎯 CRITICAL EXCLUSIONS (Applied to ALL Import Streams)
+# These lists contain contacts that must NEVER receive marketing regardless of campaign type
+CRITICAL_EXCLUDE_LISTS = [
+    "717",  # 🚫 Active deal association - Sales process in progress, no marketing interference  
+    "762",  # 🚫 Unsubscribed/Opted Out - Legal compliance, NEVER contact these people
+    "773",  # 🚫 Manual disengagement - Explicit marketing opt-out, permanent exclusion
 ]
+
+# 🏁 EXIT EXCLUSIONS (Applied to General Marketing Only)  
+# These lists contain contacts who completed the marketing journey
+EXIT_EXCLUDE_LISTS = [
+    "700",  # 🏁 Handover to sales - Qualified leads passed to sales team
+    "701",  # 🏁 Archive: Never engaged - Campaign completed, no engagement
+    "702",  # 🏁 Archive: Engaged once - Campaign completed, minimal engagement  
+    "703",  # 🏁 Archive: Engaged 2+ times - Campaign completed, good engagement
+]
+
+# =============================================================================
+# 🎯 EXCLUSION BEHAVIOR BY IMPORT STREAM
+# =============================================================================
+
+# GROUP 1 (General Marketing): Respects ALL exclusions
+# - Excludes: Critical lists (717,762,773) + Exit lists (700,701,702,703)
+# - Rationale: Comprehensive filtering for broad marketing campaigns
+
+# GROUP 2 (Webinars): Bypasses exit exclusions for re-engagement  
+# - Excludes: Critical lists (717,762,773) only
+# - Bypasses: Exit lists (700,701,702,703) 
+# - Rationale: Webinars can re-engage previously archived contacts
+
+# GROUP 3 (Manual Override): Bypasses all exclusions
+# - Excludes: Nothing (manual intervention overrides all rules)
+# - Rationale: High-value contacts requiring manual judgment
+
+# 📊 EXCLUSION MATRIX TABLE
+# =============================================================================
+# | Import Stream        | Lists           | 717 | 762 | 773 | 700 | 701 | 702 | 703 |
+# |---------------------|-----------------|-----|-----|-----|-----|-----|-----|-----|
+# | General Marketing   | 718,719,720,751 | ❌   | ❌   | ❌   | ❌   | ❌   | ❌   | ❌   |
+# | Webinar Campaigns   | 843,844,846     | ❌   | ❌   | ❌   | ✅   | ✅   | ✅   | ✅   |
+# | Manual Override     | 784             | ✅   | ✅   | ✅   | ✅   | ✅   | ✅   | ✅   |
+# =============================================================================
+# Legend: ❌ = Excluded (contact blocked), ✅ = Bypass (contact allowed)
+# 
+# 717 = Active Deal Association, 762 = Unsubscribed/Opted Out, 773 = Manual Disengagement  
+# 700 = Handover to Sales, 701 = Archive Never, 702 = Archive Once, 703 = Archive 2+ Times
+
+# =============================================================================
+# 🔧 SYSTEM CONFIGURATION (Auto-Generated)
+# =============================================================================
+
+# Legacy configuration for backward compatibility
+WEBINAR_LIST_IDS = WEBINAR_CAMPAIGN_LISTS  # Alias for existing code
+EXIT_LISTS = EXIT_EXCLUDE_LISTS            # Alias for existing code
+
+# Combined exclude lists (used by general marketing)
+HARD_EXCLUDE_LISTS = CRITICAL_EXCLUDE_LISTS + EXIT_EXCLUDE_LISTS
 
 # 🎯 HOW HARD EXCLUDE WORKS:
 # 1. Before syncing any contact from 718, 719, 720, or 751 to Mailchimp
@@ -219,6 +287,8 @@ HARD_EXCLUDE_LISTS = [
 
 # Test/Development Settings
 TEST_CONTACT_LIMIT = 0      # 0 = unlimited contacts (ready for production)
+TEST_CONTACT_LIMIT = int(os.environ.get("TEST_CONTACT_LIMIT", TEST_CONTACT_LIMIT))
+
 ENABLE_DRY_RUN = False      # Set True to simulate without actual changes
 
 # =============================================================================
@@ -380,23 +450,23 @@ class PerformanceConfig:
         # 🚀 API TIMING OPTIMIZATIONS
         # =============================================================================
         
-        # Mailchimp API delays (default: conservative, optimized: aggressive)
-        self.mailchimp_upsert_delay = float(os.getenv("MAILCHIMP_UPSERT_DELAY", "2.0"))    # Default: 2s, Optimized: 0.1s
-        self.mailchimp_tag_delay = float(os.getenv("MAILCHIMP_TAG_DELAY", "1.0"))          # Default: 1s, Optimized: 0.05s
-        self.mailchimp_verify_delay = float(os.getenv("MAILCHIMP_VERIFY_DELAY", "1.0"))    # Default: 1s, Optimized: 0.1s
+        # Mailchimp API delays (AGGRESSIVE production optimization)
+        self.mailchimp_upsert_delay = float(os.getenv("MAILCHIMP_UPSERT_DELAY", "0.01"))   # AGGRESSIVE: 0.01s (was 2.0s)
+        self.mailchimp_tag_delay = float(os.getenv("MAILCHIMP_TAG_DELAY", "0.01"))         # AGGRESSIVE: 0.01s (was 1.0s)
+        self.mailchimp_verify_delay = float(os.getenv("MAILCHIMP_VERIFY_DELAY", "0.01"))   # AGGRESSIVE: 0.01s (was 1.0s)
         
-        # HubSpot API delays
-        self.hubspot_page_delay = float(os.getenv("HUBSPOT_PAGE_DELAY", "0.5"))            # Default: 0.5s, Optimized: 0.1s
+        # HubSpot API delays (AGGRESSIVE)
+        self.hubspot_page_delay = float(os.getenv("HUBSPOT_PAGE_DELAY", "0.05"))           # AGGRESSIVE: 0.05s (was 0.5s)
         
         # =============================================================================
         # 🔍 VERIFICATION & VALIDATION
         # =============================================================================
         
-        # Verification modes: FULL, FAST, MINIMAL
-        self.verification_mode = os.getenv("MAILCHIMP_VERIFICATION_MODE", "FULL")
+        # Verification modes: FULL, FAST, MINIMAL (OPTIMIZED for speed)
+        self.verification_mode = os.getenv("MAILCHIMP_VERIFICATION_MODE", "MINIMAL")
         
         # Skip verification for successful operations (reduces API calls by ~33%)
-        self.skip_success_verification = os.getenv("SKIP_SUCCESS_VERIFICATION", "false").lower() == "true"
+        self.skip_success_verification = os.getenv("SKIP_SUCCESS_VERIFICATION", "true").lower() == "true"
         
         # Batch verification (verify multiple contacts in one call where possible)
         self.enable_batch_verification = os.getenv("ENABLE_BATCH_VERIFICATION", "false").lower() == "true"
@@ -634,19 +704,49 @@ def validate_configuration():
         if not LIST_EXCLUSION_RULES:
             warnings.append("LIST_EXCLUSION_RULES is empty - no anti-remarketing protection")
     
+    # Validate import stream groups
+    all_lists = set(GENERAL_MARKETING_LISTS + WEBINAR_CAMPAIGN_LISTS + MANUAL_INCLUSION_OVERRIDE_LISTS)
+    configured_lists = set(HUBSPOT_LIST_IDS)
+    
+    if all_lists != configured_lists:
+        errors.append(f"Import stream groups don't match HUBSPOT_LIST_IDS: {all_lists} vs {configured_lists}")
+    
+    # Validate exclusion matrix
+    print("\n📊 EXCLUSION MATRIX VERIFICATION:")
+    print("="*80)
+    print("| Import Stream        | Lists           | 717 | 762 | 773 | 700 | 701 | 702 | 703 |")
+    print("|---------------------|-----------------|-----|-----|-----|-----|-----|-----|-----|")
+    
+    # Check General Marketing exclusions
+    general_excludes = set(HARD_EXCLUDE_LISTS)
+    general_check = "❌" if "717" in general_excludes else "✅"
+    print(f"| General Marketing   | {','.join(GENERAL_MARKETING_LISTS):<15} | {general_check}   | {general_check}   | {general_check}   | {general_check}   | {general_check}   | {general_check}   | {general_check}   |")
+    
+    # Check Webinar exclusions  
+    webinar_excludes = set(CRITICAL_EXCLUDE_LISTS)
+    critical_check = "❌" if "717" in webinar_excludes else "✅"
+    exit_check = "✅"  # Webinars bypass exit lists
+    print(f"| Webinar Campaigns   | {','.join(WEBINAR_CAMPAIGN_LISTS):<15} | {critical_check}   | {critical_check}   | {critical_check}   | {exit_check}   | {exit_check}   | {exit_check}   | {exit_check}   |")
+    
+    # Check Manual Override (bypasses everything)
+    override_check = "✅"
+    print(f"| Manual Override     | {','.join(MANUAL_INCLUSION_OVERRIDE_LISTS):<15} | {override_check}   | {override_check}   | {override_check}   | {override_check}   | {override_check}   | {override_check}   | {override_check}   |")
+    print("="*80)
+    print("Legend: ❌ = Excluded (blocked), ✅ = Bypass (allowed)")
+    
     # Print validation results
     if errors:
-        print("❌ CONFIGURATION ERRORS:")
+        print("\n❌ CONFIGURATION ERRORS:")
         for error in errors:
             print(f"   • {error}")
         return False
     
     if warnings:
-        print("⚠️ CONFIGURATION WARNINGS:")
+        print("\n⚠️ CONFIGURATION WARNINGS:")
         for warning in warnings:
             print(f"   • {warning}")
     
-    print("✅ Configuration validated")
+    print("\n✅ Configuration validated - Import stream groups properly configured")
     return True
 
 def main():

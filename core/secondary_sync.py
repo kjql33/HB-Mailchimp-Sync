@@ -620,6 +620,57 @@ class MailchimpToHubSpotSync:
             self.log(f"   ❌ Error updating existing contact: {str(e)}", "ERROR")
             return None
     
+    def _unsubscribe_hubspot_contact(self, email: str) -> bool:
+        """
+        Unsubscribe a contact from HubSpot Marketing Information using Communication Preferences API.
+        This replaces adding contacts to the dynamic list 762 approach.
+        
+        Args:
+            email: Email address of the contact to unsubscribe
+            
+        Returns:
+            bool: True if successfully unsubscribed (or already unsubscribed), False if failed
+        """
+        try:
+            unsubscribe_url = "https://api.hubapi.com/communication-preferences/v3/unsubscribe"
+            
+            unsubscribe_data = {
+                "emailAddress": email,
+                "subscriptionId": 289137112,  # Marketing Information subscription ID
+                "legalBasis": "LEGITIMATE_INTEREST_OTHER",
+                "legalBasisExplanation": "Mailchimp unsubscribe sync - user opted out in Mailchimp"
+            }
+            
+            headers = {
+                'Authorization': f'Bearer {config.HUBSPOT_PRIVATE_TOKEN}',
+                'Content-Type': 'application/json'
+            }
+            
+            response = self.session.post(unsubscribe_url, json=unsubscribe_data, headers=headers)
+            
+            if response.status_code == 200:
+                self.log(f"   ✅ Successfully unsubscribed {email} from Marketing Information")
+                return True
+            elif response.status_code == 400:
+                # Check if already unsubscribed - this is success for our sync
+                response_text = response.text.lower()
+                if any(phrase in response_text for phrase in [
+                    "already unsubscribed",
+                    "cannot be updated because they have unsubscribed"
+                ]):
+                    self.log(f"   ✅ Contact {email} is already unsubscribed (sync success)")
+                    return True
+                else:
+                    self.log(f"   ❌ Unsubscribe failed for {email}: {response.text}", "ERROR")
+                    return False
+            else:
+                self.log(f"   ❌ Unsubscribe failed for {email}: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"   ❌ Exception unsubscribing {email}: {str(e)}", "ERROR")
+            return False
+
     def _add_contact_to_hubspot_list(self, contact_id: str, list_id: str) -> bool:
         """Add a contact to a HubSpot list using the list manager"""
         try:
