@@ -80,15 +80,14 @@ RUN_MODE = os.environ.get("RUN_MODE", "BIDIRECTIONAL_SYNC")  # Can be overridden
 ENABLE_SECONDARY_SYNC = True  # Set to True when target lists are created
 
 # Secondary sync mode settings
-SECONDARY_SYNC_MODE = "FULL_SYNC"  # Options: "FULL_SYNC", "TEST_RUN"
-SECONDARY_TEST_CONTACT_LIMIT = 0  # 0 = unlimited contacts
-
-# Override from environment variables for testing
-SECONDARY_SYNC_MODE = os.environ.get("SECONDARY_SYNC_MODE", SECONDARY_SYNC_MODE)
-SECONDARY_TEST_CONTACT_LIMIT = int(os.environ.get("SECONDARY_TEST_CONTACT_LIMIT", SECONDARY_TEST_CONTACT_LIMIT))
+SECONDARY_SYNC_MODE = "FULL_SYNC"  # Production: Full synchronization
+SECONDARY_TEST_CONTACT_LIMIT = 0  # Production: 0 = unlimited contacts
 
 # Archive processed contacts from Mailchimp after successful import
-ENABLE_MAILCHIMP_ARCHIVAL = True  # Enable for full production run
+ENABLE_MAILCHIMP_ARCHIVAL = True  # Production: Enable for full runs
+
+# Control untagging system (separate from archival)
+ENABLE_MAILCHIMP_UNTAGGING = True  # Production: Enable removing stale tags from Mailchimp
 
 # =============================================================================
 # 🔇 NOTIFICATION CONTROLS - NOISE REDUCTION
@@ -210,6 +209,8 @@ MANUAL_OVERRIDE_LISTS = [
 # All lists combined for system processing - DO NOT EDIT MANUALLY
 HUBSPOT_LIST_IDS = GENERAL_MARKETING_LISTS + WEBINAR_CAMPAIGN_LISTS + MANUAL_OVERRIDE_LISTS
 
+# Production: Use configured lists (no environment overrides)
+
 # ⚠️ IMPORTANT: Each contact gets tagged with their source list ID in Mailchimp
 # This allows tracking where they came from for smart removal later
 
@@ -285,9 +286,8 @@ HARD_EXCLUDE_LISTS = CRITICAL_EXCLUDE_LISTS + EXIT_EXCLUDE_LISTS
 # If you have 100 contacts in list 718, but 3 of them are also in list 123 (VIP Clients)
 # Then only 97 contacts will sync to Mailchimp - the 3 VIP contacts are protected
 
-# Test/Development Settings
-TEST_CONTACT_LIMIT = 0      # 0 = unlimited contacts (ready for production)
-TEST_CONTACT_LIMIT = int(os.environ.get("TEST_CONTACT_LIMIT", TEST_CONTACT_LIMIT))
+# Production Settings
+TEST_CONTACT_LIMIT = 0      # Production: 0 = unlimited contacts
 
 ENABLE_DRY_RUN = False      # Set True to simulate without actual changes
 

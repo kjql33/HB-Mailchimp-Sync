@@ -1791,17 +1791,32 @@ def remove_mailchimp_contact_by_email(email: str) -> bool:
     except Exception as e:
         logger.debug(f"Could not check status for {email}, proceeding with archival: {e}")
 
-    # Archive the member using PATCH with status='archived'
+    # Archive the member - use DELETE for unsubscribed contacts, PATCH for others
     archive_url = f"{MAILCHIMP_BASE_URL}/lists/{MAILCHIMP_LIST_ID}/members/{subscriber_hash}"
-    archive_data = {"status": "archived"}
+    
+    # Check current status to determine archival method
+    current_status = "unknown"
+    try:
+        status_response = requests.get(archive_url, headers=headers)
+        if status_response.status_code == 200:
+            current_status = status_response.json().get('status', 'unknown')
+    except Exception as e:
+        logger.debug(f"Could not check status before archival for {email}: {e}")
     
     try:
         for attempt in range(MAX_RETRIES):
             try:
-                response = requests.patch(archive_url, headers=headers, json=archive_data)
+                # Use DELETE for unsubscribed contacts (Mailchimp API limitation)
+                if current_status == 'unsubscribed':
+                    logger.debug(f"Using DELETE method for unsubscribed contact: {email}")
+                    response = requests.delete(archive_url, headers=headers)
+                else:
+                    # Use PATCH for other statuses
+                    archive_data = {"status": "archived"}
+                    response = requests.patch(archive_url, headers=headers, json=archive_data)
                 
                 if response.status_code in (200, 204):
-                    logger.debug(f"✅ Archived contact in Mailchimp: {email}")
+                    logger.debug(f"✅ Archived contact in Mailchimp: {email} (method: {'DELETE' if current_status == 'unsubscribed' else 'PATCH'})")
                     return True
                 elif response.status_code == 404:
                     logger.debug(f"Contact not found in Mailchimp (already archived): {email}")
@@ -3070,9 +3085,16 @@ def main():
         successful_upserts = len(stats['successful'])
         logger.debug(f"All contacts from list {list_id} tagged with source list ID for anti-remarketing")
 
-        # Step 4: Get current Mailchimp members with our tag
-        mailchimp_emails_dict = get_current_mailchimp_emails()
-        mailchimp_emails = set(mailchimp_emails_dict.keys())
+        # Step 4: Get current Mailchimp members with our tag (if untagging enabled)
+        from .config import ENABLE_MAILCHIMP_UNTAGGING
+        
+        if ENABLE_MAILCHIMP_UNTAGGING:
+            mailchimp_emails_dict = get_current_mailchimp_emails()
+            mailchimp_emails = set(mailchimp_emails_dict.keys())
+        else:
+            logger.info("⏭️ Mailchimp untagging DISABLED - Skipping member scan")
+            mailchimp_emails_dict = {}
+            mailchimp_emails = set()
 
         # Step 5: Find and untag stale contacts
         emails_to_untag = mailchimp_emails - hubspot_emails
