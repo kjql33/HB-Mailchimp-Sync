@@ -194,6 +194,7 @@ GENERAL_MARKETING_LISTS = [
 # =============================================================================  
 WEBINAR_CAMPAIGN_LISTS = [
     "872",  # Demo List - Primary demo audience with 700+ contacts
+    "883",  # MC CTA Services - Same category as Demo list with exit list bypass
 ]
 
 # =============================================================================

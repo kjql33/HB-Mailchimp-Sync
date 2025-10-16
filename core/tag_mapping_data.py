@@ -27,6 +27,7 @@ HUBSPOT_TO_MAILCHIMP_TAG_MAP = {
     
     # GROUP 2: Demo Campaigns  
     "872": "Demo",              # Demo list → "Demo" tag (already exists in Mailchimp)
+    "883": "Demo",              # MC CTA Services → "Demo" tag (same category as 872)
     
     # GROUP 3: Manual Override (appears as General)
     "784": "General",           # Manual override → appears as "General" tag
@@ -38,7 +39,7 @@ MAILCHIMP_TAG_TO_HUBSPOT_LISTS = {
     "Recruitment": ["719"],
     "Competition": ["720"], 
     "Directors": ["751"],
-    "Demo": ["872"],                    # Demo list
+    "Demo": ["872", "883"],             # Demo lists (872=Demo, 883=MC CTA Services)
 }
 
 # =============================================================================
