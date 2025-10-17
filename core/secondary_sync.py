@@ -403,14 +403,14 @@ class MailchimpToHubSpotSync:
                         if source_list_id in source_name_cache:
                             return source_name_cache[source_list_id]
                         
-                        # Handle manual override markers (e.g., "784_via_720")
+                        # Handle manual override markers (e.g., "784_via_718")
                         if "_via_" in source_list_id:
                             # For manual overrides, show the target campaign name
                             target_list_id = source_list_id.split("_via_")[1]
                             campaign_names = {
-                                "718": "Recruitment",
-                                "719": "Competition", 
-                                "720": "General",
+                                "718": "General",
+                                "719": "Recruitment", 
+                                "720": "Competition",
                                 "751": "Directors"
                             }
                             name = campaign_names.get(target_list_id, "General")
@@ -426,9 +426,9 @@ class MailchimpToHubSpotSync:
                         except Exception:
                             # Fallback to basic mapping for known lists
                             known_lists = {
-                                "718": "Recruitment",
-                                "719": "Competition", 
-                                "720": "General",
+                                "718": "General",
+                                "719": "Recruitment", 
+                                "720": "Competition",
                                 "751": "Directors"
                             }
                             name = known_lists.get(source_list_id, f"List-{source_list_id}")

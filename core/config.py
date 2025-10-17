@@ -123,12 +123,12 @@ MANUAL_INCLUSION_OVERRIDE_LISTS = [
 
 # 🏷️ SOURCE TRACKING: How manual overrides appear in Mailchimp
 # Format: "original_list_via_target_campaign" 
-MANUAL_OVERRIDE_SOURCE_MARKER = "784_via_720"  # Manual override appearing as General
+MANUAL_OVERRIDE_SOURCE_MARKER = "784_via_718"  # Manual override appearing as General
 
 # 🎯 CAMPAIGN INJECTION: Where manual overrides get routed
-# Manual contacts from list 784 appear as General (720) contacts in Mailchimp
+# Manual contacts from list 784 appear as General (718) contacts in Mailchimp
 OVERRIDE_CAMPAIGN_INJECTION = {
-    "784": "720",  # Manual inclusion list → appears as General campaign
+    "784": "718",  # Manual inclusion list → appears as General campaign
 }
 
 # =============================================================================

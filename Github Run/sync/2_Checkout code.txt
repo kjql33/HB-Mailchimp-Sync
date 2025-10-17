@@ -1,0 +1,118 @@
+﻿2025-10-03T15:47:40.0031796Z ##[group]Run actions/checkout@v3
+2025-10-03T15:47:40.0032664Z with:
+2025-10-03T15:47:40.0033118Z   repository: kjql33/HB-Mailchimp-Sync
+2025-10-03T15:47:40.0033827Z   token: ***
+2025-10-03T15:47:40.0034262Z   ssh-strict: true
+2025-10-03T15:47:40.0034883Z   persist-credentials: true
+2025-10-03T15:47:40.0035366Z   clean: true
+2025-10-03T15:47:40.0035797Z   sparse-checkout-cone-mode: true
+2025-10-03T15:47:40.0036323Z   fetch-depth: 1
+2025-10-03T15:47:40.0036751Z   fetch-tags: false
+2025-10-03T15:47:40.0037184Z   lfs: false
+2025-10-03T15:47:40.0037597Z   submodules: false
+2025-10-03T15:47:40.0038047Z   set-safe-directory: true
+2025-10-03T15:47:40.0038769Z ##[endgroup]
+2025-10-03T15:47:40.0868061Z Syncing repository: kjql33/HB-Mailchimp-Sync
+2025-10-03T15:47:40.0869828Z ##[group]Getting Git version info
+2025-10-03T15:47:40.0870671Z Working directory is '/home/runner/work/HB-Mailchimp-Sync/HB-Mailchimp-Sync'
+2025-10-03T15:47:40.0871913Z [command]/usr/bin/git version
+2025-10-03T15:47:40.0950483Z git version 2.51.0
+2025-10-03T15:47:40.0977224Z ##[endgroup]
+2025-10-03T15:47:40.0992919Z Temporarily overriding HOME='/home/runner/work/_temp/b660545e-51be-46da-bc60-f0b01d5ea1a1' before making global git config changes
+2025-10-03T15:47:40.0995650Z Adding repository directory to the temporary git global config as a safe directory
+2025-10-03T15:47:40.0997867Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/HB-Mailchimp-Sync/HB-Mailchimp-Sync
+2025-10-03T15:47:40.1033241Z Deleting the contents of '/home/runner/work/HB-Mailchimp-Sync/HB-Mailchimp-Sync'
+2025-10-03T15:47:40.1037369Z ##[group]Initializing the repository
+2025-10-03T15:47:40.1041094Z [command]/usr/bin/git init /home/runner/work/HB-Mailchimp-Sync/HB-Mailchimp-Sync
+2025-10-03T15:47:40.1148920Z hint: Using 'master' as the name for the initial branch. This default branch name
+2025-10-03T15:47:40.1149998Z hint: is subject to change. To configure the initial branch name to use in all
+2025-10-03T15:47:40.1151084Z hint: of your new repositories, which will suppress this warning, call:
+2025-10-03T15:47:40.1151836Z hint:
+2025-10-03T15:47:40.1152526Z hint: 	git config --global init.defaultBranch <name>
+2025-10-03T15:47:40.1153164Z hint:
+2025-10-03T15:47:40.1154152Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2025-10-03T15:47:40.1155422Z hint: 'development'. The just-created branch can be renamed via this command:
+2025-10-03T15:47:40.1156606Z hint:
+2025-10-03T15:47:40.1157056Z hint: 	git branch -m <name>
+2025-10-03T15:47:40.1157550Z hint:
+2025-10-03T15:47:40.1158204Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2025-10-03T15:47:40.1159397Z Initialized empty Git repository in /home/runner/work/HB-Mailchimp-Sync/HB-Mailchimp-Sync/.git/
+2025-10-03T15:47:40.1164894Z [command]/usr/bin/git remote add origin https://github.com/kjql33/HB-Mailchimp-Sync
+2025-10-03T15:47:40.1199702Z ##[endgroup]
+2025-10-03T15:47:40.1200492Z ##[group]Disabling automatic garbage collection
+2025-10-03T15:47:40.1202275Z [command]/usr/bin/git config --local gc.auto 0
+2025-10-03T15:47:40.1227913Z ##[endgroup]
+2025-10-03T15:47:40.1228674Z ##[group]Setting up auth
+2025-10-03T15:47:40.1232822Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-10-03T15:47:40.1258446Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-10-03T15:47:40.1590627Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-10-03T15:47:40.1615828Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-10-03T15:47:40.1844722Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2025-10-03T15:47:40.1876717Z ##[endgroup]
+2025-10-03T15:47:40.1878016Z ##[group]Fetching the repository
+2025-10-03T15:47:40.1885030Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --progress --no-recurse-submodules --depth=1 origin +318405d7801e88fdc7d32dba7500b03726da4ce5:refs/remotes/origin/main
+2025-10-03T15:47:40.4556049Z remote: Enumerating objects: 26, done.        
+2025-10-03T15:47:40.4557497Z remote: Counting objects:   3% (1/26)        
+2025-10-03T15:47:40.4558152Z remote: Counting objects:   7% (2/26)        
+2025-10-03T15:47:40.4558760Z remote: Counting objects:  11% (3/26)        
+2025-10-03T15:47:40.4559376Z remote: Counting objects:  15% (4/26)        
+2025-10-03T15:47:40.4559972Z remote: Counting objects:  19% (5/26)        
+2025-10-03T15:47:40.4560572Z remote: Counting objects:  23% (6/26)        
+2025-10-03T15:47:40.4561169Z remote: Counting objects:  26% (7/26)        
+2025-10-03T15:47:40.4561768Z remote: Counting objects:  30% (8/26)        
+2025-10-03T15:47:40.4562364Z remote: Counting objects:  34% (9/26)        
+2025-10-03T15:47:40.4562997Z remote: Counting objects:  38% (10/26)        
+2025-10-03T15:47:40.4563600Z remote: Counting objects:  42% (11/26)        
+2025-10-03T15:47:40.4564206Z remote: Counting objects:  46% (12/26)        
+2025-10-03T15:47:40.4565008Z remote: Counting objects:  50% (13/26)        
+2025-10-03T15:47:40.4565629Z remote: Counting objects:  53% (14/26)        
+2025-10-03T15:47:40.4566244Z remote: Counting objects:  57% (15/26)        
+2025-10-03T15:47:40.4566843Z remote: Counting objects:  61% (16/26)        
+2025-10-03T15:47:40.4567501Z remote: Counting objects:  65% (17/26)        
+2025-10-03T15:47:40.4568121Z remote: Counting objects:  69% (18/26)        
+2025-10-03T15:47:40.4568737Z remote: Counting objects:  73% (19/26)        
+2025-10-03T15:47:40.4569351Z remote: Counting objects:  76% (20/26)        
+2025-10-03T15:47:40.4569967Z remote: Counting objects:  80% (21/26)        
+2025-10-03T15:47:40.4570566Z remote: Counting objects:  84% (22/26)        
+2025-10-03T15:47:40.4571579Z remote: Counting objects:  88% (23/26)        
+2025-10-03T15:47:40.4572400Z remote: Counting objects:  92% (24/26)        
+2025-10-03T15:47:40.4573659Z remote: Counting objects:  96% (25/26)        
+2025-10-03T15:47:40.4575003Z remote: Counting objects: 100% (26/26)        
+2025-10-03T15:47:40.4575971Z remote: Counting objects: 100% (26/26), done.        
+2025-10-03T15:47:40.4576648Z remote: Compressing objects:   4% (1/23)        
+2025-10-03T15:47:40.4577271Z remote: Compressing objects:   8% (2/23)        
+2025-10-03T15:47:40.4577924Z remote: Compressing objects:  13% (3/23)        
+2025-10-03T15:47:40.4578549Z remote: Compressing objects:  17% (4/23)        
+2025-10-03T15:47:40.4579173Z remote: Compressing objects:  21% (5/23)        
+2025-10-03T15:47:40.4599608Z remote: Compressing objects:  26% (6/23)        
+2025-10-03T15:47:40.4626784Z remote: Compressing objects:  30% (7/23)        
+2025-10-03T15:47:40.4638141Z remote: Compressing objects:  34% (8/23)        
+2025-10-03T15:47:40.4640860Z remote: Compressing objects:  39% (9/23)        
+2025-10-03T15:47:40.4645186Z remote: Compressing objects:  43% (10/23)        
+2025-10-03T15:47:40.4670604Z remote: Compressing objects:  47% (11/23)        
+2025-10-03T15:47:40.4671909Z remote: Compressing objects:  52% (12/23)        
+2025-10-03T15:47:40.4672801Z remote: Compressing objects:  56% (13/23)        
+2025-10-03T15:47:40.4673654Z remote: Compressing objects:  60% (14/23)        
+2025-10-03T15:47:40.4674701Z remote: Compressing objects:  65% (15/23)        
+2025-10-03T15:47:40.4680724Z remote: Compressing objects:  69% (16/23)        
+2025-10-03T15:47:40.4682370Z remote: Compressing objects:  73% (17/23)        
+2025-10-03T15:47:40.4683403Z remote: Compressing objects:  78% (18/23)        
+2025-10-03T15:47:40.4684071Z remote: Compressing objects:  82% (19/23)        
+2025-10-03T15:47:40.4684880Z remote: Compressing objects:  86% (20/23)        
+2025-10-03T15:47:40.4685524Z remote: Compressing objects:  91% (21/23)        
+2025-10-03T15:47:40.4686154Z remote: Compressing objects:  95% (22/23)        
+2025-10-03T15:47:40.4687024Z remote: Compressing objects: 100% (23/23)        
+2025-10-03T15:47:40.4687690Z remote: Compressing objects: 100% (23/23), done.        
+2025-10-03T15:47:40.5146218Z remote: Total 26 (delta 0), reused 15 (delta 0), pack-reused 0 (from 0)        
+2025-10-03T15:47:40.5237896Z From https://github.com/kjql33/HB-Mailchimp-Sync
+2025-10-03T15:47:40.5238867Z  * [new ref]         318405d7801e88fdc7d32dba7500b03726da4ce5 -> origin/main
+2025-10-03T15:47:40.5271245Z ##[endgroup]
+2025-10-03T15:47:40.5272488Z ##[group]Determining the checkout info
+2025-10-03T15:47:40.5273972Z ##[endgroup]
+2025-10-03T15:47:40.5275370Z ##[group]Checking out the ref
+2025-10-03T15:47:40.5279047Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+2025-10-03T15:47:40.5353736Z Switched to a new branch 'main'
+2025-10-03T15:47:40.5356845Z branch 'main' set up to track 'origin/main'.
+2025-10-03T15:47:40.5363370Z ##[endgroup]
+2025-10-03T15:47:40.5397402Z [command]/usr/bin/git log -1 --format='%H'
+2025-10-03T15:47:40.5418531Z '318405d7801e88fdc7d32dba7500b03726da4ce5'

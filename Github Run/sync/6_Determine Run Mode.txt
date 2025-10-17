@@ -1,0 +1,68 @@
+﻿2025-10-03T15:47:45.6602507Z ##[group]Run # Get current UTC time
+2025-10-03T15:47:45.6602919Z [36;1m# Get current UTC time[0m
+2025-10-03T15:47:45.6603274Z [36;1mCURRENT_DAY=$(date -u +%u)  # 1=Monday, 7=Sunday[0m
+2025-10-03T15:47:45.6603632Z [36;1mCURRENT_HOUR=$(date -u +%H)[0m
+2025-10-03T15:47:45.6603944Z [36;1mCURRENT_MINUTE=$(date -u +%M)[0m
+2025-10-03T15:47:45.6604242Z [36;1mCURRENT_MONTH=$(date -u +%m)[0m
+2025-10-03T15:47:45.6604692Z [36;1mCURRENT_DATE=$(date -u +%d)[0m
+2025-10-03T15:47:45.6604984Z [36;1mCURRENT_YEAR=$(date -u +%Y)[0m
+2025-10-03T15:47:45.6605237Z [36;1m[0m
+2025-10-03T15:47:45.6605539Z [36;1m# Function to determine if we're in BST (British Summer Time)[0m
+2025-10-03T15:47:45.6605878Z [36;1mis_bst() {[0m
+2025-10-03T15:47:45.6606107Z [36;1m  local month=$1[0m
+2025-10-03T15:47:45.6606347Z [36;1m  local day=$2[0m
+2025-10-03T15:47:45.6606570Z [36;1m  [0m
+2025-10-03T15:47:45.6606846Z [36;1m  # BST runs from last Sunday in March to last Sunday in October[0m
+2025-10-03T15:47:45.6607220Z [36;1m  if [[ $month -lt 3 || $month -gt 10 ]]; then[0m
+2025-10-03T15:47:45.6607545Z [36;1m    return 1  # GMT (winter)[0m
+2025-10-03T15:47:45.6607846Z [36;1m  elif [[ $month -gt 3 && $month -lt 10 ]]; then[0m
+2025-10-03T15:47:45.6608146Z [36;1m    return 0  # BST (summer)[0m
+2025-10-03T15:47:45.6608414Z [36;1m  elif [[ $month -eq 3 ]]; then[0m
+2025-10-03T15:47:45.6608728Z [36;1m    # March - need to check if we're past last Sunday[0m
+2025-10-03T15:47:45.6609101Z [36;1m    local last_sunday=$(date -d "$CURRENT_YEAR-03-31" +%u)[0m
+2025-10-03T15:47:45.6609477Z [36;1m    local last_sunday_date=$((31 - last_sunday + 1))[0m
+2025-10-03T15:47:45.6609842Z [36;1m    [[ $day -ge $last_sunday_date ]] && return 0 || return 1[0m
+2025-10-03T15:47:45.6610166Z [36;1m  elif [[ $month -eq 10 ]]; then[0m
+2025-10-03T15:47:45.6610485Z [36;1m    # October - need to check if we're before last Sunday[0m
+2025-10-03T15:47:45.6610860Z [36;1m    local last_sunday=$(date -d "$CURRENT_YEAR-10-31" +%u)[0m
+2025-10-03T15:47:45.6611232Z [36;1m    local last_sunday_date=$((31 - last_sunday + 1))[0m
+2025-10-03T15:47:45.6611585Z [36;1m    [[ $day -lt $last_sunday_date ]] && return 0 || return 1[0m
+2025-10-03T15:47:45.6611894Z [36;1m  fi[0m
+2025-10-03T15:47:45.6612098Z [36;1m}[0m
+2025-10-03T15:47:45.6612292Z [36;1m[0m
+2025-10-03T15:47:45.6612533Z [36;1m# Check if this is a Wednesday sales prep run[0m
+2025-10-03T15:47:45.6612892Z [36;1mif [[ "$CURRENT_DAY" == "3" && "$CURRENT_MINUTE" == "05" ]]; then[0m
+2025-10-03T15:47:45.6613244Z [36;1m  # Determine current British timezone[0m
+2025-10-03T15:47:45.6613572Z [36;1m  if is_bst $CURRENT_MONTH $CURRENT_DATE; then[0m
+2025-10-03T15:47:45.6613896Z [36;1m    # BST active: 9 UTC = 10 AM British Time[0m
+2025-10-03T15:47:45.6614205Z [36;1m    if [[ "$CURRENT_HOUR" == "09" ]]; then[0m
+2025-10-03T15:47:45.6614666Z [36;1m      echo "🎯 Wednesday 10am BST Sales Prep Run Detected"[0m
+2025-10-03T15:47:45.6615067Z [36;1m      echo "mode=SECONDARY_SYNC_ONLY" >> $GITHUB_OUTPUT[0m
+2025-10-03T15:47:45.6615517Z [36;1m      echo "description=Sales Prep: Secondary Sync Only (BST)" >> $GITHUB_OUTPUT[0m
+2025-10-03T15:47:45.6615902Z [36;1m      exit 0[0m
+2025-10-03T15:47:45.6616119Z [36;1m    fi[0m
+2025-10-03T15:47:45.6616318Z [36;1m  else[0m
+2025-10-03T15:47:45.6616558Z [36;1m    # GMT active: 10 UTC = 10 AM British Time  [0m
+2025-10-03T15:47:45.6616874Z [36;1m    if [[ "$CURRENT_HOUR" == "10" ]]; then[0m
+2025-10-03T15:47:45.6617222Z [36;1m      echo "🎯 Wednesday 10am GMT Sales Prep Run Detected"[0m
+2025-10-03T15:47:45.6617594Z [36;1m      echo "mode=SECONDARY_SYNC_ONLY" >> $GITHUB_OUTPUT[0m
+2025-10-03T15:47:45.6618183Z [36;1m      echo "description=Sales Prep: Secondary Sync Only (GMT)" >> $GITHUB_OUTPUT[0m
+2025-10-03T15:47:45.6618563Z [36;1m      exit 0[0m
+2025-10-03T15:47:45.6618781Z [36;1m    fi[0m
+2025-10-03T15:47:45.6618997Z [36;1m  fi[0m
+2025-10-03T15:47:45.6619222Z [36;1m  [0m
+2025-10-03T15:47:45.6619517Z [36;1m  # If we get here, it's Wednesday but wrong time - skip this run[0m
+2025-10-03T15:47:45.6620164Z [36;1m  echo "⏭️ Wednesday detected but not the correct British time - skipping"[0m
+2025-10-03T15:47:45.6620598Z [36;1m  echo "mode=SKIP" >> $GITHUB_OUTPUT[0m
+2025-10-03T15:47:45.6621008Z [36;1m  echo "description=Skipped - Wrong British Time" >> $GITHUB_OUTPUT[0m
+2025-10-03T15:47:45.6621389Z [36;1melse[0m
+2025-10-03T15:47:45.6621658Z [36;1m  echo "🔄 Regular Bidirectional Sync Run"[0m
+2025-10-03T15:47:45.6622023Z [36;1m  echo "mode=BIDIRECTIONAL_SYNC" >> $GITHUB_OUTPUT[0m
+2025-10-03T15:47:45.6622444Z [36;1m  echo "description=Full Bidirectional Sync" >> $GITHUB_OUTPUT[0m
+2025-10-03T15:47:45.6622825Z [36;1mfi[0m
+2025-10-03T15:47:45.6654616Z shell: /usr/bin/bash -e {0}
+2025-10-03T15:47:45.6654887Z env:
+2025-10-03T15:47:45.6655162Z   pythonLocation: /opt/hostedtoolcache/Python/3.10.18/x64
+2025-10-03T15:47:45.6655559Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.18/x64/lib
+2025-10-03T15:47:45.6655872Z ##[endgroup]
+2025-10-03T15:47:45.6772397Z 🔄 Regular Bidirectional Sync Run

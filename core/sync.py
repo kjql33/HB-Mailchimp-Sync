@@ -1600,9 +1600,9 @@ def apply_manual_override_campaign_tags(successful_emails: List[str], target_cam
         
     # Campaign name mapping
     campaign_names = {
-        "718": "Recruitment",
-        "719": "Competition", 
-        "720": "General",
+        "718": "General",
+        "719": "Recruitment", 
+        "720": "Competition",
         "751": "Directors"
     }
     
