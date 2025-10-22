@@ -167,11 +167,11 @@ COMPANY_EMAIL_PREFIXES = ["info", "contact", "hello", "enquiries"]  # Try these 
 #     - Exclusion Behavior: Respects ALL hard exclude lists including exit lists
 #     - Target Audience: Broad marketing reach with full compliance filtering
 #
-# 🎯 GROUP 2: WEBINAR CAMPAIGNS (Bypass Exit Lists Only)  
-#     - Lists: 843 (Companies→Contacts), 844 (Associated Contacts), 846 (Main Contacts)
-#     - Business Purpose: Event-specific marketing and webinar promotion
+# 🎯 GROUP 2: SPECIAL CAMPAIGNS (Exit List Bypass)  
+#     - Lists: 872 (Demo), 883 (MC CTA Services)
+#     - Business Purpose: Special campaigns and demo promotion
 #     - Exclusion Behavior: Excludes critical lists (717,762,773) but BYPASSES exit lists (700-703)
-#     - Rationale: Re-engagement campaigns may target previously archived contacts
+#     - Rationale: Can re-engage previously archived contacts
 #
 # 🎯 GROUP 3: MANUAL INCLUSION OVERRIDE (Bypass All Exclusions)
 #     - Lists: 784 (Manual Override)
@@ -190,11 +190,12 @@ GENERAL_MARKETING_LISTS = [
 ]
 
 # =============================================================================
-# 🎯 GROUP 2: DEMO CAMPAIGNS (Exit List Bypass)
+# 🎯 GROUP 2: SPECIAL CAMPAIGNS (Exit List Bypass)
 # =============================================================================  
-WEBINAR_CAMPAIGN_LISTS = [
-    "872",  # Demo List - Primary demo audience with 700+ contacts
-    "883",  # MC CTA Services - Same category as Demo list with exit list bypass
+SPECIAL_CAMPAIGN_LISTS = [
+    "872",  # Demo List - Primary demo audience with exit strategy to 894
+    "883",  # MC CTA Services - No exit strategy, manual cleanup only
+    "889",  # T23 EOY - End of year campaign, special exclusion rules
 ]
 
 # =============================================================================
@@ -208,7 +209,7 @@ MANUAL_OVERRIDE_LISTS = [
 # 📋 CONSOLIDATED INPUT LISTS (Auto-Generated)
 # =============================================================================
 # All lists combined for system processing - DO NOT EDIT MANUALLY
-HUBSPOT_LIST_IDS = GENERAL_MARKETING_LISTS + WEBINAR_CAMPAIGN_LISTS + MANUAL_OVERRIDE_LISTS
+HUBSPOT_LIST_IDS = GENERAL_MARKETING_LISTS + SPECIAL_CAMPAIGN_LISTS + MANUAL_OVERRIDE_LISTS
 
 # Production: Use configured lists (no environment overrides)
 
@@ -219,12 +220,17 @@ HUBSPOT_LIST_IDS = GENERAL_MARKETING_LISTS + WEBINAR_CAMPAIGN_LISTS + MANUAL_OVE
 # 🚫 EXCLUSION MATRIX - WHICH LISTS EXCLUDE WHICH CONTACTS
 # =============================================================================
 
-# 🎯 CRITICAL EXCLUSIONS (Applied to ALL Import Streams)
+# 🎯 CRITICAL EXCLUSIONS (Applied to ALL Import Streams - NO EXCEPTIONS)
 # These lists contain contacts that must NEVER receive marketing regardless of campaign type
 CRITICAL_EXCLUDE_LISTS = [
-    "717",  # 🚫 Active deal association - Sales process in progress, no marketing interference  
     "762",  # 🚫 Unsubscribed/Opted Out - Legal compliance, NEVER contact these people
     "773",  # 🚫 Manual disengagement - Explicit marketing opt-out, permanent exclusion
+]
+
+# 🎯 ACTIVE DEAL EXCLUSIONS (Applied to General Marketing + Special Campaigns Only)
+# Manual Override bypasses this to allow high-value prospect manual intervention
+ACTIVE_DEAL_EXCLUDE_LISTS = [
+    "717",  # 🚫 Active deal association - Sales process in progress, no marketing interference  
 ]
 
 # 🏁 EXIT EXCLUSIONS (Applied to General Marketing Only)  
@@ -241,25 +247,26 @@ EXIT_EXCLUDE_LISTS = [
 # =============================================================================
 
 # GROUP 1 (General Marketing): Respects ALL exclusions
-# - Excludes: Critical lists (717,762,773) + Exit lists (700,701,702,703)
+# - Excludes: Compliance lists (762,773) + Active deals (717) + Exit lists (700,701,702,703)
 # - Rationale: Comprehensive filtering for broad marketing campaigns
 
-# GROUP 2 (Webinars): Bypasses exit exclusions for re-engagement  
-# - Excludes: Critical lists (717,762,773) only
-# - Bypasses: Exit lists (700,701,702,703) 
-# - Rationale: Webinars can re-engage previously archived contacts
+# GROUP 2 (Special Campaigns): Bypasses exit exclusions and active deals  
+# - Excludes: Compliance lists (762,773) only
+# - Bypasses: Active deals (717) + Exit lists (700,701,702,703) 
+# - Rationale: Special campaigns can re-engage archived contacts and bypass active deals
 
-# GROUP 3 (Manual Override): Bypasses all exclusions
-# - Excludes: Nothing (manual intervention overrides all rules)
-# - Rationale: High-value contacts requiring manual judgment
+# GROUP 3 (Manual Override): Bypasses all exclusions except compliance
+# - Excludes: Compliance lists (762,773) only
+# - Bypasses: Active deals (717) + Exit lists (700,701,702,703)
+# - Rationale: High-value contacts requiring manual judgment, but still respect unsubscribe/opt-out
 
 # 📊 EXCLUSION MATRIX TABLE
 # =============================================================================
 # | Import Stream        | Lists           | 717 | 762 | 773 | 700 | 701 | 702 | 703 |
 # |---------------------|-----------------|-----|-----|-----|-----|-----|-----|-----|
 # | General Marketing   | 718,719,720,751 | ❌   | ❌   | ❌   | ❌   | ❌   | ❌   | ❌   |
-# | Webinar Campaigns   | 843,844,846     | ❌   | ❌   | ❌   | ✅   | ✅   | ✅   | ✅   |
-# | Manual Override     | 784             | ✅   | ✅   | ✅   | ✅   | ✅   | ✅   | ✅   |
+# | Special Campaigns   | 872,883,889     | ✅   | ❌   | ❌   | ✅   | ✅   | ✅   | ✅   |
+# | Manual Override     | 784             | ✅   | ❌   | ❌   | ✅   | ✅   | ✅   | ✅   |
 # =============================================================================
 # Legend: ❌ = Excluded (contact blocked), ✅ = Bypass (contact allowed)
 # 
@@ -271,11 +278,13 @@ EXIT_EXCLUDE_LISTS = [
 # =============================================================================
 
 # Legacy configuration for backward compatibility
-WEBINAR_LIST_IDS = WEBINAR_CAMPAIGN_LISTS  # Alias for existing code
-EXIT_LISTS = EXIT_EXCLUDE_LISTS            # Alias for existing code
+WEBINAR_CAMPAIGN_LISTS = SPECIAL_CAMPAIGN_LISTS  # Alias for existing code
+EXIT_LISTS = EXIT_EXCLUDE_LISTS                  # Alias for existing code
 
-# Combined exclude lists (used by general marketing)
-HARD_EXCLUDE_LISTS = CRITICAL_EXCLUDE_LISTS + EXIT_EXCLUDE_LISTS
+# Combined exclude lists for different import stream groups
+HARD_EXCLUDE_LISTS = CRITICAL_EXCLUDE_LISTS + ACTIVE_DEAL_EXCLUDE_LISTS + EXIT_EXCLUDE_LISTS  # General Marketing
+COMPLIANCE_EXCLUDE_LISTS = CRITICAL_EXCLUDE_LISTS  # Special Campaigns + Manual Override
+SPECIAL_EXCLUDE_LISTS = CRITICAL_EXCLUDE_LISTS + ACTIVE_DEAL_EXCLUDE_LISTS  # Special Campaigns (bypass exit lists)
 
 # 🎯 HOW HARD EXCLUDE WORKS:
 # 1. Before syncing any contact from 718, 719, 720, or 751 to Mailchimp
@@ -335,8 +344,8 @@ TEAMS_WEBHOOK_URL = os.getenv("TEAMS_WEBHOOK_URL", "")
 
 # Processing settings
 PAGE_SIZE = int(os.getenv("PAGE_SIZE", 20))               # records per HubSpot page
-MAX_RETRIES = int(os.getenv("MAX_RETRIES", 3))           # API retry attempts
-RETRY_DELAY = int(os.getenv("RETRY_DELAY", 2))           # seconds between retries
+MAX_RETRIES = int(os.getenv("MAX_RETRIES", 2))           # API retry attempts (reduced for faster failure)
+RETRY_DELAY = int(os.getenv("RETRY_DELAY", 1))           # seconds between retries (reduced for faster failure)
 
 # =============================================================================
 # 📋 DATA MAPPING
@@ -383,8 +392,10 @@ SECONDARY_SYNC_MAPPINGS = {
     "archive_engaged_recruitment_never": "701",
     "archive_engaged_general_twice": "703",
     "archive_engaged_general_once": "702",
-    "archive_engaged_general_never": "701", 
-
+    "archive_engaged_general_never": "701",
+    
+    # DEMO EXIT MAPPING:
+    "Demo Finished": "894",  # Demo completion → Demo Finished list (894)
 
     # Keep test mapping for reference:
     # "engaged_test_tag": "676",         # TEST: Engaged contacts → List 676
@@ -409,6 +420,9 @@ LIST_EXCLUSION_RULES = {
     "719": ["700", "701", "702", "703"], # Remove from 719 when added to ANY destination list  
     "720": ["700", "701", "702", "703"], # Remove from 720 when added to ANY destination list
     "751": ["700", "701", "702", "703"], # Remove from 751 when added to ANY destination list
+    
+    # DEMO EXIT RULES:
+    "872": ["894"],  # Remove from Demo list (872) when added to Demo Finished (894)
     
     # Keep test rule for reference:
     # "677": ["676"],  # TEST: If added to list 676, remove from 677
@@ -723,11 +737,11 @@ def validate_configuration():
     general_check = "❌" if "717" in general_excludes else "✅"
     print(f"| General Marketing   | {','.join(GENERAL_MARKETING_LISTS):<15} | {general_check}   | {general_check}   | {general_check}   | {general_check}   | {general_check}   | {general_check}   | {general_check}   |")
     
-    # Check Webinar exclusions  
-    webinar_excludes = set(CRITICAL_EXCLUDE_LISTS)
-    critical_check = "❌" if "717" in webinar_excludes else "✅"
-    exit_check = "✅"  # Webinars bypass exit lists
-    print(f"| Webinar Campaigns   | {','.join(WEBINAR_CAMPAIGN_LISTS):<15} | {critical_check}   | {critical_check}   | {critical_check}   | {exit_check}   | {exit_check}   | {exit_check}   | {exit_check}   |")
+    # Check Special Campaigns exclusions  
+    special_excludes = set(CRITICAL_EXCLUDE_LISTS)
+    critical_check = "❌" if "717" in special_excludes else "✅"
+    exit_check = "✅"  # Special campaigns bypass exit lists
+    print(f"| Special Campaigns   | {','.join(SPECIAL_CAMPAIGN_LISTS):<15} | {critical_check}   | {critical_check}   | {critical_check}   | {exit_check}   | {exit_check}   | {exit_check}   | {exit_check}   |")
     
     # Check Manual Override (bypasses everything)
     override_check = "✅"

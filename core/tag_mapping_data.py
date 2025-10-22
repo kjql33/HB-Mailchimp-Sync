@@ -25,9 +25,10 @@ HUBSPOT_TO_MAILCHIMP_TAG_MAP = {
     "720": "Competition",       # Competition campaigns → "Competition" tag
     "751": "Directors",         # Directors targeting → "Directors" tag
     
-    # GROUP 2: Demo Campaigns  
-    "872": "Demo",              # Demo list → "Demo" tag (already exists in Mailchimp)
-    "883": "Demo",              # MC CTA Services → "Demo" tag (same category as 872)
+    # GROUP 2: Special Campaigns  
+    "872": "Demo",              # Demo list → "Demo" tag
+    "883": "MC CTA Services",   # MC CTA Services → "MC CTA Services" tag (no exit strategy)
+    "889": "T23 EOY",           # T23 EOY → "T23 EOY" tag (end of year campaign)
     
     # GROUP 3: Manual Override (appears as General)
     "784": "General",           # Manual override → appears as "General" tag
@@ -39,7 +40,9 @@ MAILCHIMP_TAG_TO_HUBSPOT_LISTS = {
     "Recruitment": ["719"],
     "Competition": ["720"], 
     "Directors": ["751"],
-    "Demo": ["872", "883"],             # Demo lists (872=Demo, 883=MC CTA Services)
+    "Demo": ["872"],                    # Demo list only
+    "MC CTA Services": ["883"],         # MC CTA Services list only
+    "T23 EOY": ["889"],                 # T23 EOY list only
 }
 
 # =============================================================================

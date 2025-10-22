@@ -32,7 +32,7 @@ from .config import (
     COMPANY_LIST_IDS, COMPANY_EMAIL_PREFIXES, COMPANY_TO_CONTACT_MAPPING,
     # Import stream exclusion configuration
     WEBINAR_CAMPAIGN_LISTS, EXIT_EXCLUDE_LISTS,
-    CRITICAL_EXCLUDE_LISTS, GENERAL_MARKETING_LISTS
+    CRITICAL_EXCLUDE_LISTS, GENERAL_MARKETING_LISTS, ACTIVE_DEAL_EXCLUDE_LISTS
 )
 
 # ─── IMPORT SOURCE LIST TRACKING CONFIGURATION ─────────────────────────────
@@ -319,22 +319,24 @@ def get_exclude_lists_for_list(list_id: str) -> List[str]:
     """
     Get the appropriate exclude lists for a given HubSpot list ID based on import stream group.
     
-    GROUP 1 (General Marketing): Exclude ALL lists (critical + exit)
-    GROUP 2 (Webinars): Exclude CRITICAL lists only (bypass exit lists for re-engagement)
-    GROUP 3 (Manual Override): Exclude NOTHING (manual judgment overrides all rules)
+    GROUP 1 (General Marketing): Exclude ALL lists (compliance + active deals + exit)
+    GROUP 2 (Special Campaigns): Exclude COMPLIANCE + ACTIVE DEALS only (bypass exit lists)
+    GROUP 3 (Manual Override): Exclude COMPLIANCE only (bypass active deals + exit lists)
     """
     if list_id in WEBINAR_CAMPAIGN_LISTS:
-        # GROUP 2: Webinar campaigns - exclude critical lists only
-        logger.info(f"🎯 WEBINAR LIST {list_id}: Using critical excludes only (bypassing exit lists)")
-        logger.info(f"🎯 Excluding: {CRITICAL_EXCLUDE_LISTS} (bypassed: {EXIT_EXCLUDE_LISTS})")
-        return CRITICAL_EXCLUDE_LISTS
+        # GROUP 2: Special campaigns - exclude compliance + active deals (bypass exit lists)
+        logger.info(f"🎯 SPECIAL CAMPAIGN {list_id}: Using compliance + active deal excludes (bypassing exit lists)")
+        exclude_lists = CRITICAL_EXCLUDE_LISTS + ACTIVE_DEAL_EXCLUDE_LISTS
+        logger.info(f"🎯 Excluding: {exclude_lists} (bypassed: {EXIT_EXCLUDE_LISTS})")
+        return exclude_lists
     elif list_id in MANUAL_INCLUSION_OVERRIDE_LISTS:
-        # GROUP 3: Manual override - no exclusions
-        logger.info(f"🔐 MANUAL OVERRIDE {list_id}: Bypassing ALL exclusions (manual judgment)")
-        return []
+        # GROUP 3: Manual override - compliance only (bypass active deals + exit lists)
+        logger.info(f"🔐 MANUAL OVERRIDE {list_id}: Using compliance excludes only (bypassing active deals + exit lists)")
+        logger.info(f"🔐 Excluding: {CRITICAL_EXCLUDE_LISTS} (bypassed: {ACTIVE_DEAL_EXCLUDE_LISTS + EXIT_EXCLUDE_LISTS})")
+        return CRITICAL_EXCLUDE_LISTS
     else:
         # GROUP 1: General marketing - exclude all lists
-        logger.info(f"📋 GENERAL MARKETING {list_id}: Using full exclusions (critical + exit)")
+        logger.info(f"📋 GENERAL MARKETING {list_id}: Using full exclusions (compliance + active deals + exit)")
         logger.info(f"📋 Excluding: {HARD_EXCLUDE_LISTS}")
         return HARD_EXCLUDE_LISTS
 
@@ -1771,15 +1773,15 @@ def remove_mailchimp_contact_by_email(email: str) -> bool:
     subscriber_hash = calculate_subscriber_hash(email)
     
     headers = {
-        "Authorization": f"Bearer {MAILCHIMP_API_KEY}",
         "Content-Type": "application/json"
     }
+    auth = ('user', MAILCHIMP_API_KEY)
 
     # First check current status to avoid unnecessary archival attempts
     check_url = f"{MAILCHIMP_BASE_URL}/lists/{MAILCHIMP_LIST_ID}/members/{subscriber_hash}"
     
     try:
-        response = requests.get(check_url, headers=headers)
+        response = requests.get(check_url, headers=headers, auth=auth)
         if response.status_code == 200:
             current_status = response.json().get('status', '')
             if current_status == 'archived':
@@ -1797,7 +1799,7 @@ def remove_mailchimp_contact_by_email(email: str) -> bool:
     # Check current status to determine archival method
     current_status = "unknown"
     try:
-        status_response = requests.get(archive_url, headers=headers)
+        status_response = requests.get(archive_url, headers=headers, auth=auth)
         if status_response.status_code == 200:
             current_status = status_response.json().get('status', 'unknown')
     except Exception as e:
@@ -1809,11 +1811,11 @@ def remove_mailchimp_contact_by_email(email: str) -> bool:
                 # Use DELETE for unsubscribed contacts (Mailchimp API limitation)
                 if current_status == 'unsubscribed':
                     logger.debug(f"Using DELETE method for unsubscribed contact: {email}")
-                    response = requests.delete(archive_url, headers=headers)
+                    response = requests.delete(archive_url, headers=headers, auth=auth)
                 else:
                     # Use PATCH for other statuses
                     archive_data = {"status": "archived"}
-                    response = requests.patch(archive_url, headers=headers, json=archive_data)
+                    response = requests.patch(archive_url, headers=headers, json=archive_data, auth=auth)
                 
                 if response.status_code in (200, 204):
                     logger.debug(f"✅ Archived contact in Mailchimp: {email} (method: {'DELETE' if current_status == 'unsubscribed' else 'PATCH'})")
