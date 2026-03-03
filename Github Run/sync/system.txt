@@ -1,5 +1,0 @@
-2025-10-03T15:47:32.8070000Z Requested labels: ubuntu-latest
-2025-10-03T15:47:32.8070000Z Job defined at: kjql33/HB-Mailchimp-Sync/.github/workflows/sync.yml@refs/heads/main
-2025-10-03T15:47:32.8070000Z Waiting for a runner to pick up this job...
-2025-10-03T15:47:33.7860000Z Job is about to start running on the hosted runner: GitHub Actions 1000000412
-2025-10-03T15:47:33.7860000Z Job is waiting for a hosted runner to come online.

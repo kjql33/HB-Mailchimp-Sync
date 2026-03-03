@@ -1,0 +1,151 @@
+# PRODUCTION CONFIGURATION for HubSpot ↔ Mailchimp Sync V2
+# 
+# CONFIGURED FOR: Multi-list sync
+#   - HubSpot list 900 "EXP" → Mailchimp tag "EXP"
+#   - HubSpot list 719 "Recruitment" → Mailchimp tag "Recruitment"
+# SAFETY: Default settings are plan-only (allow_apply=false)
+
+hubspot:
+  api_key: ${HUBSPOT_PRIVATE_APP_TOKEN}
+  
+  lists:
+    # GROUP 1: General Marketing - Specific lists FIRST, General LAST (catch-all)
+    # Sync order: Sanctioned → Recruitment → Competition → Network Agents → New agents → General
+    general_marketing:
+      - id: "969"
+        name: "Sanctioned"
+        tag: "Sanctioned"
+      - id: "719"
+        name: "Recruitment"
+        tag: "Recruitment"
+      - id: "720"
+        name: "Competition"
+        tag: "Competition"
+      - id: "989"
+        name: "Network Agents"
+        tag: "EXP"
+      - id: "945"
+        name: "New agents"
+        tag: "New agents"
+      - id: "987"
+        name: "General"
+        tag: "General"
+    
+    # GROUP 2: Special Campaigns (empty for now)
+    special_campaigns: []
+    
+    # GROUP 3: Manual Override (empty for now)
+    manual_override: []
+  
+  # Supplemental Tags: Lists that are NOT synced themselves, but add extra tags to contacts already being synced
+  # DISABLED: T2 subdivision removed - using single "General" tag only
+  supplemental_tags: []
+  
+  exclusions:
+    # CRITICAL: Compliance lists (762, 773) - enforce INV-002
+    # NOTE: These are DYNAMIC LISTS - auto-managed by HubSpot, NEVER manually add/remove contacts
+    critical:
+      - "762"  # Unsubscribed/Opted Out (DYNAMIC - auto-populated when contacts opt out)
+      - "773"  # Manual Disengagement (DYNAMIC - criteria-based)
+    
+    # Contacts in active deals - already being contacted for sales
+    active_deals:
+      - "717"  # Active Deals (dynamic list)
+    
+    # Contacts who exited (none specified for now)
+    exit: []
+
+mailchimp:
+  api_key: ${MAILCHIMP_API_KEY}
+  server_prefix: ${MAILCHIMP_DC}
+  audience_id: ${MAILCHIMP_LIST_ID}
+
+sync:
+  batch_size: 100
+  tag_prefix: ""
+  ori_lists_field: "ORI_LISTS"
+  force_subscribe: true
+
+# INV-001: Three-tier import stream exclusion matrix
+exclusion_matrix:
+  # GROUP 1: Specific lists FIRST, General LAST - Sync order: Sanctioned → Recruitment → Competition → Network Agents → New agents → General
+  general_marketing:
+    lists:
+      - "969"  # Sanctioned
+      - "719"  # Recruitment
+      - "720"  # Competition
+      - "989"  # Network Agents
+      - "945"  # New agents
+      - "987"  # General (LAST - catch-all)
+    exclude:
+      - "762"  # Unsubscribed/Opted Out (DYNAMIC LIST - auto-managed, REQUIRED by INV-002)
+      - "773"  # Manual Disengagement (DYNAMIC LIST - auto-managed, REQUIRED by INV-002)
+      - "717"  # Active Deals (DYNAMIC LIST - auto-managed, REQUIRED - no marketing during sales)
+  
+  # GROUP 2: Empty for now
+  special_campaigns:
+    lists: []
+    exclude:
+      - "762"
+      - "773"
+      - "717"
+  
+  # GROUP 3: Empty for now
+  manual_override:
+    lists: []
+    exclude:
+      - "762"
+      - "773"
+      - "717"
+
+# INV-009: Anti-remarketing rules (optional)
+# Example: "source_list_id": ["excluded_list_id_1", "excluded_list_id_2"]
+list_exclusion_rules: {}
+
+# INV-011: Exit tag routing (Mailchimp tag → HubSpot list)
+# Not yet implemented - placeholder for future secondary sync
+secondary_sync_mappings: {}
+
+# INV-006: Smart archival preservation
+archival:
+  exempt_tags:
+    - "VIP"
+    - "DoNotArchive"
+    - "Manual_Override"
+  preservation_patterns:
+    - "^Manual_.*"      # Any tag starting with Manual_
+    - "^Custom_.*"      # Any tag starting with Custom_
+    - "^Team_.*"        # Any tag starting with Team_
+  max_archive_per_run: 100  # Increased from 25 to clear backlog faster
+
+# INV-010: Triple-lock safety gates
+safety:
+  # Contact processing limit (0 = unlimited for full 200-contact run)
+  test_contact_limit: 0           # ✓ UNLIMITED for full run
+  
+  # Environment gate (MUST be "prod" for production)
+  run_mode: "prod"
+  
+  # Archival gate (ENABLED - untag + archive orphaned contacts)
+  allow_archive: true
+  
+  # Mutation gate (MUST be true to execute operations)
+  allow_apply: true               # ✓ ENABLED for full import
+  
+  # Unlimited mode gate
+  allow_unlimited: true           # ✓ ENABLED for full 200-contact run
+  
+  # HubSpot write-back (ORI_LISTS property tracking)
+  enable_hubspot_writes: false    # Disabled for now
+
+# =============================================================================
+# LIST 900 "EXP" IMPORT INSTRUCTIONS:
+# =============================================================================
+# 1. Clear Mailchimp audience manually (if needed)
+# 2. Generate plan: python -m corev2.cli plan --config corev2/config/production.yaml --output corev2/artifacts/plan_exp_20.json
+# 3. Inspect plan: Verify operations show tag="EXP", count should be ~20
+# 4. Set allow_apply=true in this file
+# 5. Execute: python -m corev2.cli apply --plan corev2/artifacts/plan_exp_20.json
+# 6. Verify: Check execution_journal.jsonl + manually verify 3-5 contacts in Mailchimp
+# 7. For full run: Set test_contact_limit=0, allow_unlimited=true, regenerate plan + apply
+# =============================================================================
