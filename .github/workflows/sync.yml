@@ -5,6 +5,9 @@ on:
     - cron: '0 */8 * * *'    # every 8 hours at minute 0 (00:00, 08:00, 16:00 UTC)
   workflow_dispatch:         # allows you to trigger manually from the Actions tab
 
+permissions:
+  contents: write
+
 jobs:
   sync:
     runs-on: ubuntu-latest
@@ -72,7 +75,7 @@ jobs:
         env:
           HUBSPOT_PRIVATE_APP_TOKEN: ${{ secrets.HUBSPOT_PRIVATE_APP_TOKEN }}
           MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
-          MAILCHIMP_AUDIENCE_ID: ${{ secrets.MAILCHIMP_AUDIENCE_ID }}
+          MAILCHIMP_LIST_ID: ${{ secrets.MAILCHIMP_AUDIENCE_ID }}
           MAILCHIMP_DC: ${{ secrets.MAILCHIMP_DC }}
           MAILCHIMP_TAG_DELAY: "0.05"      # Reduced from 1.0s to 0.05s (95% faster tag operations)  
           MAILCHIMP_UPSERT_DELAY: "0.05"   # New configurable delay after upserts (prevents rate limits)
