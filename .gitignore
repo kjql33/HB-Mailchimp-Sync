@@ -54,7 +54,7 @@ cover/
 *.pot
 
 # Django stuff
-*.log
+# *.log  # DISABLED - we want to track sync logs in GitHub
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
@@ -123,8 +123,8 @@ raw_data/metadata/
 raw_data/snapshots/
 raw_data/*.json
 
-# Logs directory
-logs/
+# Logs directory (allow sync logs to be tracked)
+# logs/  # DISABLED - GitHub Actions logs should be tracked
 
 # System testing archives (generated test files)
 system_testing/

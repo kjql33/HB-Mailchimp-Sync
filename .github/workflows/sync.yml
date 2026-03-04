@@ -64,6 +64,11 @@ jobs:
           SYNC_END=$(date +%s)
           DURATION=$((SYNC_END - SYNC_START))
           echo "✅ corev2 sync completed successfully in ${DURATION} seconds"
+          
+          # Copy logs to workspace for commit
+          mkdir -p logs
+          cp /tmp/plan_output.log logs/plan_$(date +%Y%m%d_%H%M%S).log || true
+          cp /tmp/apply_output.log logs/apply_$(date +%Y%m%d_%H%M%S).log || true
         env:
           HUBSPOT_PRIVATE_APP_TOKEN: ${{ secrets.HUBSPOT_PRIVATE_APP_TOKEN }}
           MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
@@ -71,6 +76,15 @@ jobs:
           MAILCHIMP_DC: ${{ secrets.MAILCHIMP_DC }}
           MAILCHIMP_TAG_DELAY: "0.05"      # Reduced from 1.0s to 0.05s (95% faster tag operations)  
           MAILCHIMP_UPSERT_DELAY: "0.05"   # New configurable delay after upserts (prevents rate limits)
+      
+      - name: Commit sync logs and artifacts
+        if: ${{ success() }}
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add logs/*.log corev2/artifacts/*.json corev2/artifacts/*.jsonl || true
+          git diff --staged --quiet || git commit -m "🤖 Sync logs: $(date -u '+%Y-%m-%d %H:%M UTC')" || true
+          git push origin ${{ github.ref_name }} || echo "⚠️ Push failed (may be no changes)"
       
       - name: Upload artifacts on failure
         if: ${{ failure() }}
