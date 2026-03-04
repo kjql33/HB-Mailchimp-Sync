@@ -130,7 +130,7 @@ raw_data/*.json
 system_testing/
 
 # Local testing directories (keep local only)
-Tests/
+/Tests/
 
 # Generated test files and debug scripts
 debug_*.py

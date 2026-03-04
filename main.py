@@ -51,7 +51,7 @@ async def main():
     from corev2.executor.engine import SyncExecutor
     
     logger.info("="*70)
-    logger.info("  HubSpot ↔ Mailchimp Bidirectional Sync")
+    logger.info("  HubSpot <-> Mailchimp Bidirectional Sync")
     logger.info("="*70)
     
     # Load config
