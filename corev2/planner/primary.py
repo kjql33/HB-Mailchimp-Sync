@@ -466,12 +466,21 @@ class SyncPlanner:
         # reconciliation second-pass in generate_plan() — not here.
         compliance_overlap = self.compliance_lists.intersection(list_ids)
         if compliance_overlap:
-            sync_overlap = list_ids - self.compliance_lists
-            logger.warning(
-                f"INVARIANT VIOLATION: Contact {email} is in compliance list(s) "
-                f"{compliance_overlap} AND sync list(s) {sync_overlap}. "
-                f"HubSpot list removal will be scheduled."
-            )
+            all_sync_ids = set()
+            for gn in ["general_marketing", "special_campaigns", "manual_override"]:
+                all_sync_ids.update(getattr(self.config.exclusion_matrix, gn).lists)
+            sync_overlap = list_ids & all_sync_ids
+            if sync_overlap:
+                logger.warning(
+                    f"INVARIANT VIOLATION: Contact {email} is in compliance list(s) "
+                    f"{compliance_overlap} AND sync list(s) {sync_overlap}. "
+                    f"HubSpot list removal will be scheduled."
+                )
+            else:
+                # Contact is only in a compliance list (no sync list) — expected, suppress noise
+                logger.debug(
+                    f"Contact {email} in compliance list {compliance_overlap} only — skipping MC ops"
+                )
             return []
         
         # Determine target tags (single primary tag + optional additional tags for subdivisions)
