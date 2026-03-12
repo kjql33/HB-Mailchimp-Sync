@@ -1,0 +1,6674 @@
+{
+  "metadata": {
+    "generated_at": "2026-03-12T16:24:42.374593",
+    "config_hash": "bd73e9bac9062a4f",
+    "contact_limit": 0,
+    "run_mode": "prod",
+    "filter_email": null,
+    "filter_vid": null,
+    "reconciliation": {
+      "orphaned_members": 441,
+      "exempt_members": 0,
+      "archive_operations_generated": 207
+    },
+    "config_file": "corev2/config/production.yaml"
+  },
+  "summary": {
+    "total_contacts_scanned": 404,
+    "contacts_with_operations": 423,
+    "operations_by_type": {
+      "upsert_mc_member": 209,
+      "apply_mc_tag": 209,
+      "archive_mc_member": 207,
+      "remove_hs_from_list": 7
+    },
+    "invariants_checked": {
+      "INV-002": "Compliance lists never synced",
+      "INV-004": "Single-tag enforcement",
+      "INV-007": "List exclusion rules"
+    }
+  },
+  "operations": [
+    {
+      "email": "hello@aliandcoproperty.co.uk",
+      "vid": "15705092538",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "hello@aliandcoproperty.co.uk",
+          "merge_fields": {
+            "FNAME": "Mohammed Shah Mujakkir",
+            "LNAME": "ALI"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "hello@aliandcoproperty.co.uk",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "nathan@nandnproperties.com",
+      "vid": "199549775039",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "nathan@nandnproperties.com",
+          "merge_fields": {
+            "FNAME": "Nathan",
+            "LNAME": "Cii"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "nathan@nandnproperties.com",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "tonyourris@anthonywebb.co.uk",
+      "vid": "199628200167",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "tonyourris@anthonywebb.co.uk",
+          "merge_fields": {
+            "FNAME": "Tony",
+            "LNAME": "Ourris"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "tonyourris@anthonywebb.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "xlita@litahomes.co.uk",
+      "vid": "244392845520",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "xlita@litahomes.co.uk",
+          "merge_fields": {
+            "FNAME": "Xhevat",
+            "LNAME": "Lita"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "xlita@litahomes.co.uk",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "jeanette@squireestates.co.uk",
+      "vid": "257783942379",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "jeanette@squireestates.co.uk",
+          "merge_fields": {
+            "FNAME": "Jeanette",
+            "LNAME": "Squire"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "jeanette@squireestates.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "helena@hjpm.co.uk",
+      "vid": "258843264241",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "helena@hjpm.co.uk",
+          "merge_fields": {
+            "FNAME": "Helena",
+            "LNAME": "jackson"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "helena@hjpm.co.uk",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "ejas@solacemanagement.co.uk",
+      "vid": "310149675242",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "ejas@solacemanagement.co.uk",
+          "merge_fields": {
+            "FNAME": "Ejas",
+            "LNAME": "Deane"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "ejas@solacemanagement.co.uk",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "tom@thehomecloud.co.uk",
+      "vid": "346471536888",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "tom@thehomecloud.co.uk",
+          "merge_fields": {
+            "FNAME": "Tom",
+            "LNAME": "Jewell"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "tom@thehomecloud.co.uk",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "stuart@coapt.co.uk",
+      "vid": "434269543661",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "stuart@coapt.co.uk",
+          "merge_fields": {
+            "FNAME": "Stuart",
+            "LNAME": "Ray"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "stuart@coapt.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "jeffreyjaysan@hydepartners.com",
+      "vid": "472088620273",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "jeffreyjaysan@hydepartners.com",
+          "merge_fields": {
+            "FNAME": "Jeffrey",
+            "LNAME": "Jaysan"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "jeffreyjaysan@hydepartners.com",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "info@propertybyyes.co.uk",
+      "vid": "506615743727",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@propertybyyes.co.uk",
+          "merge_fields": {
+            "FNAME": "Michael",
+            "LNAME": "Douglas"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@propertybyyes.co.uk",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "abbas@lancashire-properties.co.uk",
+      "vid": "506752792806",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "abbas@lancashire-properties.co.uk",
+          "merge_fields": {
+            "FNAME": "Muhammad",
+            "LNAME": "Abbas"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "abbas@lancashire-properties.co.uk",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "enquiries@estatespm.co.uk",
+      "vid": "566961533177",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "enquiries@estatespm.co.uk",
+          "merge_fields": {
+            "FNAME": "Chris",
+            "LNAME": " O\u2019Brien"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "enquiries@estatespm.co.uk",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "general@everstone-property.com",
+      "vid": "626343967980",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "general@everstone-property.com",
+          "merge_fields": {
+            "FNAME": "Daniel",
+            "LNAME": "James"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "general@everstone-property.com",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "wayne@weletproperties.co.uk",
+      "vid": "678640388308",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "wayne@weletproperties.co.uk",
+          "merge_fields": {
+            "FNAME": "Wayne",
+            "LNAME": "Eastman"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "wayne@weletproperties.co.uk",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "jm@smcrhomes.co.uk",
+      "vid": "690280704226",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "jm@smcrhomes.co.uk",
+          "merge_fields": {
+            "FNAME": "jonathan",
+            "LNAME": "martin"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "jm@smcrhomes.co.uk",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "freddie@marcoharris.co.uk",
+      "vid": "692109794497",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "freddie@marcoharris.co.uk",
+          "merge_fields": {
+            "FNAME": "Freddie ",
+            "LNAME": "Hands"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "freddie@marcoharris.co.uk",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "property@templebury.co.uk",
+      "vid": "701752409276",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "property@templebury.co.uk",
+          "merge_fields": {
+            "FNAME": "Daniel",
+            "LNAME": "Wilson"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "property@templebury.co.uk",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "ashmi@theaddressmanagement.com",
+      "vid": "711210193138",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "ashmi@theaddressmanagement.com",
+          "merge_fields": {
+            "FNAME": "Ashmi",
+            "LNAME": "Bhambra"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "ashmi@theaddressmanagement.com",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "sue@countryhousecompany.co.uk",
+      "vid": "711221057754",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "sue@countryhousecompany.co.uk",
+          "merge_fields": {
+            "FNAME": "Sue",
+            "LNAME": "Crossley"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "sue@countryhousecompany.co.uk",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "chris@gartonjones.co.uk",
+      "vid": "711222712537",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "chris@gartonjones.co.uk",
+          "merge_fields": {
+            "FNAME": "Chris",
+            "LNAME": "Garston"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "chris@gartonjones.co.uk",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "sales@aandfproperty.co.uk",
+      "vid": "711321526474",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "sales@aandfproperty.co.uk",
+          "merge_fields": {
+            "FNAME": "Paul",
+            "LNAME": "Andrew"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "sales@aandfproperty.co.uk",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "d.j.satchwell@marstonmanagement.com",
+      "vid": "711323348161",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "d.j.satchwell@marstonmanagement.com",
+          "merge_fields": {
+            "FNAME": "David",
+            "LNAME": "Satchwell"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "d.j.satchwell@marstonmanagement.com",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "info@prestonhillestates.com",
+      "vid": "711645141179",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@prestonhillestates.com",
+          "merge_fields": {
+            "FNAME": "Jamil",
+            "LNAME": "Ahmad"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@prestonhillestates.com",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "martin@groupkm.co.uk",
+      "vid": "721842500817",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "martin@groupkm.co.uk",
+          "merge_fields": {
+            "FNAME": "Martin",
+            "LNAME": "Kingsley"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "martin@groupkm.co.uk",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "info@londonwideestates.com",
+      "vid": "721842500818",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@londonwideestates.com",
+          "merge_fields": {
+            "FNAME": "Raffaela",
+            "LNAME": "Farahabadi"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@londonwideestates.com",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "ben@garrettwhitelock.co.uk",
+      "vid": "722037351647",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "ben@garrettwhitelock.co.uk",
+          "merge_fields": {
+            "FNAME": "Ben",
+            "LNAME": "Garrett"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "ben@garrettwhitelock.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "fraser@tristrams.uk.com",
+      "vid": "722104329427",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "fraser@tristrams.uk.com",
+          "merge_fields": {
+            "FNAME": "Fraser",
+            "LNAME": "Barron"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "fraser@tristrams.uk.com",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "gareth@pepperfox.com",
+      "vid": "732069739757",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "gareth@pepperfox.com",
+          "merge_fields": {
+            "FNAME": "Gareth",
+            "LNAME": "Knox"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "gareth@pepperfox.com",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "info@propertyoptions.com",
+      "vid": "732493328593",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@propertyoptions.com",
+          "merge_fields": {
+            "FNAME": "Amar",
+            "LNAME": "Hameed"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@propertyoptions.com",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "andrew@moonstonemanagement.co.uk",
+      "vid": "732857270480",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "andrew@moonstonemanagement.co.uk",
+          "merge_fields": {
+            "FNAME": "Heidi",
+            "LNAME": "Evjemo"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "andrew@moonstonemanagement.co.uk",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "ian@thepropertyplace.uk.com",
+      "vid": "732943384814",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "ian@thepropertyplace.uk.com",
+          "merge_fields": {
+            "FNAME": "Ian",
+            "LNAME": "Tidd"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "ian@thepropertyplace.uk.com",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "lev@levproperties.co.uk",
+      "vid": "732943614165",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "lev@levproperties.co.uk",
+          "merge_fields": {
+            "FNAME": "Orit",
+            "LNAME": "Lev"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "lev@levproperties.co.uk",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "info@amaxestates.com",
+      "vid": "15703974610",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@amaxestates.com",
+          "merge_fields": {
+            "FNAME": "Maxine ",
+            "LNAME": "Fothergill"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@amaxestates.com",
+          "tag": "Competition"
+        }
+      ]
+    },
+    {
+      "email": "vishal@nicheestates.co.uk",
+      "vid": "56001197276",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "vishal@nicheestates.co.uk",
+          "merge_fields": {
+            "FNAME": "Vishal ",
+            "LNAME": "Pattni"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "vishal@nicheestates.co.uk",
+          "tag": "Competition"
+        }
+      ]
+    },
+    {
+      "email": "lee@oakhill.london",
+      "vid": "88547912899",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "lee@oakhill.london",
+          "merge_fields": {
+            "FNAME": "Lee ",
+            "LNAME": "Cash"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "lee@oakhill.london",
+          "tag": "Competition"
+        }
+      ]
+    },
+    {
+      "email": "russell@jaysonrussell.com",
+      "vid": "94804440270",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "russell@jaysonrussell.com",
+          "merge_fields": {
+            "FNAME": "Russell ",
+            "LNAME": "Fraser"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "russell@jaysonrussell.com",
+          "tag": "Competition"
+        }
+      ]
+    },
+    {
+      "email": "christie@kbire.co.uk",
+      "vid": "238334196956",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "christie@kbire.co.uk",
+          "merge_fields": {
+            "FNAME": "Christie",
+            "LNAME": "PINNICK"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "christie@kbire.co.uk",
+          "tag": "Competition"
+        }
+      ]
+    },
+    {
+      "email": "robert@foundationestateagents.co.uk",
+      "vid": "283436582124",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "robert@foundationestateagents.co.uk",
+          "merge_fields": {
+            "FNAME": "Robert",
+            "LNAME": "Fletcher"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "robert@foundationestateagents.co.uk",
+          "tag": "Competition"
+        }
+      ]
+    },
+    {
+      "email": "info@hytheandwaterside.com",
+      "vid": "354693766369",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@hytheandwaterside.com",
+          "merge_fields": {
+            "FNAME": "Teresa",
+            "LNAME": "Lynne"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@hytheandwaterside.com",
+          "tag": "Competition"
+        }
+      ]
+    },
+    {
+      "email": "leone@harrycharles.co.uk",
+      "vid": "372944110783",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "leone@harrycharles.co.uk",
+          "merge_fields": {
+            "FNAME": "Leone",
+            "LNAME": "Ashby"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "leone@harrycharles.co.uk",
+          "tag": "Competition"
+        }
+      ]
+    },
+    {
+      "email": "matt@barrettestates.com",
+      "vid": "400915307743",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "matt@barrettestates.com",
+          "merge_fields": {
+            "FNAME": "Matthew",
+            "LNAME": "Barrett"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "matt@barrettestates.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "cl@lewis-tucker.com",
+      "vid": "565371565244",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "cl@lewis-tucker.com",
+          "merge_fields": {
+            "FNAME": "Clive ",
+            "LNAME": "Lewis"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "cl@lewis-tucker.com",
+          "tag": "Competition"
+        }
+      ]
+    },
+    {
+      "email": "gsteer@alexandersteer.co.uk",
+      "vid": "653983064268",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "gsteer@alexandersteer.co.uk",
+          "merge_fields": {
+            "FNAME": "George",
+            "LNAME": "Steer"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "gsteer@alexandersteer.co.uk",
+          "tag": "Competition"
+        }
+      ]
+    },
+    {
+      "email": "simon@handleygibson.co.uk",
+      "vid": "654480846044",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "simon@handleygibson.co.uk",
+          "merge_fields": {
+            "FNAME": "Simon",
+            "LNAME": "Handley"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "simon@handleygibson.co.uk",
+          "tag": "Competition"
+        }
+      ]
+    },
+    {
+      "email": "chris@jowett-huddersfield.co.uk",
+      "vid": "666974176489",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "chris@jowett-huddersfield.co.uk",
+          "merge_fields": {
+            "FNAME": "Chris",
+            "LNAME": "Jowett"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "chris@jowett-huddersfield.co.uk",
+          "tag": "Competition"
+        }
+      ]
+    },
+    {
+      "email": "post@nops.co.uk",
+      "vid": "667190297818",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "post@nops.co.uk",
+          "merge_fields": {
+            "FNAME": "Debbie",
+            "LNAME": "Swailes"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "post@nops.co.uk",
+          "tag": "Competition"
+        }
+      ]
+    },
+    {
+      "email": "andrew.harvey@oceanandcountry.co.uk",
+      "vid": "678640215273",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "andrew.harvey@oceanandcountry.co.uk",
+          "merge_fields": {
+            "FNAME": "Andrew",
+            "LNAME": "Harvey"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "andrew.harvey@oceanandcountry.co.uk",
+          "tag": "Competition"
+        }
+      ]
+    },
+    {
+      "email": "info@spartanltd.co.uk",
+      "vid": "690342224070",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@spartanltd.co.uk",
+          "merge_fields": {
+            "FNAME": "Waseem",
+            "LNAME": "Alvi"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@spartanltd.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "neil@crabbcurtis.co.uk",
+      "vid": "711219090627",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "neil@crabbcurtis.co.uk",
+          "merge_fields": {
+            "FNAME": "Neil",
+            "LNAME": "Crabb"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "neil@crabbcurtis.co.uk",
+          "tag": "Competition"
+        }
+      ]
+    },
+    {
+      "email": "asm@swallows.co.uk",
+      "vid": "711305296117",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "asm@swallows.co.uk",
+          "merge_fields": {
+            "FNAME": "Caroline",
+            "LNAME": "Standen"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "asm@swallows.co.uk",
+          "tag": "Competition"
+        }
+      ]
+    },
+    {
+      "email": "tim@jmslettings.co.uk",
+      "vid": "711312376028",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "tim@jmslettings.co.uk",
+          "merge_fields": {
+            "FNAME": "Tim",
+            "LNAME": "Crowch"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "tim@jmslettings.co.uk",
+          "tag": "Competition"
+        }
+      ]
+    },
+    {
+      "email": "info@rmaproperties.co.uk",
+      "vid": "711325150441",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@rmaproperties.co.uk",
+          "merge_fields": {
+            "FNAME": "Mohammed",
+            "LNAME": "Arshad"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@rmaproperties.co.uk",
+          "tag": "Competition"
+        }
+      ]
+    },
+    {
+      "email": "info@savvyanchor.co.uk",
+      "vid": "28915593714",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@savvyanchor.co.uk",
+          "merge_fields": {
+            "FNAME": "Mir Jubayer",
+            "LNAME": "Ahmed"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@savvyanchor.co.uk",
+          "tag": "New agents"
+        }
+      ]
+    },
+    {
+      "email": "info@mysite.com",
+      "vid": "196283239647",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@mysite.com",
+          "merge_fields": {
+            "FNAME": "Evan",
+            "LNAME": "Collard"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@mysite.com",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "edalessandro@mindtheflat.co.uk",
+      "vid": "199757185227",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "edalessandro@mindtheflat.co.uk",
+          "merge_fields": {
+            "FNAME": "Eliana",
+            "LNAME": "D'Alessandro"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "edalessandro@mindtheflat.co.uk",
+          "tag": "New agents"
+        }
+      ]
+    },
+    {
+      "email": "info@zorbapropertysolutions.co.uk",
+      "vid": "671709797567",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@zorbapropertysolutions.co.uk",
+          "merge_fields": {
+            "FNAME": "Ethan",
+            "LNAME": "Zorbas"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@zorbapropertysolutions.co.uk",
+          "tag": "New agents"
+        }
+      ]
+    },
+    {
+      "email": "info@ideal-locations.com",
+      "vid": "187671221476",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@ideal-locations.com",
+          "merge_fields": {
+            "FNAME": "Dalvir",
+            "LNAME": "Chana"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@ideal-locations.com",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "info@letsby-avenue.co.uk",
+      "vid": "289184570593",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@letsby-avenue.co.uk",
+          "merge_fields": {
+            "FNAME": "Stephen",
+            "LNAME": "Leigh"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@letsby-avenue.co.uk",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "kellyharvey@robertmanning.co.uk",
+      "vid": "340893688009",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "kellyharvey@robertmanning.co.uk",
+          "merge_fields": {
+            "FNAME": "Reception",
+            "LNAME": ""
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "kellyharvey@robertmanning.co.uk",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "info@sutherlandestates.co.uk",
+      "vid": "400929427655",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@sutherlandestates.co.uk",
+          "merge_fields": {
+            "FNAME": "Adley",
+            "LNAME": "Sutherland"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@sutherlandestates.co.uk",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "info@elite-properties.co.uk",
+      "vid": "690833840377",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@elite-properties.co.uk",
+          "merge_fields": {
+            "FNAME": "Slimani",
+            "LNAME": "Ahmed"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@elite-properties.co.uk",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "info@rowflex.co.uk",
+      "vid": "691203851503",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@rowflex.co.uk",
+          "merge_fields": {
+            "FNAME": "Rafiu",
+            "LNAME": "Olalekan"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@rowflex.co.uk",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "claire@thejollylandlord.co.uk",
+      "vid": "691296708799",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "claire@thejollylandlord.co.uk",
+          "merge_fields": {
+            "FNAME": "Gavin",
+            "LNAME": "David"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "claire@thejollylandlord.co.uk",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "info@jonesandreeds.co.uk",
+      "vid": "691322583284",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@jonesandreeds.co.uk",
+          "merge_fields": {
+            "FNAME": "Geoff",
+            "LNAME": "Lloyd"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@jonesandreeds.co.uk",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "jacqui@tjspropertypeople.co.uk",
+      "vid": "691331852524",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "jacqui@tjspropertypeople.co.uk",
+          "merge_fields": {
+            "FNAME": "Gunes",
+            "LNAME": "Ata"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "jacqui@tjspropertypeople.co.uk",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "info@propertysolutionsgb.co.uk",
+      "vid": "691621774568",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@propertysolutionsgb.co.uk",
+          "merge_fields": {
+            "FNAME": "Khalid",
+            "LNAME": "Mahmood"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@propertysolutionsgb.co.uk",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "lettings@balmerandco.co.uk",
+      "vid": "691660498136",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "lettings@balmerandco.co.uk",
+          "merge_fields": {
+            "FNAME": "Kieran",
+            "LNAME": "Doherty"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "lettings@balmerandco.co.uk",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "neil@assetgrove.co.uk",
+      "vid": "691701339366",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "neil@assetgrove.co.uk",
+          "merge_fields": {
+            "FNAME": "Kyriacos",
+            "LNAME": ""
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "neil@assetgrove.co.uk",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "paul@pksalesandlettings.co.uk",
+      "vid": "691706401994",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "paul@pksalesandlettings.co.uk",
+          "merge_fields": {
+            "FNAME": "",
+            "LNAME": ""
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "paul@pksalesandlettings.co.uk",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "info@balinor.co.uk",
+      "vid": "691720346848",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@balinor.co.uk",
+          "merge_fields": {
+            "FNAME": "Deborah",
+            "LNAME": "Jane"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@balinor.co.uk",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "info@jngestates.co.uk",
+      "vid": "691730293979",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@jngestates.co.uk",
+          "merge_fields": {
+            "FNAME": "James",
+            "LNAME": "Kamara"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@jngestates.co.uk",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "mail@markwarren.org.uk",
+      "vid": "691779764445",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "mail@markwarren.org.uk",
+          "merge_fields": {
+            "FNAME": "Mark",
+            "LNAME": "Warren"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "mail@markwarren.org.uk",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "harry.singh@johalshomes.co.uk",
+      "vid": "691781945554",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "harry.singh@johalshomes.co.uk",
+          "merge_fields": {
+            "FNAME": "Harry",
+            "LNAME": "Singh"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "harry.singh@johalshomes.co.uk",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "andrew.gregory@pmpremier.co.uk",
+      "vid": "691789548759",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "andrew.gregory@pmpremier.co.uk",
+          "merge_fields": {
+            "FNAME": "Andrew",
+            "LNAME": "Gregory"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "andrew.gregory@pmpremier.co.uk",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "rothwell@barringtonandblake.co.uk",
+      "vid": "691812155622",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "rothwell@barringtonandblake.co.uk",
+          "merge_fields": {
+            "FNAME": "Steven",
+            "LNAME": "Craig"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "rothwell@barringtonandblake.co.uk",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "info@londonletsales.com",
+      "vid": "691812155624",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@londonletsales.com",
+          "merge_fields": {
+            "FNAME": "Martin",
+            "LNAME": "Dubem"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@londonletsales.com",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "info@thatsmyproperty.co.uk",
+      "vid": "691813934321",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@thatsmyproperty.co.uk",
+          "merge_fields": {
+            "FNAME": "Ajmeet",
+            "LNAME": "Singh"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@thatsmyproperty.co.uk",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "enquiries@property-vault-co-uk.stackstaging.com",
+      "vid": "691815759067",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "enquiries@property-vault-co-uk.stackstaging.com",
+          "merge_fields": {
+            "FNAME": "Caroline",
+            "LNAME": "Louise"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "enquiries@property-vault-co-uk.stackstaging.com",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "paul@hutton-parker.co.uk",
+      "vid": "691822731498",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "paul@hutton-parker.co.uk",
+          "merge_fields": {
+            "FNAME": "Paul",
+            "LNAME": "McMackin"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "paul@hutton-parker.co.uk",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "info@rwmestates.co.uk",
+      "vid": "691852759269",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@rwmestates.co.uk",
+          "merge_fields": {
+            "FNAME": "Ryan",
+            "LNAME": "William"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@rwmestates.co.uk",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "info@stratsmoregroup.com",
+      "vid": "691852759270",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@stratsmoregroup.com",
+          "merge_fields": {
+            "FNAME": "Mahmood",
+            "LNAME": "Ali"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@stratsmoregroup.com",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "bobby@eightam.co.uk",
+      "vid": "732882761935",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "bobby@eightam.co.uk",
+          "merge_fields": {
+            "FNAME": "Bobby ",
+            "LNAME": "DIN"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "bobby@eightam.co.uk",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "info@proinvestproperties.co.uk",
+      "vid": "733028179187",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@proinvestproperties.co.uk",
+          "merge_fields": {
+            "FNAME": "Jordan",
+            "LNAME": "Ward"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@proinvestproperties.co.uk",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "sales@edwardclark.co.uk",
+      "vid": "733077455060",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "sales@edwardclark.co.uk",
+          "merge_fields": {
+            "FNAME": " Denise ",
+            "LNAME": "Helen"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "sales@edwardclark.co.uk",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "elderflower213@gmail.com",
+      "vid": "733344722166",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "elderflower213@gmail.com",
+          "merge_fields": {
+            "FNAME": "Zubuar",
+            "LNAME": "Akram"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "elderflower213@gmail.com",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "tony@anthonyjamesproperties.co.uk",
+      "vid": "733344722167",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "tony@anthonyjamesproperties.co.uk",
+          "merge_fields": {
+            "FNAME": "Tony",
+            "LNAME": "Coatsworth"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "tony@anthonyjamesproperties.co.uk",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "info@phoenixestate.co.uk",
+      "vid": "733365958857",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@phoenixestate.co.uk",
+          "merge_fields": {
+            "FNAME": "Paul",
+            "LNAME": "Clarke"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@phoenixestate.co.uk",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "enquiries@lincsletting.co.uk",
+      "vid": "733383871677",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "enquiries@lincsletting.co.uk",
+          "merge_fields": {
+            "FNAME": "Victoria",
+            "LNAME": "BROUGHTON"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "enquiries@lincsletting.co.uk",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "telford@livenoble.co.uk",
+      "vid": "733389656302",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "telford@livenoble.co.uk",
+          "merge_fields": {
+            "FNAME": "Gunes",
+            "LNAME": "Ata"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "telford@livenoble.co.uk",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "info@ez-homes.co.uk",
+      "vid": "733421711568",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@ez-homes.co.uk",
+          "merge_fields": {
+            "FNAME": "Hussein",
+            "LNAME": "Kamrudin"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@ez-homes.co.uk",
+          "tag": "Sanctioned"
+        }
+      ]
+    },
+    {
+      "email": "enquiries@easymoveea.com",
+      "vid": "3351",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "enquiries@easymoveea.com",
+          "merge_fields": {
+            "FNAME": "Irfan",
+            "LNAME": "Damiel"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "enquiries@easymoveea.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "nasir@firstcontact.uk.net",
+      "vid": "6251",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "nasir@firstcontact.uk.net",
+          "merge_fields": {
+            "FNAME": "Nasir",
+            "LNAME": "Khan"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "nasir@firstcontact.uk.net",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "catie@baclis.com",
+      "vid": "7090900681",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "catie@baclis.com",
+          "merge_fields": {
+            "FNAME": "Catie",
+            "LNAME": "Evans"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "catie@baclis.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "grays@msestates.co.uk",
+      "vid": "8153679057",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "grays@msestates.co.uk",
+          "merge_fields": {
+            "FNAME": "Mayowa",
+            "LNAME": " Oluyede"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "grays@msestates.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "harry@galaxyrealestates.co.uk",
+      "vid": "23591582399",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "harry@galaxyrealestates.co.uk",
+          "merge_fields": {
+            "FNAME": "Harry",
+            "LNAME": "Sachdeva"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "harry@galaxyrealestates.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "info@katherineestates.co.uk",
+      "vid": "27699755209",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@katherineestates.co.uk",
+          "merge_fields": {
+            "FNAME": "Munir",
+            "LNAME": "HUSSAIN"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@katherineestates.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "mohsin@aeymoveestates.co.uk",
+      "vid": "28770189550",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "mohsin@aeymoveestates.co.uk",
+          "merge_fields": {
+            "FNAME": "Mohsin",
+            "LNAME": "PATEL"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "mohsin@aeymoveestates.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "info@skypowersproperty.co.uk",
+      "vid": "28895362286",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@skypowersproperty.co.uk",
+          "merge_fields": {
+            "FNAME": "Shahzad Bashir",
+            "LNAME": "Chaudhry"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@skypowersproperty.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "sales@centralparkestate.co.uk",
+      "vid": "28915928049",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "sales@centralparkestate.co.uk",
+          "merge_fields": {
+            "FNAME": "Shahzad Bashir",
+            "LNAME": "Chaudhry"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "sales@centralparkestate.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "sales@tjmiller.co.uk",
+      "vid": "28969443259",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "sales@tjmiller.co.uk",
+          "merge_fields": {
+            "FNAME": "Tahir",
+            "LNAME": "Nazif"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "sales@tjmiller.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "kevin@kevinandco.uk",
+      "vid": "31551250138",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "kevin@kevinandco.uk",
+          "merge_fields": {
+            "FNAME": "Kevin ",
+            "LNAME": "Patel"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "kevin@kevinandco.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "sales@woodhousestjohn.co.uk",
+      "vid": "33729268183",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "sales@woodhousestjohn.co.uk",
+          "merge_fields": {
+            "FNAME": "Yvonne Elizabeth",
+            "LNAME": "Mc Dermott"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "sales@woodhousestjohn.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "emilia@moreandco.co.uk",
+      "vid": "36329627845",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "emilia@moreandco.co.uk",
+          "merge_fields": {
+            "FNAME": "Emilia",
+            "LNAME": "Vasiliou"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "emilia@moreandco.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "arnosgrove@oyster-properties.co.uk",
+      "vid": "42056515521",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "arnosgrove@oyster-properties.co.uk",
+          "merge_fields": {
+            "FNAME": "Irina",
+            "LNAME": "Valeva"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "arnosgrove@oyster-properties.co.uk",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "info@bestates.uk",
+      "vid": "43348098791",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@bestates.uk",
+          "merge_fields": {
+            "FNAME": "Abraham Yehuda",
+            "LNAME": "Bresler"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@bestates.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "stroudgreen@hobarts.co.uk",
+      "vid": "44827484606",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "stroudgreen@hobarts.co.uk",
+          "merge_fields": {
+            "FNAME": "Hobarts",
+            "LNAME": "Stroudgreen"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "stroudgreen@hobarts.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "chloe@oakhill.london",
+      "vid": "87323359468",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "chloe@oakhill.london",
+          "merge_fields": {
+            "FNAME": "Chlo\u00e9 ",
+            "LNAME": "Ellis"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "chloe@oakhill.london",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "info@bramleylettings.co.uk",
+      "vid": "110384970989",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@bramleylettings.co.uk",
+          "merge_fields": {
+            "FNAME": "Veli",
+            "LNAME": "BUNUL"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@bramleylettings.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "lettings@michaelwright.co.uk",
+      "vid": "110396867802",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "lettings@michaelwright.co.uk",
+          "merge_fields": {
+            "FNAME": "Christine",
+            "LNAME": "Michael"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "lettings@michaelwright.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "info@eliteagency.london",
+      "vid": "110424475836",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@eliteagency.london",
+          "merge_fields": {
+            "FNAME": "Ali Reza",
+            "LNAME": "ABAZARI"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@eliteagency.london",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "info@heimandhomes.com",
+      "vid": "110427490519",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@heimandhomes.com",
+          "merge_fields": {
+            "FNAME": "Mehmet",
+            "LNAME": "Yuce"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@heimandhomes.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "john@jtmhomes.co.uk",
+      "vid": "170097160391",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "john@jtmhomes.co.uk",
+          "merge_fields": {
+            "FNAME": " John ",
+            "LNAME": "M"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "john@jtmhomes.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "nima@eldertons.co.uk",
+      "vid": "170145371325",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "nima@eldertons.co.uk",
+          "merge_fields": {
+            "FNAME": "Nima",
+            "LNAME": "Toserkani"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "nima@eldertons.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "debbie@douglasallen.co.uk",
+      "vid": "176887995578",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "debbie@douglasallen.co.uk",
+          "merge_fields": {
+            "FNAME": "Debbie ",
+            "LNAME": "Softly"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "debbie@douglasallen.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "abdullah.hussain@ryan-baker.co.uk",
+      "vid": "177928200424",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "abdullah.hussain@ryan-baker.co.uk",
+          "merge_fields": {
+            "FNAME": "Abdullah ",
+            "LNAME": "Hussain"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "abdullah.hussain@ryan-baker.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "uckhursthill@knightons.co.uk",
+      "vid": "183927692509",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "uckhursthill@knightons.co.uk",
+          "merge_fields": {
+            "FNAME": "Nicholas",
+            "LNAME": "Whiddon"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "uckhursthill@knightons.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "amanda@cromwellsestateagents.com",
+      "vid": "183961309413",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "amanda@cromwellsestateagents.com",
+          "merge_fields": {
+            "FNAME": "Amanda",
+            "LNAME": "Crowson"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "amanda@cromwellsestateagents.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "hassan@atlocation.co.uk",
+      "vid": "186175644874",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "hassan@atlocation.co.uk",
+          "merge_fields": {
+            "FNAME": "Adeel",
+            "LNAME": "Hassan"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "hassan@atlocation.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "michael@michaelsteven.co.uk",
+      "vid": "187036544216",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "michael@michaelsteven.co.uk",
+          "merge_fields": {
+            "FNAME": "Michael",
+            "LNAME": ""
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "michael@michaelsteven.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "paul.fryer@jamesgorey.com",
+      "vid": "191827018982",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "paul.fryer@jamesgorey.com",
+          "merge_fields": {
+            "FNAME": "Paul",
+            "LNAME": "Marla"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "paul.fryer@jamesgorey.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "info@thomashynesestates.co.uk",
+      "vid": "194101465286",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@thomashynesestates.co.uk",
+          "merge_fields": {
+            "FNAME": "Thomas Patrick",
+            "LNAME": "Hynes"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@thomashynesestates.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "sacha@mariana-realestate.com",
+      "vid": "194111602909",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "sacha@mariana-realestate.com",
+          "merge_fields": {
+            "FNAME": "Sacha",
+            "LNAME": "Rahbary"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "sacha@mariana-realestate.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "simon@findprop.co.uk",
+      "vid": "194111602913",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "simon@findprop.co.uk",
+          "merge_fields": {
+            "FNAME": "Simon",
+            "LNAME": "Mc Donnell"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "simon@findprop.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "nav.singh@charlesstratton.co.uk",
+      "vid": "194113468636",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "nav.singh@charlesstratton.co.uk",
+          "merge_fields": {
+            "FNAME": "Navdeep Singh",
+            "LNAME": "Bal"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "nav.singh@charlesstratton.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "lucie@luciewhite.co",
+      "vid": "194136317159",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "lucie@luciewhite.co",
+          "merge_fields": {
+            "FNAME": "Lucie Jean",
+            "LNAME": "white"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "lucie@luciewhite.co",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "admin@victorianz.co.uk",
+      "vid": "194136635636",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "admin@victorianz.co.uk",
+          "merge_fields": {
+            "FNAME": "Hamid Jamal",
+            "LNAME": "Khan"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "admin@victorianz.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "luke@woodcoteestateagents.co.uk",
+      "vid": "194136635638",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "luke@woodcoteestateagents.co.uk",
+          "merge_fields": {
+            "FNAME": "Luke",
+            "LNAME": "Porter"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "luke@woodcoteestateagents.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "jjames@gbpestates.co.uk",
+      "vid": "194137638103",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "jjames@gbpestates.co.uk",
+          "merge_fields": {
+            "FNAME": "Julie",
+            "LNAME": "James"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "jjames@gbpestates.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "rhiannon@llcoproperty.com",
+      "vid": "196104532168",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "rhiannon@llcoproperty.com",
+          "merge_fields": {
+            "FNAME": "Rhiannon",
+            "LNAME": "Llewellyn"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "rhiannon@llcoproperty.com",
+          "tag": "Competition"
+        }
+      ]
+    },
+    {
+      "email": "contact@twentyeight28propertygroup.co.uk",
+      "vid": "196255644866",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "contact@twentyeight28propertygroup.co.uk",
+          "merge_fields": {
+            "FNAME": "Josh",
+            "LNAME": "Yorke"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "contact@twentyeight28propertygroup.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "agriffin@griffinstevens.co.uk",
+      "vid": "199491113174",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "agriffin@griffinstevens.co.uk",
+          "merge_fields": {
+            "FNAME": "Andrew",
+            "LNAME": "Griffin"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "agriffin@griffinstevens.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "sanna@fhpl.uk",
+      "vid": "199491113179",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "sanna@fhpl.uk",
+          "merge_fields": {
+            "FNAME": "Sanna",
+            "LNAME": "Ahmed"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "sanna@fhpl.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "gt@wellsstreetstudio.co",
+      "vid": "199491113196",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "gt@wellsstreetstudio.co",
+          "merge_fields": {
+            "FNAME": "Geoffrey",
+            "LNAME": "Thomas"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "gt@wellsstreetstudio.co",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "roberthobart@hobartslater.com",
+      "vid": "199523355855",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "roberthobart@hobartslater.com",
+          "merge_fields": {
+            "FNAME": "Robert",
+            "LNAME": "Hobart"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "roberthobart@hobartslater.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "idrees@viryacapital.co.uk",
+      "vid": "199523355860",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "idrees@viryacapital.co.uk",
+          "merge_fields": {
+            "FNAME": "Idrees",
+            "LNAME": "Baig"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "idrees@viryacapital.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "e.sosa@fortesestates.co.uk",
+      "vid": "199523355869",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "e.sosa@fortesestates.co.uk",
+          "merge_fields": {
+            "FNAME": "Emmanuel",
+            "LNAME": "Sosa"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "e.sosa@fortesestates.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "charlotte@fairygodmover.com",
+      "vid": "199523355871",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "charlotte@fairygodmover.com",
+          "merge_fields": {
+            "FNAME": "Charlotte",
+            "LNAME": "Burton"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "charlotte@fairygodmover.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "karolina@acomodile.com",
+      "vid": "199523355890",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "karolina@acomodile.com",
+          "merge_fields": {
+            "FNAME": "Karolina",
+            "LNAME": "Kournossova"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "karolina@acomodile.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "daniel@statoncoe.com",
+      "vid": "199549775040",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "daniel@statoncoe.com",
+          "merge_fields": {
+            "FNAME": "Daniel",
+            "LNAME": "Coe"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "daniel@statoncoe.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "jsw@capstonegrp.co.uk",
+      "vid": "199549775060",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "jsw@capstonegrp.co.uk",
+          "merge_fields": {
+            "FNAME": "James",
+            "LNAME": "Winston"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "jsw@capstonegrp.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "atha.rasool@property2lease.com",
+      "vid": "199553548496",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "atha.rasool@property2lease.com",
+          "merge_fields": {
+            "FNAME": "Atha",
+            "LNAME": "Rasool"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "atha.rasool@property2lease.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "jorawar@sardarhomesuk.com",
+      "vid": "199553548500",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "jorawar@sardarhomesuk.com",
+          "merge_fields": {
+            "FNAME": "Jorawar",
+            "LNAME": "Gandhi"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "jorawar@sardarhomesuk.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "ana@akmrealestate.com",
+      "vid": "199556686012",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "ana@akmrealestate.com",
+          "merge_fields": {
+            "FNAME": "Ana",
+            "LNAME": "Vargas"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "ana@akmrealestate.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "michael.naylor@higginsconstruction.co.uk",
+      "vid": "199556686024",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "michael.naylor@higginsconstruction.co.uk",
+          "merge_fields": {
+            "FNAME": "Michael",
+            "LNAME": "Naylor"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "michael.naylor@higginsconstruction.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "apenfold@presentmade.com",
+      "vid": "199560037618",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "apenfold@presentmade.com",
+          "merge_fields": {
+            "FNAME": "Alan",
+            "LNAME": "Penfold"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "apenfold@presentmade.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "dawid@toolmach.co.uk",
+      "vid": "199560037619",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "dawid@toolmach.co.uk",
+          "merge_fields": {
+            "FNAME": "Dawid",
+            "LNAME": "Kucharski"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "dawid@toolmach.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "andreas@vanquishrealestate.com",
+      "vid": "199577377988",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "andreas@vanquishrealestate.com",
+          "merge_fields": {
+            "FNAME": "Andreas",
+            "LNAME": "Poulloura"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "andreas@vanquishrealestate.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "hannah@movegenius.com",
+      "vid": "199580732647",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "hannah@movegenius.com",
+          "merge_fields": {
+            "FNAME": "Hannah",
+            "LNAME": "Nicholson"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "hannah@movegenius.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "billy@grainproperty.com",
+      "vid": "199580732652",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "billy@grainproperty.com",
+          "merge_fields": {
+            "FNAME": "Billy",
+            "LNAME": "Homan"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "billy@grainproperty.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "ceyhun@urbanhigh.co.uk",
+      "vid": "199580732654",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "ceyhun@urbanhigh.co.uk",
+          "merge_fields": {
+            "FNAME": "Ceyhun",
+            "LNAME": "Cingi"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "ceyhun@urbanhigh.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "dean@parataproperty.co.uk",
+      "vid": "199580732665",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "dean@parataproperty.co.uk",
+          "merge_fields": {
+            "FNAME": "Dean",
+            "LNAME": "Parata"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "dean@parataproperty.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "gabriella@huttonsandpartners.com",
+      "vid": "199580733630",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "gabriella@huttonsandpartners.com",
+          "merge_fields": {
+            "FNAME": "Gabriella",
+            "LNAME": "Nazar"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "gabriella@huttonsandpartners.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "matt@guid3d.co.uk",
+      "vid": "199580733632",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "matt@guid3d.co.uk",
+          "merge_fields": {
+            "FNAME": "Matt",
+            "LNAME": "Pope"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "matt@guid3d.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "danial@dsainvestmentgroup.co.uk",
+      "vid": "199583168716",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "danial@dsainvestmentgroup.co.uk",
+          "merge_fields": {
+            "FNAME": "Danial",
+            "LNAME": "Abbas"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "danial@dsainvestmentgroup.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "aaron@aaronshohetproperty.com",
+      "vid": "199583168719",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "aaron@aaronshohetproperty.com",
+          "merge_fields": {
+            "FNAME": "Aaron ",
+            "LNAME": "SHOHET"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "aaron@aaronshohetproperty.com",
+          "tag": "Recruitment"
+        }
+      ]
+    },
+    {
+      "email": "marguerite@skyllagroup.com",
+      "vid": "199583168722",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "marguerite@skyllagroup.com",
+          "merge_fields": {
+            "FNAME": "Marguerite",
+            "LNAME": "Krikhaar"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "marguerite@skyllagroup.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "ashley@marriotvernon.com",
+      "vid": "199610279154",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "ashley@marriotvernon.com",
+          "merge_fields": {
+            "FNAME": "Ashley",
+            "LNAME": "Marriot"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "ashley@marriotvernon.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "charlie@onplan.co.uk",
+      "vid": "199613709519",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "charlie@onplan.co.uk",
+          "merge_fields": {
+            "FNAME": "Charlie",
+            "LNAME": "Orbell"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "charlie@onplan.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "rohit@alliancegroup.uk",
+      "vid": "199613709522",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "rohit@alliancegroup.uk",
+          "merge_fields": {
+            "FNAME": "Rohit",
+            "LNAME": "Santa"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "rohit@alliancegroup.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "jack@ivyandstone.uk",
+      "vid": "199613709523",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "jack@ivyandstone.uk",
+          "merge_fields": {
+            "FNAME": "Jack",
+            "LNAME": "Tuck"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "jack@ivyandstone.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "aamir@bayseian.com",
+      "vid": "199613709524",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "aamir@bayseian.com",
+          "merge_fields": {
+            "FNAME": "Aamir",
+            "LNAME": "Faaiz"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "aamir@bayseian.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "veronica@helloguest.co.uk",
+      "vid": "199613709526",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "veronica@helloguest.co.uk",
+          "merge_fields": {
+            "FNAME": "Veronica",
+            "LNAME": "Tribolati"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "veronica@helloguest.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "peter@lofthunt.co.uk",
+      "vid": "199617242345",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "peter@lofthunt.co.uk",
+          "merge_fields": {
+            "FNAME": "Peter",
+            "LNAME": "Hunt"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "peter@lofthunt.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "akshay.mishra@freeholdcorp.com",
+      "vid": "199617243327",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "akshay.mishra@freeholdcorp.com",
+          "merge_fields": {
+            "FNAME": "Akshay",
+            "LNAME": "Mishra"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "akshay.mishra@freeholdcorp.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "charlie@stcongar.com",
+      "vid": "199619905784",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "charlie@stcongar.com",
+          "merge_fields": {
+            "FNAME": "Charlie",
+            "LNAME": "Gordon"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "charlie@stcongar.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "colin@alchemygreen.co.uk",
+      "vid": "199620019415",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "colin@alchemygreen.co.uk",
+          "merge_fields": {
+            "FNAME": "Colin",
+            "LNAME": "Mendelowitz"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "colin@alchemygreen.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "pmade@presentmade.com",
+      "vid": "199620019417",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "pmade@presentmade.com",
+          "merge_fields": {
+            "FNAME": "Present",
+            "LNAME": "Made"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "pmade@presentmade.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "tomas@wantedrealestate.pt",
+      "vid": "199620019428",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "tomas@wantedrealestate.pt",
+          "merge_fields": {
+            "FNAME": "Tomas",
+            "LNAME": "Taylor"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "tomas@wantedrealestate.pt",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "jm@j3advisory.co.uk",
+      "vid": "199620019442",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "jm@j3advisory.co.uk",
+          "merge_fields": {
+            "FNAME": "James",
+            "LNAME": "Mole"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "jm@j3advisory.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "nathen@jbpam.co.uk",
+      "vid": "199623109876",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "nathen@jbpam.co.uk",
+          "merge_fields": {
+            "FNAME": "Nathen",
+            "LNAME": "Johns"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "nathen@jbpam.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "danny@bardanproperty.com",
+      "vid": "199623110848",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "danny@bardanproperty.com",
+          "merge_fields": {
+            "FNAME": "Danny",
+            "LNAME": "Tuckwood"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "danny@bardanproperty.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "daniel@dlrelocation.co.uk",
+      "vid": "199623110856",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "daniel@dlrelocation.co.uk",
+          "merge_fields": {
+            "FNAME": "Daniel",
+            "LNAME": "Lawrence"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "daniel@dlrelocation.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "sandeep@barosa.co.uk",
+      "vid": "199623110858",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "sandeep@barosa.co.uk",
+          "merge_fields": {
+            "FNAME": "Sandeep",
+            "LNAME": "Goenka"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "sandeep@barosa.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "daniel@restaurant-property.co.uk",
+      "vid": "199623110859",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "daniel@restaurant-property.co.uk",
+          "merge_fields": {
+            "FNAME": "Daniel",
+            "LNAME": "Brown"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "daniel@restaurant-property.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "michelle@hydeandrowlimited.co.uk",
+      "vid": "199625414865",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "michelle@hydeandrowlimited.co.uk",
+          "merge_fields": {
+            "FNAME": "Michelle",
+            "LNAME": "McPherson"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "michelle@hydeandrowlimited.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "josh@rently.co.uk",
+      "vid": "199625668847",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "josh@rently.co.uk",
+          "merge_fields": {
+            "FNAME": "Josh",
+            "LNAME": "Pavis"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "josh@rently.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "geeta.tek@compliance-experts.co.uk",
+      "vid": "199625668851",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "geeta.tek@compliance-experts.co.uk",
+          "merge_fields": {
+            "FNAME": "Geeta",
+            "LNAME": "Tekchandani"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "geeta.tek@compliance-experts.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "will@propa.co.uk",
+      "vid": "199625668853",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "will@propa.co.uk",
+          "merge_fields": {
+            "FNAME": "Will",
+            "LNAME": "Shelley"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "will@propa.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "info@jameschiltern.com",
+      "vid": "199631898846",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "info@jameschiltern.com",
+          "merge_fields": {
+            "FNAME": "Naseem",
+            "LNAME": "Choudry"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "info@jameschiltern.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "kristian@bartlettandpartners.com",
+      "vid": "199659166913",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "kristian@bartlettandpartners.com",
+          "merge_fields": {
+            "FNAME": "Kristian",
+            "LNAME": "Fitchett"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "kristian@bartlettandpartners.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "marta@dalhamltd.com",
+      "vid": "199659166915",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "marta@dalhamltd.com",
+          "merge_fields": {
+            "FNAME": "Marta",
+            "LNAME": "Marla"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "marta@dalhamltd.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "kaveh@thekey4ukcities.com",
+      "vid": "199659166924",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "kaveh@thekey4ukcities.com",
+          "merge_fields": {
+            "FNAME": "Kaveh",
+            "LNAME": "Mobasheri"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "kaveh@thekey4ukcities.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "nick.henley@cohabitas.com",
+      "vid": "199659166929",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "nick.henley@cohabitas.com",
+          "merge_fields": {
+            "FNAME": "Nick",
+            "LNAME": "Henley"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "nick.henley@cohabitas.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "tom@sqft.capital",
+      "vid": "199659166930",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "tom@sqft.capital",
+          "merge_fields": {
+            "FNAME": "Tom",
+            "LNAME": "Wolfe"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "tom@sqft.capital",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "james.h@iconomy.co.uk",
+      "vid": "199659166936",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "james.h@iconomy.co.uk",
+          "merge_fields": {
+            "FNAME": "James",
+            "LNAME": "Hennessy"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "james.h@iconomy.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "thierry@vincitgroup.co.uk",
+      "vid": "199667001569",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "thierry@vincitgroup.co.uk",
+          "merge_fields": {
+            "FNAME": "Thierry",
+            "LNAME": "Lemaire"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "thierry@vincitgroup.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "andrew.lock@hadleypropertygroup.com",
+      "vid": "199667001574",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "andrew.lock@hadleypropertygroup.com",
+          "merge_fields": {
+            "FNAME": "Andrew",
+            "LNAME": "Lock"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "andrew.lock@hadleypropertygroup.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "stefan@developark.co.uk",
+      "vid": "199667001576",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "stefan@developark.co.uk",
+          "merge_fields": {
+            "FNAME": "Stefan",
+            "LNAME": "Stanton"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "stefan@developark.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "ahmed@rockledge.co.uk",
+      "vid": "199691156721",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "ahmed@rockledge.co.uk",
+          "merge_fields": {
+            "FNAME": "Ahmed",
+            "LNAME": "Ali"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "ahmed@rockledge.co.uk",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "sascha@londonrelocation.com",
+      "vid": "199745540307",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "sascha@londonrelocation.com",
+          "merge_fields": {
+            "FNAME": "Sascha",
+            "LNAME": "Pendigrast"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "sascha@londonrelocation.com",
+          "tag": "General"
+        }
+      ]
+    },
+    {
+      "email": "ashleigh.fletcher@exp.uk.com",
+      "vid": "507694658780",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "ashleigh.fletcher@exp.uk.com",
+          "merge_fields": {
+            "FNAME": "Ashleigh",
+            "LNAME": "Fletcher"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "ashleigh.fletcher@exp.uk.com",
+          "tag": "EXP"
+        }
+      ]
+    },
+    {
+      "email": "nia.abrishami@exp.uk.com",
+      "vid": "507803802841",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "nia.abrishami@exp.uk.com",
+          "merge_fields": {
+            "FNAME": "Nia",
+            "LNAME": "Abrishami"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "nia.abrishami@exp.uk.com",
+          "tag": "EXP"
+        }
+      ]
+    },
+    {
+      "email": "james.chajet@exp.uk.com",
+      "vid": "667138084081",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "james.chajet@exp.uk.com",
+          "merge_fields": {
+            "FNAME": "James",
+            "LNAME": "Chajet"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "james.chajet@exp.uk.com",
+          "tag": "EXP"
+        }
+      ]
+    },
+    {
+      "email": "akeel.alidina@exp.uk.com",
+      "vid": "667529802959",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "akeel.alidina@exp.uk.com",
+          "merge_fields": {
+            "FNAME": "Akeel",
+            "LNAME": "Alidina"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "akeel.alidina@exp.uk.com",
+          "tag": "EXP"
+        }
+      ]
+    },
+    {
+      "email": "ayshakenny@kwuk.com",
+      "vid": "692672457948",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "ayshakenny@kwuk.com",
+          "merge_fields": {
+            "FNAME": "Aysha",
+            "LNAME": "Kenny"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "ayshakenny@kwuk.com",
+          "tag": "EXP"
+        }
+      ]
+    },
+    {
+      "email": "debbie.dorans@kwuk.com",
+      "vid": "692916529359",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "debbie.dorans@kwuk.com",
+          "merge_fields": {
+            "FNAME": "Debbie",
+            "LNAME": "Dorans"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "debbie.dorans@kwuk.com",
+          "tag": "EXP"
+        }
+      ]
+    },
+    {
+      "email": "ela.nistor@kwuk.com",
+      "vid": "692963963100",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "ela.nistor@kwuk.com",
+          "merge_fields": {
+            "FNAME": "Ela",
+            "LNAME": "Nistor"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "ela.nistor@kwuk.com",
+          "tag": "EXP"
+        }
+      ]
+    },
+    {
+      "email": "scott.hayter@iad.uk.com",
+      "vid": "692963969212",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "scott.hayter@iad.uk.com",
+          "merge_fields": {
+            "FNAME": "Scott",
+            "LNAME": "Hayter"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "scott.hayter@iad.uk.com",
+          "tag": "EXP"
+        }
+      ]
+    },
+    {
+      "email": "michael.obrien@kwuk.com",
+      "vid": "692968068319",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "michael.obrien@kwuk.com",
+          "merge_fields": {
+            "FNAME": "Michael",
+            "LNAME": "O\u2019Brien"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "michael.obrien@kwuk.com",
+          "tag": "EXP"
+        }
+      ]
+    },
+    {
+      "email": "ezinne.ikejiani@iad.uk.com",
+      "vid": "693011890366",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "ezinne.ikejiani@iad.uk.com",
+          "merge_fields": {
+            "FNAME": "Ezinne",
+            "LNAME": "Ikejiani"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "ezinne.ikejiani@iad.uk.com",
+          "tag": "EXP"
+        }
+      ]
+    },
+    {
+      "email": "oliver.exley@kwuk.com",
+      "vid": "693235502273",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "oliver.exley@kwuk.com",
+          "merge_fields": {
+            "FNAME": "Oliver",
+            "LNAME": "George"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "oliver.exley@kwuk.com",
+          "tag": "EXP"
+        }
+      ]
+    },
+    {
+      "email": "charles.peto@kwuk.com",
+      "vid": "693262349549",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "charles.peto@kwuk.com",
+          "merge_fields": {
+            "FNAME": "Charles",
+            "LNAME": "Peto"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "charles.peto@kwuk.com",
+          "tag": "EXP"
+        }
+      ]
+    },
+    {
+      "email": "saho.praneeth@kwuk.com",
+      "vid": "693266263283",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "saho.praneeth@kwuk.com",
+          "merge_fields": {
+            "FNAME": "Saho",
+            "LNAME": "Praneeth"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "saho.praneeth@kwuk.com",
+          "tag": "EXP"
+        }
+      ]
+    },
+    {
+      "email": "jodie.silverman@kwuk.com",
+      "vid": "693317668082",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "jodie.silverman@kwuk.com",
+          "merge_fields": {
+            "FNAME": "Jodie",
+            "LNAME": "Silverman"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "jodie.silverman@kwuk.com",
+          "tag": "EXP"
+        }
+      ]
+    },
+    {
+      "email": "sandra.catelo-jabar@iad.uk",
+      "vid": "693500701909",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "sandra.catelo-jabar@iad.uk",
+          "merge_fields": {
+            "FNAME": "Sandra",
+            "LNAME": "Catelo-Jabar"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "sandra.catelo-jabar@iad.uk",
+          "tag": "EXP"
+        }
+      ]
+    },
+    {
+      "email": "natalie.muckersie@kwuk.com",
+      "vid": "693698714866",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "natalie.muckersie@kwuk.com",
+          "merge_fields": {
+            "FNAME": "Natalie",
+            "LNAME": "Muckersie"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "natalie.muckersie@kwuk.com",
+          "tag": "EXP"
+        }
+      ]
+    },
+    {
+      "email": "ali.hussain@iad.uk.com",
+      "vid": "693815256283",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "ali.hussain@iad.uk.com",
+          "merge_fields": {
+            "FNAME": "Ali",
+            "LNAME": "Hussain"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "ali.hussain@iad.uk.com",
+          "tag": "EXP"
+        }
+      ]
+    },
+    {
+      "email": "daniel.keenan@exp.uk.com",
+      "vid": "732983575792",
+      "operations": [
+        {
+          "type": "upsert_mc_member",
+          "email": "daniel.keenan@exp.uk.com",
+          "merge_fields": {
+            "FNAME": "Daniel ",
+            "LNAME": "Keenan"
+          },
+          "status_if_new": "subscribed"
+        },
+        {
+          "type": "apply_mc_tag",
+          "email": "daniel.keenan@exp.uk.com",
+          "tag": "EXP"
+        }
+      ]
+    },
+    {
+      "email": "raphael@bluefieldsolutions.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "unsubscribe_mc_member",
+          "email": "raphael@bluefieldsolutions.co.uk",
+          "reason": "opted_out_in_hubspot"
+        }
+      ]
+    },
+    {
+      "email": "raphael@bluefieldsolutions.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "raphael@bluefieldsolutions.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "raphael@bluefieldsolutions.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "raphael@bluefieldsolutions.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "office@mdreamproperty.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "unsubscribe_mc_member",
+          "email": "office@mdreamproperty.co.uk",
+          "reason": "opted_out_in_hubspot"
+        }
+      ]
+    },
+    {
+      "email": "office@mdreamproperty.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "office@mdreamproperty.co.uk",
+          "tags": [
+            "Recruitment"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "office@mdreamproperty.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "office@mdreamproperty.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "lizz.graves@burnetware.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "lizz.graves@burnetware.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "lizz.graves@burnetware.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "lizz.graves@burnetware.com"
+        }
+      ]
+    },
+    {
+      "email": "stephen@gallowaysonline.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "unsubscribe_mc_member",
+          "email": "stephen@gallowaysonline.co.uk",
+          "reason": "opted_out_in_hubspot"
+        }
+      ]
+    },
+    {
+      "email": "stephen@gallowaysonline.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "stephen@gallowaysonline.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "stephen@gallowaysonline.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "stephen@gallowaysonline.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "danielm@danielmadden.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "unsubscribe_mc_member",
+          "email": "danielm@danielmadden.co.uk",
+          "reason": "opted_out_in_hubspot"
+        }
+      ]
+    },
+    {
+      "email": "danielm@danielmadden.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "danielm@danielmadden.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "danielm@danielmadden.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "danielm@danielmadden.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "simon.stacey@cromwellpropertygroup.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "simon.stacey@cromwellpropertygroup.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "simon.stacey@cromwellpropertygroup.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "simon.stacey@cromwellpropertygroup.com"
+        }
+      ]
+    },
+    {
+      "email": "obida@kingdominternationalrealestate.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "obida@kingdominternationalrealestate.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "obida@kingdominternationalrealestate.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "obida@kingdominternationalrealestate.com"
+        }
+      ]
+    },
+    {
+      "email": "emma@emmasestateagents.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "unsubscribe_mc_member",
+          "email": "emma@emmasestateagents.co.uk",
+          "reason": "opted_out_in_hubspot"
+        }
+      ]
+    },
+    {
+      "email": "emma@emmasestateagents.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "emma@emmasestateagents.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "emma@emmasestateagents.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "emma@emmasestateagents.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "james@symmetryhousing.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "james@symmetryhousing.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "james@symmetryhousing.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "james@symmetryhousing.com"
+        }
+      ]
+    },
+    {
+      "email": "renato@mastergrowth.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "renato@mastergrowth.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "renato@mastergrowth.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "renato@mastergrowth.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "amanda.mangan@rubiconestates.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "amanda.mangan@rubiconestates.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "amanda.mangan@rubiconestates.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "amanda.mangan@rubiconestates.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "rgv@curate.ventures",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "rgv@curate.ventures",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "rgv@curate.ventures",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "rgv@curate.ventures"
+        }
+      ]
+    },
+    {
+      "email": "bilal@rockledge.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "bilal@rockledge.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "bilal@rockledge.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "bilal@rockledge.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "claire@stonesresidential.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "claire@stonesresidential.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "claire@stonesresidential.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "claire@stonesresidential.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "hussain@phoenixresidential.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "hussain@phoenixresidential.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "hussain@phoenixresidential.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "hussain@phoenixresidential.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "james@jsepropertymanagement.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "james@jsepropertymanagement.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "james@jsepropertymanagement.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "james@jsepropertymanagement.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "max@limepm.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "max@limepm.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "max@limepm.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "max@limepm.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "tasosvoutselas@roundzero.co",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "tasosvoutselas@roundzero.co",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "tasosvoutselas@roundzero.co",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "tasosvoutselas@roundzero.co"
+        }
+      ]
+    },
+    {
+      "email": "charlotte.coates@martelrealestate.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "charlotte.coates@martelrealestate.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "charlotte.coates@martelrealestate.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "charlotte.coates@martelrealestate.com"
+        }
+      ]
+    },
+    {
+      "email": "rhidian@cohab.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "rhidian@cohab.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "rhidian@cohab.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "rhidian@cohab.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "info@incityestates.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "info@incityestates.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "info@incityestates.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "info@incityestates.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "mark.bainbridge@exp.uk.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "mark.bainbridge@exp.uk.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "mark.bainbridge@exp.uk.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "mark.bainbridge@exp.uk.com"
+        }
+      ]
+    },
+    {
+      "email": "properties@diamondestates.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "properties@diamondestates.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "properties@diamondestates.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "properties@diamondestates.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "info@mrandmrssimon.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "info@mrandmrssimon.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "info@mrandmrssimon.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "info@mrandmrssimon.com"
+        }
+      ]
+    },
+    {
+      "email": "info@hooperestateagents.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "info@hooperestateagents.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "info@hooperestateagents.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "info@hooperestateagents.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "nfo@flagstonespg.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "nfo@flagstonespg.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "nfo@flagstonespg.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "nfo@flagstonespg.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "sales@citywest.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "sales@citywest.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "sales@citywest.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "sales@citywest.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "hemel@northwooduk.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "hemel@northwooduk.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "hemel@northwooduk.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "hemel@northwooduk.com"
+        }
+      ]
+    },
+    {
+      "email": "welcome@fexcopropertyservices.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "unsubscribe_mc_member",
+          "email": "welcome@fexcopropertyservices.co.uk",
+          "reason": "opted_out_in_hubspot"
+        }
+      ]
+    },
+    {
+      "email": "welcome@fexcopropertyservices.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "welcome@fexcopropertyservices.co.uk",
+          "tags": [
+            "Recruitment"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "welcome@fexcopropertyservices.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "welcome@fexcopropertyservices.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "info@theparklanegroup.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "info@theparklanegroup.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "info@theparklanegroup.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "info@theparklanegroup.com"
+        }
+      ]
+    },
+    {
+      "email": "demi.collins@truthrealestate.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "demi.collins@truthrealestate.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "demi.collins@truthrealestate.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "demi.collins@truthrealestate.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "simon.spicer@simon.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "simon.spicer@simon.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "simon.spicer@simon.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "simon.spicer@simon.com"
+        }
+      ]
+    },
+    {
+      "email": "pgleave@deloitte.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "pgleave@deloitte.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "pgleave@deloitte.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "pgleave@deloitte.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "rgreen@akinternationalestates.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "rgreen@akinternationalestates.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "rgreen@akinternationalestates.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "rgreen@akinternationalestates.com"
+        }
+      ]
+    },
+    {
+      "email": "jdahms@totalise.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "jdahms@totalise.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "jdahms@totalise.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "jdahms@totalise.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "richard.wright@struttandparker.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "richard.wright@struttandparker.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "richard.wright@struttandparker.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "richard.wright@struttandparker.com"
+        }
+      ]
+    },
+    {
+      "email": "sphilipp@ashtonsproperty.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "sphilipp@ashtonsproperty.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "sphilipp@ashtonsproperty.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "sphilipp@ashtonsproperty.com"
+        }
+      ]
+    },
+    {
+      "email": "dlindsell@talktalk.net",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "dlindsell@talktalk.net",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "dlindsell@talktalk.net",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "dlindsell@talktalk.net"
+        }
+      ]
+    },
+    {
+      "email": "timchambers@driversjonas.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "timchambers@driversjonas.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "timchambers@driversjonas.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "timchambers@driversjonas.com"
+        }
+      ]
+    },
+    {
+      "email": "fkavanagh@btconnect.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "fkavanagh@btconnect.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "fkavanagh@btconnect.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "fkavanagh@btconnect.com"
+        }
+      ]
+    },
+    {
+      "email": "henry.leighton@dejlevy.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "henry.leighton@dejlevy.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "henry.leighton@dejlevy.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "henry.leighton@dejlevy.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "gemma.harvey-perry@struttandparker.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "gemma.harvey-perry@struttandparker.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "gemma.harvey-perry@struttandparker.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "gemma.harvey-perry@struttandparker.com"
+        }
+      ]
+    },
+    {
+      "email": "tan.khan@capita.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "tan.khan@capita.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "tan.khan@capita.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "tan.khan@capita.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "richard@hmredfield.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "richard@hmredfield.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "richard@hmredfield.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "richard@hmredfield.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "jamesbeard@countyenergy.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "jamesbeard@countyenergy.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "jamesbeard@countyenergy.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "jamesbeard@countyenergy.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "finnledwidge@keningtons.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "finnledwidge@keningtons.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "finnledwidge@keningtons.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "finnledwidge@keningtons.com"
+        }
+      ]
+    },
+    {
+      "email": "sales@curtisandparker.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "sales@curtisandparker.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "sales@curtisandparker.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "sales@curtisandparker.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "beverley@countryandvillage.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "beverley@countryandvillage.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "beverley@countryandvillage.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "beverley@countryandvillage.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "henrysimmons1990@gmail.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "henrysimmons1990@gmail.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "henrysimmons1990@gmail.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "henrysimmons1990@gmail.com"
+        }
+      ]
+    },
+    {
+      "email": "info@myproperties.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "info@myproperties.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "info@myproperties.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "info@myproperties.com"
+        }
+      ]
+    },
+    {
+      "email": "info@tonbridgeproperty.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "info@tonbridgeproperty.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "info@tonbridgeproperty.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "info@tonbridgeproperty.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "mark.jones@dtz.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "mark.jones@dtz.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "mark.jones@dtz.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "mark.jones@dtz.com"
+        }
+      ]
+    },
+    {
+      "email": "ray.mccoll@hsh-nordbank.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "ray.mccoll@hsh-nordbank.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "ray.mccoll@hsh-nordbank.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "ray.mccoll@hsh-nordbank.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "patrick.j.neville@rbs.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "patrick.j.neville@rbs.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "patrick.j.neville@rbs.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "patrick.j.neville@rbs.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "property.chigwell@lawlors.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "property.chigwell@lawlors.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "property.chigwell@lawlors.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "property.chigwell@lawlors.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "info@4saleltd.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "info@4saleltd.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "info@4saleltd.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "info@4saleltd.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "info@kingdom-property.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "info@kingdom-property.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "info@kingdom-property.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "info@kingdom-property.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "sales@flatmanagency.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "sales@flatmanagency.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "sales@flatmanagency.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "sales@flatmanagency.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "tunbridgewells@bardensestates.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "tunbridgewells@bardensestates.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "tunbridgewells@bardensestates.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "tunbridgewells@bardensestates.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "billie@amberestateagency.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "billie@amberestateagency.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "billie@amberestateagency.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "billie@amberestateagency.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "magda@hometime-property.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "magda@hometime-property.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "magda@hometime-property.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "magda@hometime-property.com"
+        }
+      ]
+    },
+    {
+      "email": "helen@nashpartnership.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "helen@nashpartnership.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "helen@nashpartnership.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "helen@nashpartnership.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "stalbans@bradfordandhowley.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "stalbans@bradfordandhowley.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "stalbans@bradfordandhowley.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "stalbans@bradfordandhowley.com"
+        }
+      ]
+    },
+    {
+      "email": "info@ramestateagent.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "info@ramestateagent.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "info@ramestateagent.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "info@ramestateagent.com"
+        }
+      ]
+    },
+    {
+      "email": "enquiries@aph-sussex.co",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "enquiries@aph-sussex.co",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "enquiries@aph-sussex.co",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "enquiries@aph-sussex.co"
+        }
+      ]
+    },
+    {
+      "email": "lettings@jacksmithestateagents.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "lettings@jacksmithestateagents.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "lettings@jacksmithestateagents.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "lettings@jacksmithestateagents.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "nadim@landestate.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "nadim@landestate.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "nadim@landestate.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "nadim@landestate.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "peter@yourcompany.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "peter@yourcompany.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "peter@yourcompany.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "peter@yourcompany.com"
+        }
+      ]
+    },
+    {
+      "email": "hello@swiftproperty.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "hello@swiftproperty.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "hello@swiftproperty.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "hello@swiftproperty.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "gurol@hansonsestates.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "gurol@hansonsestates.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "gurol@hansonsestates.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "gurol@hansonsestates.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "info@leaflettings.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "info@leaflettings.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "info@leaflettings.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "info@leaflettings.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "info@saxonsrentals.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "info@saxonsrentals.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "info@saxonsrentals.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "info@saxonsrentals.com"
+        }
+      ]
+    },
+    {
+      "email": "enquiries@barringtonlettings.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "enquiries@barringtonlettings.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "enquiries@barringtonlettings.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "enquiries@barringtonlettings.com"
+        }
+      ]
+    },
+    {
+      "email": "stephanie@annuletproperty.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "stephanie@annuletproperty.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "stephanie@annuletproperty.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "stephanie@annuletproperty.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "steven.hammond@bartletthammond.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "steven.hammond@bartletthammond.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "steven.hammond@bartletthammond.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "steven.hammond@bartletthammond.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "info@mylondonpad.net",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "info@mylondonpad.net",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "info@mylondonpad.net",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "info@mylondonpad.net"
+        }
+      ]
+    },
+    {
+      "email": "immaz@propertyco.org",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "immaz@propertyco.org",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "immaz@propertyco.org",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "immaz@propertyco.org"
+        }
+      ]
+    },
+    {
+      "email": "info@shores-property.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "info@shores-property.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "info@shores-property.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "info@shores-property.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "enquires@edgefield-property.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "enquires@edgefield-property.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "enquires@edgefield-property.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "enquires@edgefield-property.com"
+        }
+      ]
+    },
+    {
+      "email": "enquiries@carthews.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "enquiries@carthews.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "enquiries@carthews.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "enquiries@carthews.com"
+        }
+      ]
+    },
+    {
+      "email": "charles@daviddoyle.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "charles@daviddoyle.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "charles@daviddoyle.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "charles@daviddoyle.com"
+        }
+      ]
+    },
+    {
+      "email": "christian@christianreid.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "christian@christianreid.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "christian@christianreid.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "christian@christianreid.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "padam@kpgllettings.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "padam@kpgllettings.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "padam@kpgllettings.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "padam@kpgllettings.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "info@howlands-property.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "info@howlands-property.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "info@howlands-property.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "info@howlands-property.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "roger@reiddean.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "roger@reiddean.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "roger@reiddean.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "roger@reiddean.com"
+        }
+      ]
+    },
+    {
+      "email": "mounirouarzane@easymoveea.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "unsubscribe_mc_member",
+          "email": "mounirouarzane@easymoveea.com",
+          "reason": "opted_out_in_hubspot"
+        }
+      ]
+    },
+    {
+      "email": "mounirouarzane@easymoveea.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "mounirouarzane@easymoveea.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "mounirouarzane@easymoveea.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "mounirouarzane@easymoveea.com"
+        }
+      ]
+    },
+    {
+      "email": "hello@gkproperty.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "hello@gkproperty.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "hello@gkproperty.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "hello@gkproperty.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "robert@potterandford.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "robert@potterandford.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "robert@potterandford.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "robert@potterandford.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "lettings@smithandcosussex.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "lettings@smithandcosussex.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "lettings@smithandcosussex.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "lettings@smithandcosussex.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "london.essex@btconnect.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "london.essex@btconnect.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "london.essex@btconnect.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "london.essex@btconnect.com"
+        }
+      ]
+    },
+    {
+      "email": "conor.bracken@arcww.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "conor.bracken@arcww.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "conor.bracken@arcww.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "conor.bracken@arcww.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "info@auraestates.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "info@auraestates.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "info@auraestates.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "info@auraestates.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "info@hollandssmith.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "info@hollandssmith.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "info@hollandssmith.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "info@hollandssmith.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "info@cartierestates.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "info@cartierestates.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "info@cartierestates.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "info@cartierestates.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "pontingsproperty@btconnect.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "pontingsproperty@btconnect.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "pontingsproperty@btconnect.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "pontingsproperty@btconnect.com"
+        }
+      ]
+    },
+    {
+      "email": "cortlin.whitehead@lets-do-business.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "cortlin.whitehead@lets-do-business.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "cortlin.whitehead@lets-do-business.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "cortlin.whitehead@lets-do-business.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "sarah.wilkins@throughthedoorproperty.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "sarah.wilkins@throughthedoorproperty.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "sarah.wilkins@throughthedoorproperty.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "sarah.wilkins@throughthedoorproperty.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "tristan@lettingprofessionals.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "tristan@lettingprofessionals.com",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "tristan@lettingprofessionals.com",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "tristan@lettingprofessionals.com"
+        }
+      ]
+    },
+    {
+      "email": "kathryn@marrion.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "kathryn@marrion.co.uk",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "kathryn@marrion.co.uk",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "kathryn@marrion.co.uk"
+        }
+      ]
+    },
+    {
+      "email": "e.williams@williams.properties",
+      "vid": null,
+      "operations": [
+        {
+          "type": "remove_mc_tag",
+          "email": "e.williams@williams.properties",
+          "tags": [
+            "General"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "e.williams@williams.properties",
+      "vid": null,
+      "operations": [
+        {
+          "type": "archive_mc_member",
+          "email": "e.williams@williams.properties"
+        }
+      ]
+    },
+    {
+      "email": "info@jsestatemanagement.co.uk",
+      "vid": "133267229918",
+      "operations": [
+        {
+          "type": "remove_hs_from_list",
+          "list_id": "969",
+          "vid": "133267229918",
+          "reason": "contact_in_exclusion_list"
+        }
+      ]
+    },
+    {
+      "email": "sam@samuelandco.co.uk",
+      "vid": "653461410005",
+      "operations": [
+        {
+          "type": "remove_hs_from_list",
+          "list_id": "719",
+          "vid": "653461410005",
+          "reason": "contact_in_exclusion_list"
+        }
+      ]
+    },
+    {
+      "email": "info@fcrhomes.co.uk",
+      "vid": "37717470923",
+      "operations": [
+        {
+          "type": "remove_hs_from_list",
+          "list_id": "969",
+          "vid": "37717470923",
+          "reason": "contact_in_exclusion_list"
+        }
+      ]
+    },
+    {
+      "email": "rhoque@eldridgeestates.co.uk",
+      "vid": "158773127375",
+      "operations": [
+        {
+          "type": "remove_hs_from_list",
+          "list_id": "719",
+          "vid": "158773127375",
+          "reason": "contact_in_exclusion_list"
+        }
+      ]
+    },
+    {
+      "email": "info@astonestates.co.uk",
+      "vid": "370772294902",
+      "operations": [
+        {
+          "type": "remove_hs_from_list",
+          "list_id": "969",
+          "vid": "370772294902",
+          "reason": "contact_in_exclusion_list"
+        }
+      ]
+    },
+    {
+      "email": "info@hillcrestestates.co.uk",
+      "vid": "194268039369",
+      "operations": [
+        {
+          "type": "remove_hs_from_list",
+          "list_id": "719",
+          "vid": "194268039369",
+          "reason": "contact_in_exclusion_list"
+        }
+      ]
+    },
+    {
+      "email": "miles@edinburghlettingcentre.com",
+      "vid": "310161581269",
+      "operations": [
+        {
+          "type": "remove_hs_from_list",
+          "list_id": "720",
+          "vid": "310161581269",
+          "reason": "contact_in_exclusion_list"
+        }
+      ]
+    }
+  ]
+}

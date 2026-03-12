@@ -1,0 +1,861 @@
+2026-03-12 16:27:33 [INFO] __main__: Loading operations plan from: corev2/artifacts/plan_20260312_162441.json
+2026-03-12 16:27:33 [INFO] __main__: Loading config from: corev2/config/production.yaml
+2026-03-12 16:27:33 [INFO] __main__: ­ƒöÆ Checking safety gates for LIVE execution...
+2026-03-12 16:27:33 [WARNING] __main__: ÔÜá´©Å  UNLIMITED MODE: Processing all contacts
+2026-03-12 16:27:33 [INFO] __main__: Ô£ô All safety gates passed
+2026-03-12 16:27:33 [INFO] __main__:   run_mode: prod
+2026-03-12 16:27:33 [INFO] __main__:   allow_apply: True
+2026-03-12 16:27:33 [INFO] __main__:   test_contact_limit: 0
+2026-03-12 16:27:33 [INFO] __main__:   allow_archive: True
+2026-03-12 16:27:33 [INFO] __main__: Initializing API clients...
+2026-03-12 16:27:33 [INFO] __main__: ­ƒÜ¿ EXECUTING LIVE OPERATIONS ­ƒÜ¿
+2026-03-12 16:27:33 [INFO] __main__: ­ƒöä Step 1: Syncing Mailchimp unsubscribes to HubSpot...
+2026-03-12 16:27:33 [INFO] corev2.sync.unsubscribe_sync: Starting Mailchimp → HubSpot unsubscribe sync...
+2026-03-12 16:27:43 [INFO] corev2.sync.unsubscribe_sync: Found 7 unsubscribed contacts in Mailchimp
+2026-03-12 16:27:43 [INFO] corev2.sync.unsubscribe_sync: Processing sales@aandfproperty.co.uk...
+2026-03-12 16:27:44 [INFO] corev2.sync.unsubscribe_sync:   Unsubscribing sales@aandfproperty.co.uk from all email types...
+2026-03-12 16:27:44 [INFO] corev2.sync.unsubscribe_sync:     ✓ Unsubscribed from: One to One
+2026-03-12 16:27:44 [INFO] corev2.sync.unsubscribe_sync:     ✓ Unsubscribed from: Marketing Information
+2026-03-12 16:27:44 [INFO] corev2.sync.unsubscribe_sync:   ✓ Unsubscribed sales@aandfproperty.co.uk from 2 subscription types
+2026-03-12 16:27:45 [INFO] corev2.sync.unsubscribe_sync: Processing josie@foundationestateagents.co.uk...
+2026-03-12 16:27:45 [INFO] corev2.sync.unsubscribe_sync:   Unsubscribing josie@foundationestateagents.co.uk from all email types...
+2026-03-12 16:27:45 [INFO] corev2.sync.unsubscribe_sync:     ✓ Unsubscribed from: One to One
+2026-03-12 16:27:46 [INFO] corev2.sync.unsubscribe_sync:     ✓ Unsubscribed from: Marketing Information
+2026-03-12 16:27:46 [INFO] corev2.sync.unsubscribe_sync:   ✓ Unsubscribed josie@foundationestateagents.co.uk from 2 subscription types
+2026-03-12 16:27:46 [INFO] corev2.sync.unsubscribe_sync: Processing charlie@cbwilliamsproperty.com...
+2026-03-12 16:27:47 [INFO] corev2.sync.unsubscribe_sync:   Unsubscribing charlie@cbwilliamsproperty.com from all email types...
+2026-03-12 16:27:47 [INFO] corev2.sync.unsubscribe_sync:     ✓ Unsubscribed from: One to One
+2026-03-12 16:27:47 [INFO] corev2.sync.unsubscribe_sync:     ✓ Unsubscribed from: Marketing Information
+2026-03-12 16:27:47 [INFO] corev2.sync.unsubscribe_sync:   ✓ Unsubscribed charlie@cbwilliamsproperty.com from 2 subscription types
+2026-03-12 16:27:47 [INFO] corev2.sync.unsubscribe_sync: Processing ryan@just-management.com...
+2026-03-12 16:27:48 [INFO] corev2.sync.unsubscribe_sync:   Unsubscribing ryan@just-management.com from all email types...
+2026-03-12 16:27:48 [INFO] corev2.sync.unsubscribe_sync:     ✓ Unsubscribed from: One to One
+2026-03-12 16:27:48 [INFO] corev2.sync.unsubscribe_sync:     ✓ Unsubscribed from: Marketing Information
+2026-03-12 16:27:48 [INFO] corev2.sync.unsubscribe_sync:   ✓ Unsubscribed ryan@just-management.com from 2 subscription types
+2026-03-12 16:27:49 [INFO] corev2.sync.unsubscribe_sync: Processing camilo@depositpass.com...
+2026-03-12 16:27:49 [INFO] corev2.sync.unsubscribe_sync:   Unsubscribing camilo@depositpass.com from all email types...
+2026-03-12 16:27:49 [INFO] corev2.sync.unsubscribe_sync:     ✓ Unsubscribed from: One to One
+2026-03-12 16:27:50 [INFO] corev2.sync.unsubscribe_sync:     ✓ Unsubscribed from: Marketing Information
+2026-03-12 16:27:50 [INFO] corev2.sync.unsubscribe_sync:   ✓ Unsubscribed camilo@depositpass.com from 2 subscription types
+2026-03-12 16:27:50 [INFO] corev2.sync.unsubscribe_sync: Processing simon.pound@lcpi.co.uk...
+2026-03-12 16:27:50 [INFO] corev2.sync.unsubscribe_sync:   Unsubscribing simon.pound@lcpi.co.uk from all email types...
+2026-03-12 16:27:51 [INFO] corev2.sync.unsubscribe_sync:     ✓ Unsubscribed from: One to One
+2026-03-12 16:27:51 [INFO] corev2.sync.unsubscribe_sync:     ✓ Unsubscribed from: Marketing Information
+2026-03-12 16:27:51 [INFO] corev2.sync.unsubscribe_sync:   ✓ Unsubscribed simon.pound@lcpi.co.uk from 2 subscription types
+2026-03-12 16:27:51 [INFO] corev2.sync.unsubscribe_sync:   → Removing email from company 'LCPI Ltd' (ID: 413557063884)
+2026-03-12 16:27:52 [INFO] corev2.sync.unsubscribe_sync:   ✓ Cleaned company 'LCPI Ltd'
+2026-03-12 16:27:52 [INFO] corev2.sync.unsubscribe_sync: Processing tony@anthonyjamesproperties.co.uk...
+2026-03-12 16:27:52 [INFO] corev2.sync.unsubscribe_sync:   Unsubscribing tony@anthonyjamesproperties.co.uk from all email types...
+2026-03-12 16:27:52 [INFO] corev2.sync.unsubscribe_sync:     ✓ Unsubscribed from: One to One
+2026-03-12 16:27:52 [INFO] corev2.sync.unsubscribe_sync:     ✓ Unsubscribed from: Marketing Information
+2026-03-12 16:27:52 [INFO] corev2.sync.unsubscribe_sync:   ✓ Unsubscribed tony@anthonyjamesproperties.co.uk from 2 subscription types
+2026-03-12 16:27:53 [INFO] corev2.sync.unsubscribe_sync: 
+✓ Mailchimp → HubSpot Unsubscribe Sync Complete:
+2026-03-12 16:27:53 [INFO] corev2.sync.unsubscribe_sync:   • Unsubscribed found: 7
+2026-03-12 16:27:53 [INFO] corev2.sync.unsubscribe_sync:   • Opted out in HubSpot: 7
+2026-03-12 16:27:53 [INFO] corev2.sync.unsubscribe_sync:   • Already opted out: 0
+2026-03-12 16:27:53 [INFO] corev2.sync.unsubscribe_sync:   • Errors: 0
+2026-03-12 16:27:53 [INFO] __main__: Ô£ô Unsubscribe sync complete:
+2026-03-12 16:27:53 [INFO] __main__:   Mailchimp unsubscribed: 7
+2026-03-12 16:27:53 [INFO] __main__:   HubSpot updates: 7
+2026-03-12 16:27:53 [INFO] __main__:   Skipped (already unsubscribed): 0
+2026-03-12 16:27:53 [INFO] __main__: ­ƒöä Step 2: Executing primary sync operations...
+2026-03-12 16:27:53 [INFO] corev2.executor.engine: Starting execution (dry_run=False)...
+2026-03-12 16:27:53 [INFO] corev2.executor.engine: Journal: corev2/artifacts/execution_journal.jsonl
+2026-03-12 16:27:53 [INFO] corev2.executor.engine: Processing 423 contacts...
+2026-03-12 16:27:53 [INFO] corev2.executor.engine: Processing contact: hello@aliandcoproperty.co.uk (VID: 15705092538)
+2026-03-12 16:27:54 [INFO] corev2.executor.engine: Processing contact: nathan@nandnproperties.com (VID: 199549775039)
+2026-03-12 16:27:54 [INFO] corev2.executor.engine: Processing contact: tonyourris@anthonywebb.co.uk (VID: 199628200167)
+2026-03-12 16:27:55 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:27:55 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:27:55 [WARNING] corev2.executor.engine: Skipping tonyourris@anthonywebb.co.uk: in compliance state (unsubscribed/bounced)
+2026-03-12 16:27:55 [INFO] corev2.executor.engine: Processing contact: xlita@litahomes.co.uk (VID: 244392845520)
+2026-03-12 16:27:56 [INFO] corev2.executor.engine: Processing contact: jeanette@squireestates.co.uk (VID: 257783942379)
+2026-03-12 16:27:56 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:27:56 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:27:56 [WARNING] corev2.executor.engine: Skipping jeanette@squireestates.co.uk: in compliance state (unsubscribed/bounced)
+2026-03-12 16:27:57 [INFO] corev2.executor.engine: Processing contact: helena@hjpm.co.uk (VID: 258843264241)
+2026-03-12 16:27:57 [INFO] corev2.executor.engine: Processing contact: ejas@solacemanagement.co.uk (VID: 310149675242)
+2026-03-12 16:27:58 [INFO] corev2.executor.engine: Processing contact: tom@thehomecloud.co.uk (VID: 346471536888)
+2026-03-12 16:27:59 [INFO] corev2.executor.engine: Processing contact: stuart@coapt.co.uk (VID: 434269543661)
+2026-03-12 16:28:00 [INFO] corev2.executor.engine: Processing contact: jeffreyjaysan@hydepartners.com (VID: 472088620273)
+2026-03-12 16:28:00 [INFO] corev2.executor.engine: Processing contact: info@propertybyyes.co.uk (VID: 506615743727)
+2026-03-12 16:28:01 [INFO] corev2.executor.engine: Processing contact: abbas@lancashire-properties.co.uk (VID: 506752792806)
+2026-03-12 16:28:02 [INFO] corev2.executor.engine:   Contact abbas@lancashire-properties.co.uk restored from archive - cleaning old tags
+2026-03-12 16:28:02 [INFO] corev2.executor.engine:   No old tags to clean for abbas@lancashire-properties.co.uk
+2026-03-12 16:28:02 [INFO] corev2.executor.engine: Processing contact: enquiries@estatespm.co.uk (VID: 566961533177)
+2026-03-12 16:28:03 [INFO] corev2.executor.engine: Processing contact: general@everstone-property.com (VID: 626343967980)
+2026-03-12 16:28:04 [INFO] corev2.executor.engine: Processing contact: wayne@weletproperties.co.uk (VID: 678640388308)
+2026-03-12 16:28:05 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:28:05 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:28:05 [WARNING] corev2.executor.engine: Skipping wayne@weletproperties.co.uk: in compliance state (unsubscribed/bounced)
+2026-03-12 16:28:05 [INFO] corev2.executor.engine: Processing contact: jm@smcrhomes.co.uk (VID: 690280704226)
+2026-03-12 16:28:05 [INFO] corev2.executor.engine:   Contact jm@smcrhomes.co.uk restored from archive - cleaning old tags
+2026-03-12 16:28:06 [INFO] corev2.executor.engine:   No old tags to clean for jm@smcrhomes.co.uk
+2026-03-12 16:28:06 [INFO] corev2.executor.engine: Processing contact: freddie@marcoharris.co.uk (VID: 692109794497)
+2026-03-12 16:28:07 [INFO] corev2.executor.engine: Processing contact: property@templebury.co.uk (VID: 701752409276)
+2026-03-12 16:28:07 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:28:07 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:28:07 [WARNING] corev2.executor.engine: Skipping property@templebury.co.uk: in compliance state (unsubscribed/bounced)
+2026-03-12 16:28:07 [INFO] corev2.executor.engine: Processing contact: ashmi@theaddressmanagement.com (VID: 711210193138)
+2026-03-12 16:28:08 [INFO] corev2.executor.engine: Processing contact: sue@countryhousecompany.co.uk (VID: 711221057754)
+2026-03-12 16:28:09 [INFO] corev2.executor.engine: Processing contact: chris@gartonjones.co.uk (VID: 711222712537)
+2026-03-12 16:28:10 [INFO] corev2.executor.engine: Processing contact: sales@aandfproperty.co.uk (VID: 711321526474)
+2026-03-12 16:28:11 [INFO] corev2.executor.engine: Processing contact: d.j.satchwell@marstonmanagement.com (VID: 711323348161)
+2026-03-12 16:28:11 [INFO] corev2.executor.engine: Processing contact: info@prestonhillestates.com (VID: 711645141179)
+2026-03-12 16:28:12 [INFO] corev2.executor.engine: Processing contact: martin@groupkm.co.uk (VID: 721842500817)
+2026-03-12 16:28:13 [INFO] corev2.executor.engine: Processing contact: info@londonwideestates.com (VID: 721842500818)
+2026-03-12 16:28:14 [INFO] corev2.executor.engine: Processing contact: ben@garrettwhitelock.co.uk (VID: 722037351647)
+2026-03-12 16:28:14 [INFO] corev2.executor.engine: Processing contact: fraser@tristrams.uk.com (VID: 722104329427)
+2026-03-12 16:28:15 [INFO] corev2.executor.engine: Processing contact: gareth@pepperfox.com (VID: 732069739757)
+2026-03-12 16:28:16 [INFO] corev2.executor.engine: Processing contact: info@propertyoptions.com (VID: 732493328593)
+2026-03-12 16:28:17 [INFO] corev2.executor.engine: Processing contact: andrew@moonstonemanagement.co.uk (VID: 732857270480)
+2026-03-12 16:28:17 [INFO] corev2.executor.engine: Processing contact: ian@thepropertyplace.uk.com (VID: 732943384814)
+2026-03-12 16:28:18 [INFO] corev2.executor.engine: Processing contact: lev@levproperties.co.uk (VID: 732943614165)
+2026-03-12 16:28:19 [INFO] corev2.executor.engine: Processing contact: info@amaxestates.com (VID: 15703974610)
+2026-03-12 16:28:20 [INFO] corev2.executor.engine: Processing contact: vishal@nicheestates.co.uk (VID: 56001197276)
+2026-03-12 16:28:21 [INFO] corev2.executor.engine: Processing contact: lee@oakhill.london (VID: 88547912899)
+2026-03-12 16:28:21 [INFO] corev2.executor.engine: Processing contact: russell@jaysonrussell.com (VID: 94804440270)
+2026-03-12 16:28:22 [INFO] corev2.executor.engine: Processing contact: christie@kbire.co.uk (VID: 238334196956)
+2026-03-12 16:28:23 [INFO] corev2.executor.engine: Processing contact: robert@foundationestateagents.co.uk (VID: 283436582124)
+2026-03-12 16:28:24 [INFO] corev2.executor.engine: Processing contact: info@hytheandwaterside.com (VID: 354693766369)
+2026-03-12 16:28:24 [INFO] corev2.executor.engine: Processing contact: leone@harrycharles.co.uk (VID: 372944110783)
+2026-03-12 16:28:25 [INFO] corev2.executor.engine: Processing contact: matt@barrettestates.com (VID: 400915307743)
+2026-03-12 16:28:26 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:28:26 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:28:26 [WARNING] corev2.executor.engine: Skipping matt@barrettestates.com: in compliance state (unsubscribed/bounced)
+2026-03-12 16:28:26 [INFO] corev2.executor.engine: Processing contact: cl@lewis-tucker.com (VID: 565371565244)
+2026-03-12 16:28:27 [INFO] corev2.executor.engine: Processing contact: gsteer@alexandersteer.co.uk (VID: 653983064268)
+2026-03-12 16:28:27 [INFO] corev2.executor.engine: Processing contact: simon@handleygibson.co.uk (VID: 654480846044)
+2026-03-12 16:28:28 [INFO] corev2.executor.engine: Processing contact: chris@jowett-huddersfield.co.uk (VID: 666974176489)
+2026-03-12 16:28:29 [INFO] corev2.executor.engine: Processing contact: post@nops.co.uk (VID: 667190297818)
+2026-03-12 16:28:30 [INFO] corev2.executor.engine: Processing contact: andrew.harvey@oceanandcountry.co.uk (VID: 678640215273)
+2026-03-12 16:28:30 [INFO] corev2.executor.engine: Processing contact: info@spartanltd.co.uk (VID: 690342224070)
+2026-03-12 16:28:31 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:28:31 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:28:31 [WARNING] corev2.executor.engine: Skipping info@spartanltd.co.uk: in compliance state (unsubscribed/bounced)
+2026-03-12 16:28:31 [INFO] corev2.executor.engine: Processing contact: neil@crabbcurtis.co.uk (VID: 711219090627)
+2026-03-12 16:28:32 [INFO] corev2.executor.engine: Processing contact: asm@swallows.co.uk (VID: 711305296117)
+2026-03-12 16:28:33 [INFO] corev2.executor.engine: Processing contact: tim@jmslettings.co.uk (VID: 711312376028)
+2026-03-12 16:28:34 [INFO] corev2.executor.engine: Processing contact: info@rmaproperties.co.uk (VID: 711325150441)
+2026-03-12 16:28:34 [INFO] corev2.executor.engine: Processing contact: info@savvyanchor.co.uk (VID: 28915593714)
+2026-03-12 16:28:35 [INFO] corev2.executor.engine: Processing contact: info@mysite.com (VID: 196283239647)
+2026-03-12 16:28:36 [INFO] corev2.executor.engine: Processing contact: edalessandro@mindtheflat.co.uk (VID: 199757185227)
+2026-03-12 16:28:37 [INFO] corev2.executor.engine: Processing contact: info@zorbapropertysolutions.co.uk (VID: 671709797567)
+2026-03-12 16:28:37 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:28:37 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:28:37 [WARNING] corev2.executor.engine: Skipping info@zorbapropertysolutions.co.uk: in compliance state (unsubscribed/bounced)
+2026-03-12 16:28:37 [INFO] corev2.executor.engine: Processing contact: info@ideal-locations.com (VID: 187671221476)
+2026-03-12 16:28:38 [INFO] corev2.executor.engine: Processing contact: info@letsby-avenue.co.uk (VID: 289184570593)
+2026-03-12 16:28:39 [INFO] corev2.executor.engine: Processing contact: kellyharvey@robertmanning.co.uk (VID: 340893688009)
+2026-03-12 16:28:40 [INFO] corev2.executor.engine: Processing contact: info@sutherlandestates.co.uk (VID: 400929427655)
+2026-03-12 16:28:41 [INFO] corev2.executor.engine: Processing contact: info@elite-properties.co.uk (VID: 690833840377)
+2026-03-12 16:28:41 [INFO] corev2.executor.engine: Processing contact: info@rowflex.co.uk (VID: 691203851503)
+2026-03-12 16:28:42 [INFO] corev2.executor.engine: Processing contact: claire@thejollylandlord.co.uk (VID: 691296708799)
+2026-03-12 16:28:43 [INFO] corev2.executor.engine: Processing contact: info@jonesandreeds.co.uk (VID: 691322583284)
+2026-03-12 16:28:43 [INFO] corev2.executor.engine: Processing contact: jacqui@tjspropertypeople.co.uk (VID: 691331852524)
+2026-03-12 16:28:44 [INFO] corev2.executor.engine: Processing contact: info@propertysolutionsgb.co.uk (VID: 691621774568)
+2026-03-12 16:28:45 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:28:45 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:28:45 [WARNING] corev2.executor.engine: Skipping info@propertysolutionsgb.co.uk: in compliance state (unsubscribed/bounced)
+2026-03-12 16:28:45 [INFO] corev2.executor.engine: Processing contact: lettings@balmerandco.co.uk (VID: 691660498136)
+2026-03-12 16:28:45 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:28:45 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:28:45 [WARNING] corev2.executor.engine: Skipping lettings@balmerandco.co.uk: in compliance state (unsubscribed/bounced)
+2026-03-12 16:28:46 [INFO] corev2.executor.engine: Processing contact: neil@assetgrove.co.uk (VID: 691701339366)
+2026-03-12 16:28:46 [INFO] corev2.executor.engine: Processing contact: paul@pksalesandlettings.co.uk (VID: 691706401994)
+2026-03-12 16:28:47 [INFO] corev2.executor.engine: Processing contact: info@balinor.co.uk (VID: 691720346848)
+2026-03-12 16:28:48 [INFO] corev2.executor.engine: Processing contact: info@jngestates.co.uk (VID: 691730293979)
+2026-03-12 16:28:49 [INFO] corev2.executor.engine: Processing contact: mail@markwarren.org.uk (VID: 691779764445)
+2026-03-12 16:28:49 [INFO] corev2.executor.engine: Processing contact: harry.singh@johalshomes.co.uk (VID: 691781945554)
+2026-03-12 16:28:50 [INFO] corev2.executor.engine: Processing contact: andrew.gregory@pmpremier.co.uk (VID: 691789548759)
+2026-03-12 16:28:51 [INFO] corev2.executor.engine: Processing contact: rothwell@barringtonandblake.co.uk (VID: 691812155622)
+2026-03-12 16:28:52 [INFO] corev2.executor.engine: Processing contact: info@londonletsales.com (VID: 691812155624)
+2026-03-12 16:28:52 [INFO] corev2.executor.engine: Processing contact: info@thatsmyproperty.co.uk (VID: 691813934321)
+2026-03-12 16:28:53 [INFO] corev2.executor.engine: Processing contact: enquiries@property-vault-co-uk.stackstaging.com (VID: 691815759067)
+2026-03-12 16:28:54 [INFO] corev2.executor.engine: Processing contact: paul@hutton-parker.co.uk (VID: 691822731498)
+2026-03-12 16:28:55 [INFO] corev2.executor.engine: Processing contact: info@rwmestates.co.uk (VID: 691852759269)
+2026-03-12 16:28:56 [INFO] corev2.executor.engine: Processing contact: info@stratsmoregroup.com (VID: 691852759270)
+2026-03-12 16:28:57 [INFO] corev2.executor.engine: Processing contact: bobby@eightam.co.uk (VID: 732882761935)
+2026-03-12 16:28:57 [INFO] corev2.executor.engine: Processing contact: info@proinvestproperties.co.uk (VID: 733028179187)
+2026-03-12 16:28:58 [INFO] corev2.executor.engine: Processing contact: sales@edwardclark.co.uk (VID: 733077455060)
+2026-03-12 16:28:59 [INFO] corev2.executor.engine: Processing contact: elderflower213@gmail.com (VID: 733344722166)
+2026-03-12 16:29:00 [INFO] corev2.executor.engine: Processing contact: tony@anthonyjamesproperties.co.uk (VID: 733344722167)
+2026-03-12 16:29:00 [INFO] corev2.executor.engine: Processing contact: info@phoenixestate.co.uk (VID: 733365958857)
+2026-03-12 16:29:01 [INFO] corev2.executor.engine: Processing contact: enquiries@lincsletting.co.uk (VID: 733383871677)
+2026-03-12 16:29:02 [INFO] corev2.executor.engine: Processing contact: telford@livenoble.co.uk (VID: 733389656302)
+2026-03-12 16:29:03 [INFO] corev2.executor.engine: Processing contact: info@ez-homes.co.uk (VID: 733421711568)
+2026-03-12 16:29:03 [INFO] corev2.executor.engine: Processing contact: enquiries@easymoveea.com (VID: 3351)
+2026-03-12 16:29:04 [INFO] corev2.executor.engine: Processing contact: nasir@firstcontact.uk.net (VID: 6251)
+2026-03-12 16:29:05 [INFO] corev2.executor.engine: Processing contact: catie@baclis.com (VID: 7090900681)
+2026-03-12 16:29:06 [INFO] corev2.executor.engine: Processing contact: grays@msestates.co.uk (VID: 8153679057)
+2026-03-12 16:29:06 [INFO] corev2.executor.engine: Processing contact: harry@galaxyrealestates.co.uk (VID: 23591582399)
+2026-03-12 16:29:07 [INFO] corev2.executor.engine: Processing contact: info@katherineestates.co.uk (VID: 27699755209)
+2026-03-12 16:29:08 [INFO] corev2.executor.engine: Processing contact: mohsin@aeymoveestates.co.uk (VID: 28770189550)
+2026-03-12 16:29:09 [INFO] corev2.executor.engine: Processing contact: info@skypowersproperty.co.uk (VID: 28895362286)
+2026-03-12 16:29:09 [INFO] corev2.executor.engine: Processing contact: sales@centralparkestate.co.uk (VID: 28915928049)
+2026-03-12 16:29:10 [INFO] corev2.executor.engine: Processing contact: sales@tjmiller.co.uk (VID: 28969443259)
+2026-03-12 16:29:11 [INFO] corev2.executor.engine: Processing contact: kevin@kevinandco.uk (VID: 31551250138)
+2026-03-12 16:29:12 [INFO] corev2.executor.engine: Processing contact: sales@woodhousestjohn.co.uk (VID: 33729268183)
+2026-03-12 16:29:13 [INFO] corev2.executor.engine: Processing contact: emilia@moreandco.co.uk (VID: 36329627845)
+2026-03-12 16:29:14 [INFO] corev2.executor.engine: Processing contact: arnosgrove@oyster-properties.co.uk (VID: 42056515521)
+2026-03-12 16:29:14 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:14 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:14 [WARNING] corev2.executor.engine: Skipping arnosgrove@oyster-properties.co.uk: in compliance state (unsubscribed/bounced)
+2026-03-12 16:29:15 [INFO] corev2.executor.engine: Processing contact: info@bestates.uk (VID: 43348098791)
+2026-03-12 16:29:15 [INFO] corev2.executor.engine: Processing contact: stroudgreen@hobarts.co.uk (VID: 44827484606)
+2026-03-12 16:29:16 [INFO] corev2.executor.engine: Processing contact: chloe@oakhill.london (VID: 87323359468)
+2026-03-12 16:29:17 [INFO] corev2.executor.engine: Processing contact: info@bramleylettings.co.uk (VID: 110384970989)
+2026-03-12 16:29:18 [INFO] corev2.executor.engine: Processing contact: lettings@michaelwright.co.uk (VID: 110396867802)
+2026-03-12 16:29:18 [INFO] corev2.executor.engine: Processing contact: info@eliteagency.london (VID: 110424475836)
+2026-03-12 16:29:19 [INFO] corev2.executor.engine: Processing contact: info@heimandhomes.com (VID: 110427490519)
+2026-03-12 16:29:20 [INFO] corev2.executor.engine: Processing contact: john@jtmhomes.co.uk (VID: 170097160391)
+2026-03-12 16:29:21 [INFO] corev2.executor.engine: Processing contact: nima@eldertons.co.uk (VID: 170145371325)
+2026-03-12 16:29:21 [INFO] corev2.executor.engine: Processing contact: debbie@douglasallen.co.uk (VID: 176887995578)
+2026-03-12 16:29:22 [INFO] corev2.executor.engine: Processing contact: abdullah.hussain@ryan-baker.co.uk (VID: 177928200424)
+2026-03-12 16:29:23 [INFO] corev2.executor.engine: Processing contact: uckhursthill@knightons.co.uk (VID: 183927692509)
+2026-03-12 16:29:24 [INFO] corev2.executor.engine: Processing contact: amanda@cromwellsestateagents.com (VID: 183961309413)
+2026-03-12 16:29:24 [INFO] corev2.executor.engine: Processing contact: hassan@atlocation.co.uk (VID: 186175644874)
+2026-03-12 16:29:26 [INFO] corev2.executor.engine: Processing contact: michael@michaelsteven.co.uk (VID: 187036544216)
+2026-03-12 16:29:26 [INFO] corev2.executor.engine: Processing contact: paul.fryer@jamesgorey.com (VID: 191827018982)
+2026-03-12 16:29:27 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:27 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:27 [WARNING] corev2.executor.engine: Skipping paul.fryer@jamesgorey.com: in compliance state (unsubscribed/bounced)
+2026-03-12 16:29:27 [INFO] corev2.executor.engine: Processing contact: info@thomashynesestates.co.uk (VID: 194101465286)
+2026-03-12 16:29:28 [INFO] corev2.executor.engine: Processing contact: sacha@mariana-realestate.com (VID: 194111602909)
+2026-03-12 16:29:28 [INFO] corev2.executor.engine: Processing contact: simon@findprop.co.uk (VID: 194111602913)
+2026-03-12 16:29:29 [INFO] corev2.executor.engine: Processing contact: nav.singh@charlesstratton.co.uk (VID: 194113468636)
+2026-03-12 16:29:30 [INFO] corev2.executor.engine: Processing contact: lucie@luciewhite.co (VID: 194136317159)
+2026-03-12 16:29:31 [INFO] corev2.executor.engine: Processing contact: admin@victorianz.co.uk (VID: 194136635636)
+2026-03-12 16:29:32 [INFO] corev2.executor.engine: Processing contact: luke@woodcoteestateagents.co.uk (VID: 194136635638)
+2026-03-12 16:29:32 [INFO] corev2.executor.engine: Processing contact: jjames@gbpestates.co.uk (VID: 194137638103)
+2026-03-12 16:29:33 [INFO] corev2.executor.engine: Processing contact: rhiannon@llcoproperty.com (VID: 196104532168)
+2026-03-12 16:29:34 [INFO] corev2.executor.engine: Processing contact: contact@twentyeight28propertygroup.co.uk (VID: 196255644866)
+2026-03-12 16:29:35 [INFO] corev2.executor.engine: Processing contact: agriffin@griffinstevens.co.uk (VID: 199491113174)
+2026-03-12 16:29:35 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:35 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:35 [WARNING] corev2.executor.engine: Skipping agriffin@griffinstevens.co.uk: in compliance state (unsubscribed/bounced)
+2026-03-12 16:29:36 [INFO] corev2.executor.engine: Processing contact: sanna@fhpl.uk (VID: 199491113179)
+2026-03-12 16:29:36 [INFO] corev2.executor.engine: Processing contact: gt@wellsstreetstudio.co (VID: 199491113196)
+2026-03-12 16:29:37 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:37 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:37 [WARNING] corev2.executor.engine: Skipping gt@wellsstreetstudio.co: in compliance state (unsubscribed/bounced)
+2026-03-12 16:29:37 [INFO] corev2.executor.engine: Processing contact: roberthobart@hobartslater.com (VID: 199523355855)
+2026-03-12 16:29:38 [INFO] corev2.executor.engine: Processing contact: idrees@viryacapital.co.uk (VID: 199523355860)
+2026-03-12 16:29:39 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:39 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:39 [WARNING] corev2.executor.engine: Skipping idrees@viryacapital.co.uk: in compliance state (unsubscribed/bounced)
+2026-03-12 16:29:39 [INFO] corev2.executor.engine: Processing contact: e.sosa@fortesestates.co.uk (VID: 199523355869)
+2026-03-12 16:29:40 [INFO] corev2.executor.engine: Processing contact: charlotte@fairygodmover.com (VID: 199523355871)
+2026-03-12 16:29:40 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:40 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:40 [WARNING] corev2.executor.engine: Skipping charlotte@fairygodmover.com: in compliance state (unsubscribed/bounced)
+2026-03-12 16:29:40 [INFO] corev2.executor.engine: Processing contact: karolina@acomodile.com (VID: 199523355890)
+2026-03-12 16:29:41 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:41 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:41 [WARNING] corev2.executor.engine: Skipping karolina@acomodile.com: in compliance state (unsubscribed/bounced)
+2026-03-12 16:29:41 [INFO] corev2.executor.engine: Processing contact: daniel@statoncoe.com (VID: 199549775040)
+2026-03-12 16:29:42 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:42 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:42 [WARNING] corev2.executor.engine: Skipping daniel@statoncoe.com: in compliance state (unsubscribed/bounced)
+2026-03-12 16:29:42 [INFO] corev2.executor.engine: Processing contact: jsw@capstonegrp.co.uk (VID: 199549775060)
+2026-03-12 16:29:42 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:42 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:42 [WARNING] corev2.executor.engine: Skipping jsw@capstonegrp.co.uk: in compliance state (unsubscribed/bounced)
+2026-03-12 16:29:43 [INFO] corev2.executor.engine: Processing contact: atha.rasool@property2lease.com (VID: 199553548496)
+2026-03-12 16:29:43 [INFO] corev2.executor.engine: Processing contact: jorawar@sardarhomesuk.com (VID: 199553548500)
+2026-03-12 16:29:44 [INFO] corev2.executor.engine: Processing contact: ana@akmrealestate.com (VID: 199556686012)
+2026-03-12 16:29:45 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:45 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:45 [WARNING] corev2.executor.engine: Skipping ana@akmrealestate.com: in compliance state (unsubscribed/bounced)
+2026-03-12 16:29:45 [INFO] corev2.executor.engine: Processing contact: michael.naylor@higginsconstruction.co.uk (VID: 199556686024)
+2026-03-12 16:29:46 [INFO] corev2.executor.engine: Processing contact: apenfold@presentmade.com (VID: 199560037618)
+2026-03-12 16:29:47 [INFO] corev2.executor.engine: Processing contact: dawid@toolmach.co.uk (VID: 199560037619)
+2026-03-12 16:29:47 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:47 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:47 [WARNING] corev2.executor.engine: Skipping dawid@toolmach.co.uk: in compliance state (unsubscribed/bounced)
+2026-03-12 16:29:47 [INFO] corev2.executor.engine: Processing contact: andreas@vanquishrealestate.com (VID: 199577377988)
+2026-03-12 16:29:48 [INFO] corev2.executor.engine: Processing contact: hannah@movegenius.com (VID: 199580732647)
+2026-03-12 16:29:49 [INFO] corev2.executor.engine: Processing contact: billy@grainproperty.com (VID: 199580732652)
+2026-03-12 16:29:49 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:49 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:49 [WARNING] corev2.executor.engine: Skipping billy@grainproperty.com: in compliance state (unsubscribed/bounced)
+2026-03-12 16:29:50 [INFO] corev2.executor.engine: Processing contact: ceyhun@urbanhigh.co.uk (VID: 199580732654)
+2026-03-12 16:29:50 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:50 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:50 [WARNING] corev2.executor.engine: Skipping ceyhun@urbanhigh.co.uk: in compliance state (unsubscribed/bounced)
+2026-03-12 16:29:51 [INFO] corev2.executor.engine: Processing contact: dean@parataproperty.co.uk (VID: 199580732665)
+2026-03-12 16:29:51 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:51 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:51 [WARNING] corev2.executor.engine: Skipping dean@parataproperty.co.uk: in compliance state (unsubscribed/bounced)
+2026-03-12 16:29:51 [INFO] corev2.executor.engine: Processing contact: gabriella@huttonsandpartners.com (VID: 199580733630)
+2026-03-12 16:29:52 [INFO] corev2.executor.engine: Processing contact: matt@guid3d.co.uk (VID: 199580733632)
+2026-03-12 16:29:53 [INFO] corev2.executor.engine: Processing contact: danial@dsainvestmentgroup.co.uk (VID: 199583168716)
+2026-03-12 16:29:53 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:53 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:53 [WARNING] corev2.executor.engine: Skipping danial@dsainvestmentgroup.co.uk: in compliance state (unsubscribed/bounced)
+2026-03-12 16:29:54 [INFO] corev2.executor.engine: Processing contact: aaron@aaronshohetproperty.com (VID: 199583168719)
+2026-03-12 16:29:54 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:54 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:54 [WARNING] corev2.executor.engine: Skipping aaron@aaronshohetproperty.com: in compliance state (unsubscribed/bounced)
+2026-03-12 16:29:54 [INFO] corev2.executor.engine: Processing contact: marguerite@skyllagroup.com (VID: 199583168722)
+2026-03-12 16:29:55 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:55 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:55 [WARNING] corev2.executor.engine: Skipping marguerite@skyllagroup.com: in compliance state (unsubscribed/bounced)
+2026-03-12 16:29:55 [INFO] corev2.executor.engine: Processing contact: ashley@marriotvernon.com (VID: 199610279154)
+2026-03-12 16:29:56 [INFO] corev2.executor.engine: Processing contact: charlie@onplan.co.uk (VID: 199613709519)
+2026-03-12 16:29:56 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:56 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:56 [WARNING] corev2.executor.engine: Skipping charlie@onplan.co.uk: in compliance state (unsubscribed/bounced)
+2026-03-12 16:29:56 [INFO] corev2.executor.engine: Processing contact: rohit@alliancegroup.uk (VID: 199613709522)
+2026-03-12 16:29:57 [INFO] corev2.executor.engine: Processing contact: jack@ivyandstone.uk (VID: 199613709523)
+2026-03-12 16:29:58 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:58 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:58 [WARNING] corev2.executor.engine: Skipping jack@ivyandstone.uk: in compliance state (unsubscribed/bounced)
+2026-03-12 16:29:58 [INFO] corev2.executor.engine: Processing contact: aamir@bayseian.com (VID: 199613709524)
+2026-03-12 16:29:58 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:58 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:58 [WARNING] corev2.executor.engine: Skipping aamir@bayseian.com: in compliance state (unsubscribed/bounced)
+2026-03-12 16:29:59 [INFO] corev2.executor.engine: Processing contact: veronica@helloguest.co.uk (VID: 199613709526)
+2026-03-12 16:29:59 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:59 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:29:59 [WARNING] corev2.executor.engine: Skipping veronica@helloguest.co.uk: in compliance state (unsubscribed/bounced)
+2026-03-12 16:30:00 [INFO] corev2.executor.engine: Processing contact: peter@lofthunt.co.uk (VID: 199617242345)
+2026-03-12 16:30:00 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:00 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:00 [WARNING] corev2.executor.engine: Skipping peter@lofthunt.co.uk: in compliance state (unsubscribed/bounced)
+2026-03-12 16:30:00 [INFO] corev2.executor.engine: Processing contact: akshay.mishra@freeholdcorp.com (VID: 199617243327)
+2026-03-12 16:30:01 [INFO] corev2.executor.engine: Processing contact: charlie@stcongar.com (VID: 199619905784)
+2026-03-12 16:30:02 [INFO] corev2.executor.engine: Processing contact: colin@alchemygreen.co.uk (VID: 199620019415)
+2026-03-12 16:30:02 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:02 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:02 [WARNING] corev2.executor.engine: Skipping colin@alchemygreen.co.uk: in compliance state (unsubscribed/bounced)
+2026-03-12 16:30:02 [INFO] corev2.executor.engine: Processing contact: pmade@presentmade.com (VID: 199620019417)
+2026-03-12 16:30:03 [INFO] corev2.executor.engine: Processing contact: tomas@wantedrealestate.pt (VID: 199620019428)
+2026-03-12 16:30:04 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:04 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:04 [WARNING] corev2.executor.engine: Skipping tomas@wantedrealestate.pt: in compliance state (unsubscribed/bounced)
+2026-03-12 16:30:04 [INFO] corev2.executor.engine: Processing contact: jm@j3advisory.co.uk (VID: 199620019442)
+2026-03-12 16:30:04 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:04 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:04 [WARNING] corev2.executor.engine: Skipping jm@j3advisory.co.uk: in compliance state (unsubscribed/bounced)
+2026-03-12 16:30:05 [INFO] corev2.executor.engine: Processing contact: nathen@jbpam.co.uk (VID: 199623109876)
+2026-03-12 16:30:05 [INFO] corev2.executor.engine: Processing contact: danny@bardanproperty.com (VID: 199623110848)
+2026-03-12 16:30:06 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:06 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:06 [WARNING] corev2.executor.engine: Skipping danny@bardanproperty.com: in compliance state (unsubscribed/bounced)
+2026-03-12 16:30:06 [INFO] corev2.executor.engine: Processing contact: daniel@dlrelocation.co.uk (VID: 199623110856)
+2026-03-12 16:30:07 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:07 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:07 [WARNING] corev2.executor.engine: Skipping daniel@dlrelocation.co.uk: in compliance state (unsubscribed/bounced)
+2026-03-12 16:30:07 [INFO] corev2.executor.engine: Processing contact: sandeep@barosa.co.uk (VID: 199623110858)
+2026-03-12 16:30:07 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:07 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:07 [WARNING] corev2.executor.engine: Skipping sandeep@barosa.co.uk: in compliance state (unsubscribed/bounced)
+2026-03-12 16:30:08 [INFO] corev2.executor.engine: Processing contact: daniel@restaurant-property.co.uk (VID: 199623110859)
+2026-03-12 16:30:08 [INFO] corev2.executor.engine: Processing contact: michelle@hydeandrowlimited.co.uk (VID: 199625414865)
+2026-03-12 16:30:10 [INFO] corev2.executor.engine: Processing contact: josh@rently.co.uk (VID: 199625668847)
+2026-03-12 16:30:10 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:10 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:10 [WARNING] corev2.executor.engine: Skipping josh@rently.co.uk: in compliance state (unsubscribed/bounced)
+2026-03-12 16:30:10 [INFO] corev2.executor.engine: Processing contact: geeta.tek@compliance-experts.co.uk (VID: 199625668851)
+2026-03-12 16:30:11 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:11 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:11 [WARNING] corev2.executor.engine: Skipping geeta.tek@compliance-experts.co.uk: in compliance state (unsubscribed/bounced)
+2026-03-12 16:30:11 [INFO] corev2.executor.engine: Processing contact: will@propa.co.uk (VID: 199625668853)
+2026-03-12 16:30:12 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:12 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:12 [WARNING] corev2.executor.engine: Skipping will@propa.co.uk: in compliance state (unsubscribed/bounced)
+2026-03-12 16:30:12 [INFO] corev2.executor.engine: Processing contact: info@jameschiltern.com (VID: 199631898846)
+2026-03-12 16:30:13 [INFO] corev2.executor.engine: Processing contact: kristian@bartlettandpartners.com (VID: 199659166913)
+2026-03-12 16:30:13 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:13 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:13 [WARNING] corev2.executor.engine: Skipping kristian@bartlettandpartners.com: in compliance state (unsubscribed/bounced)
+2026-03-12 16:30:14 [INFO] corev2.executor.engine: Processing contact: marta@dalhamltd.com (VID: 199659166915)
+2026-03-12 16:30:14 [INFO] corev2.executor.engine: Processing contact: kaveh@thekey4ukcities.com (VID: 199659166924)
+2026-03-12 16:30:15 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:15 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:15 [WARNING] corev2.executor.engine: Skipping kaveh@thekey4ukcities.com: in compliance state (unsubscribed/bounced)
+2026-03-12 16:30:15 [INFO] corev2.executor.engine: Processing contact: nick.henley@cohabitas.com (VID: 199659166929)
+2026-03-12 16:30:16 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:16 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:16 [WARNING] corev2.executor.engine: Skipping nick.henley@cohabitas.com: in compliance state (unsubscribed/bounced)
+2026-03-12 16:30:16 [INFO] corev2.executor.engine: Processing contact: tom@sqft.capital (VID: 199659166930)
+2026-03-12 16:30:16 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:16 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:16 [WARNING] corev2.executor.engine: Skipping tom@sqft.capital: in compliance state (unsubscribed/bounced)
+2026-03-12 16:30:17 [INFO] corev2.executor.engine: Processing contact: james.h@iconomy.co.uk (VID: 199659166936)
+2026-03-12 16:30:18 [INFO] corev2.executor.engine: Processing contact: thierry@vincitgroup.co.uk (VID: 199667001569)
+2026-03-12 16:30:18 [INFO] corev2.executor.engine: Processing contact: andrew.lock@hadleypropertygroup.com (VID: 199667001574)
+2026-03-12 16:30:19 [INFO] corev2.executor.engine: Processing contact: stefan@developark.co.uk (VID: 199667001576)
+2026-03-12 16:30:20 [INFO] corev2.executor.engine: Processing contact: ahmed@rockledge.co.uk (VID: 199691156721)
+2026-03-12 16:30:21 [INFO] corev2.executor.engine: Processing contact: sascha@londonrelocation.com (VID: 199745540307)
+2026-03-12 16:30:22 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:22 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:22 [WARNING] corev2.executor.engine: Skipping sascha@londonrelocation.com: in compliance state (unsubscribed/bounced)
+2026-03-12 16:30:22 [INFO] corev2.executor.engine: Processing contact: ashleigh.fletcher@exp.uk.com (VID: 507694658780)
+2026-03-12 16:30:22 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:22 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:22 [WARNING] corev2.executor.engine: Skipping ashleigh.fletcher@exp.uk.com: in compliance state (unsubscribed/bounced)
+2026-03-12 16:30:23 [INFO] corev2.executor.engine: Processing contact: nia.abrishami@exp.uk.com (VID: 507803802841)
+2026-03-12 16:30:24 [INFO] corev2.executor.engine: Processing contact: james.chajet@exp.uk.com (VID: 667138084081)
+2026-03-12 16:30:24 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:24 [WARNING] corev2.clients.http_base: Mailchimp compliance state error (not retrying)
+2026-03-12 16:30:24 [WARNING] corev2.executor.engine: Skipping james.chajet@exp.uk.com: in compliance state (unsubscribed/bounced)
+2026-03-12 16:30:24 [INFO] corev2.executor.engine: Processing contact: akeel.alidina@exp.uk.com (VID: 667529802959)
+2026-03-12 16:30:25 [INFO] corev2.executor.engine: Processing contact: ayshakenny@kwuk.com (VID: 692672457948)
+2026-03-12 16:30:26 [INFO] corev2.executor.engine: Processing contact: debbie.dorans@kwuk.com (VID: 692916529359)
+2026-03-12 16:30:27 [INFO] corev2.executor.engine: Processing contact: ela.nistor@kwuk.com (VID: 692963963100)
+2026-03-12 16:30:27 [INFO] corev2.executor.engine: Processing contact: scott.hayter@iad.uk.com (VID: 692963969212)
+2026-03-12 16:30:28 [INFO] corev2.executor.engine: Processing contact: michael.obrien@kwuk.com (VID: 692968068319)
+2026-03-12 16:30:29 [INFO] corev2.executor.engine: Processing contact: ezinne.ikejiani@iad.uk.com (VID: 693011890366)
+2026-03-12 16:30:30 [INFO] corev2.executor.engine: Processing contact: oliver.exley@kwuk.com (VID: 693235502273)
+2026-03-12 16:30:30 [INFO] corev2.executor.engine: Processing contact: charles.peto@kwuk.com (VID: 693262349549)
+2026-03-12 16:30:31 [INFO] corev2.executor.engine: Processing contact: saho.praneeth@kwuk.com (VID: 693266263283)
+2026-03-12 16:30:32 [INFO] corev2.executor.engine: Processing contact: jodie.silverman@kwuk.com (VID: 693317668082)
+2026-03-12 16:30:33 [INFO] corev2.executor.engine: Processing contact: sandra.catelo-jabar@iad.uk (VID: 693500701909)
+2026-03-12 16:30:33 [INFO] corev2.executor.engine: Processing contact: natalie.muckersie@kwuk.com (VID: 693698714866)
+2026-03-12 16:30:34 [INFO] corev2.executor.engine: Processing contact: ali.hussain@iad.uk.com (VID: 693815256283)
+2026-03-12 16:30:35 [INFO] corev2.executor.engine: Processing contact: daniel.keenan@exp.uk.com (VID: 732983575792)
+2026-03-12 16:30:36 [INFO] corev2.executor.engine: Processing contact: raphael@bluefieldsolutions.co.uk (VID: None)
+2026-03-12 16:30:36 [INFO] corev2.executor.engine:   Unsubscribing raphael@bluefieldsolutions.co.uk in Mailchimp (reason: opted_out_in_hubspot)...
+2026-03-12 16:30:36 [INFO] corev2.executor.engine:   ✓ Unsubscribed raphael@bluefieldsolutions.co.uk
+2026-03-12 16:30:36 [INFO] corev2.executor.engine: Processing contact: raphael@bluefieldsolutions.co.uk (VID: None)
+2026-03-12 16:30:37 [INFO] corev2.executor.engine: Processing contact: raphael@bluefieldsolutions.co.uk (VID: None)
+2026-03-12 16:30:37 [INFO] corev2.executor.engine:   Archiving raphael@bluefieldsolutions.co.uk in Mailchimp...
+2026-03-12 16:30:37 [INFO] corev2.executor.engine:   ✓ Archived raphael@bluefieldsolutions.co.uk
+2026-03-12 16:30:37 [INFO] corev2.executor.engine: Processing contact: office@mdreamproperty.co.uk (VID: None)
+2026-03-12 16:30:37 [INFO] corev2.executor.engine:   Unsubscribing office@mdreamproperty.co.uk in Mailchimp (reason: opted_out_in_hubspot)...
+2026-03-12 16:30:37 [INFO] corev2.executor.engine:   ✓ Unsubscribed office@mdreamproperty.co.uk
+2026-03-12 16:30:37 [INFO] corev2.executor.engine: Processing contact: office@mdreamproperty.co.uk (VID: None)
+2026-03-12 16:30:38 [INFO] corev2.executor.engine: Processing contact: office@mdreamproperty.co.uk (VID: None)
+2026-03-12 16:30:38 [INFO] corev2.executor.engine:   Archiving office@mdreamproperty.co.uk in Mailchimp...
+2026-03-12 16:30:38 [INFO] corev2.executor.engine:   ✓ Archived office@mdreamproperty.co.uk
+2026-03-12 16:30:38 [INFO] corev2.executor.engine: Processing contact: lizz.graves@burnetware.com (VID: None)
+2026-03-12 16:30:38 [INFO] corev2.executor.engine: Processing contact: lizz.graves@burnetware.com (VID: None)
+2026-03-12 16:30:38 [INFO] corev2.executor.engine:   Archiving lizz.graves@burnetware.com in Mailchimp...
+2026-03-12 16:30:39 [INFO] corev2.executor.engine:   ✓ Archived lizz.graves@burnetware.com
+2026-03-12 16:30:39 [INFO] corev2.executor.engine: Processing contact: stephen@gallowaysonline.co.uk (VID: None)
+2026-03-12 16:30:39 [INFO] corev2.executor.engine:   Unsubscribing stephen@gallowaysonline.co.uk in Mailchimp (reason: opted_out_in_hubspot)...
+2026-03-12 16:30:39 [INFO] corev2.executor.engine:   ✓ Unsubscribed stephen@gallowaysonline.co.uk
+2026-03-12 16:30:39 [INFO] corev2.executor.engine: Processing contact: stephen@gallowaysonline.co.uk (VID: None)
+2026-03-12 16:30:40 [INFO] corev2.executor.engine: Processing contact: stephen@gallowaysonline.co.uk (VID: None)
+2026-03-12 16:30:40 [INFO] corev2.executor.engine:   Archiving stephen@gallowaysonline.co.uk in Mailchimp...
+2026-03-12 16:30:40 [INFO] corev2.executor.engine:   ✓ Archived stephen@gallowaysonline.co.uk
+2026-03-12 16:30:40 [INFO] corev2.executor.engine: Processing contact: danielm@danielmadden.co.uk (VID: None)
+2026-03-12 16:30:40 [INFO] corev2.executor.engine:   Unsubscribing danielm@danielmadden.co.uk in Mailchimp (reason: opted_out_in_hubspot)...
+2026-03-12 16:30:41 [INFO] corev2.executor.engine:   ✓ Unsubscribed danielm@danielmadden.co.uk
+2026-03-12 16:30:41 [INFO] corev2.executor.engine: Processing contact: danielm@danielmadden.co.uk (VID: None)
+2026-03-12 16:30:41 [INFO] corev2.executor.engine: Processing contact: danielm@danielmadden.co.uk (VID: None)
+2026-03-12 16:30:41 [INFO] corev2.executor.engine:   Archiving danielm@danielmadden.co.uk in Mailchimp...
+2026-03-12 16:30:41 [INFO] corev2.executor.engine:   ✓ Archived danielm@danielmadden.co.uk
+2026-03-12 16:30:41 [INFO] corev2.executor.engine: Processing contact: simon.stacey@cromwellpropertygroup.com (VID: None)
+2026-03-12 16:30:42 [INFO] corev2.executor.engine: Processing contact: simon.stacey@cromwellpropertygroup.com (VID: None)
+2026-03-12 16:30:42 [INFO] corev2.executor.engine:   Archiving simon.stacey@cromwellpropertygroup.com in Mailchimp...
+2026-03-12 16:30:42 [INFO] corev2.executor.engine:   ✓ Archived simon.stacey@cromwellpropertygroup.com
+2026-03-12 16:30:42 [INFO] corev2.executor.engine: Processing contact: obida@kingdominternationalrealestate.com (VID: None)
+2026-03-12 16:30:42 [INFO] corev2.executor.engine: Processing contact: obida@kingdominternationalrealestate.com (VID: None)
+2026-03-12 16:30:42 [INFO] corev2.executor.engine:   Archiving obida@kingdominternationalrealestate.com in Mailchimp...
+2026-03-12 16:30:43 [INFO] corev2.executor.engine:   ✓ Archived obida@kingdominternationalrealestate.com
+2026-03-12 16:30:43 [INFO] corev2.executor.engine: Processing contact: emma@emmasestateagents.co.uk (VID: None)
+2026-03-12 16:30:43 [INFO] corev2.executor.engine:   Unsubscribing emma@emmasestateagents.co.uk in Mailchimp (reason: opted_out_in_hubspot)...
+2026-03-12 16:30:43 [INFO] corev2.executor.engine:   ✓ Unsubscribed emma@emmasestateagents.co.uk
+2026-03-12 16:30:43 [INFO] corev2.executor.engine: Processing contact: emma@emmasestateagents.co.uk (VID: None)
+2026-03-12 16:30:43 [INFO] corev2.executor.engine: Processing contact: emma@emmasestateagents.co.uk (VID: None)
+2026-03-12 16:30:43 [INFO] corev2.executor.engine:   Archiving emma@emmasestateagents.co.uk in Mailchimp...
+2026-03-12 16:30:44 [INFO] corev2.executor.engine:   ✓ Archived emma@emmasestateagents.co.uk
+2026-03-12 16:30:44 [INFO] corev2.executor.engine: Processing contact: james@symmetryhousing.com (VID: None)
+2026-03-12 16:30:44 [INFO] corev2.executor.engine: Processing contact: james@symmetryhousing.com (VID: None)
+2026-03-12 16:30:44 [INFO] corev2.executor.engine:   Archiving james@symmetryhousing.com in Mailchimp...
+2026-03-12 16:30:44 [INFO] corev2.executor.engine:   ✓ Archived james@symmetryhousing.com
+2026-03-12 16:30:44 [INFO] corev2.executor.engine: Processing contact: renato@mastergrowth.co.uk (VID: None)
+2026-03-12 16:30:45 [INFO] corev2.executor.engine: Processing contact: renato@mastergrowth.co.uk (VID: None)
+2026-03-12 16:30:45 [INFO] corev2.executor.engine:   Archiving renato@mastergrowth.co.uk in Mailchimp...
+2026-03-12 16:30:45 [INFO] corev2.executor.engine:   ✓ Archived renato@mastergrowth.co.uk
+2026-03-12 16:30:45 [INFO] corev2.executor.engine: Processing contact: amanda.mangan@rubiconestates.co.uk (VID: None)
+2026-03-12 16:30:45 [INFO] corev2.executor.engine: Processing contact: amanda.mangan@rubiconestates.co.uk (VID: None)
+2026-03-12 16:30:45 [INFO] corev2.executor.engine:   Archiving amanda.mangan@rubiconestates.co.uk in Mailchimp...
+2026-03-12 16:30:46 [INFO] corev2.executor.engine:   ✓ Archived amanda.mangan@rubiconestates.co.uk
+2026-03-12 16:30:46 [INFO] corev2.executor.engine: Processing contact: rgv@curate.ventures (VID: None)
+2026-03-12 16:30:46 [INFO] corev2.executor.engine: Processing contact: rgv@curate.ventures (VID: None)
+2026-03-12 16:30:46 [INFO] corev2.executor.engine:   Archiving rgv@curate.ventures in Mailchimp...
+2026-03-12 16:30:46 [INFO] corev2.executor.engine:   ✓ Archived rgv@curate.ventures
+2026-03-12 16:30:46 [INFO] corev2.executor.engine: Processing contact: bilal@rockledge.co.uk (VID: None)
+2026-03-12 16:30:47 [INFO] corev2.executor.engine: Processing contact: bilal@rockledge.co.uk (VID: None)
+2026-03-12 16:30:47 [INFO] corev2.executor.engine:   Archiving bilal@rockledge.co.uk in Mailchimp...
+2026-03-12 16:30:47 [INFO] corev2.executor.engine:   ✓ Archived bilal@rockledge.co.uk
+2026-03-12 16:30:47 [INFO] corev2.executor.engine: Processing contact: claire@stonesresidential.co.uk (VID: None)
+2026-03-12 16:30:47 [INFO] corev2.executor.engine: Processing contact: claire@stonesresidential.co.uk (VID: None)
+2026-03-12 16:30:47 [INFO] corev2.executor.engine:   Archiving claire@stonesresidential.co.uk in Mailchimp...
+2026-03-12 16:30:48 [INFO] corev2.executor.engine:   ✓ Archived claire@stonesresidential.co.uk
+2026-03-12 16:30:48 [INFO] corev2.executor.engine: Processing contact: hussain@phoenixresidential.co.uk (VID: None)
+2026-03-12 16:30:48 [INFO] corev2.executor.engine: Processing contact: hussain@phoenixresidential.co.uk (VID: None)
+2026-03-12 16:30:48 [INFO] corev2.executor.engine:   Archiving hussain@phoenixresidential.co.uk in Mailchimp...
+2026-03-12 16:30:48 [INFO] corev2.executor.engine:   ✓ Archived hussain@phoenixresidential.co.uk
+2026-03-12 16:30:48 [INFO] corev2.executor.engine: Processing contact: james@jsepropertymanagement.co.uk (VID: None)
+2026-03-12 16:30:49 [INFO] corev2.executor.engine: Processing contact: james@jsepropertymanagement.co.uk (VID: None)
+2026-03-12 16:30:49 [INFO] corev2.executor.engine:   Archiving james@jsepropertymanagement.co.uk in Mailchimp...
+2026-03-12 16:30:49 [INFO] corev2.executor.engine:   ✓ Archived james@jsepropertymanagement.co.uk
+2026-03-12 16:30:49 [INFO] corev2.executor.engine: Processing contact: max@limepm.co.uk (VID: None)
+2026-03-12 16:30:49 [INFO] corev2.executor.engine: Processing contact: max@limepm.co.uk (VID: None)
+2026-03-12 16:30:49 [INFO] corev2.executor.engine:   Archiving max@limepm.co.uk in Mailchimp...
+2026-03-12 16:30:49 [INFO] corev2.executor.engine:   ✓ Archived max@limepm.co.uk
+2026-03-12 16:30:49 [INFO] corev2.executor.engine: Processing contact: tasosvoutselas@roundzero.co (VID: None)
+2026-03-12 16:30:50 [INFO] corev2.executor.engine: Processing contact: tasosvoutselas@roundzero.co (VID: None)
+2026-03-12 16:30:50 [INFO] corev2.executor.engine:   Archiving tasosvoutselas@roundzero.co in Mailchimp...
+2026-03-12 16:30:50 [INFO] corev2.executor.engine:   ✓ Archived tasosvoutselas@roundzero.co
+2026-03-12 16:30:50 [INFO] corev2.executor.engine: Processing contact: charlotte.coates@martelrealestate.com (VID: None)
+2026-03-12 16:30:50 [INFO] corev2.executor.engine: Processing contact: charlotte.coates@martelrealestate.com (VID: None)
+2026-03-12 16:30:50 [INFO] corev2.executor.engine:   Archiving charlotte.coates@martelrealestate.com in Mailchimp...
+2026-03-12 16:30:51 [INFO] corev2.executor.engine:   ✓ Archived charlotte.coates@martelrealestate.com
+2026-03-12 16:30:51 [INFO] corev2.executor.engine: Processing contact: rhidian@cohab.co.uk (VID: None)
+2026-03-12 16:30:51 [INFO] corev2.executor.engine: Processing contact: rhidian@cohab.co.uk (VID: None)
+2026-03-12 16:30:51 [INFO] corev2.executor.engine:   Archiving rhidian@cohab.co.uk in Mailchimp...
+2026-03-12 16:30:51 [INFO] corev2.executor.engine:   ✓ Archived rhidian@cohab.co.uk
+2026-03-12 16:30:51 [INFO] corev2.executor.engine: Processing contact: info@incityestates.co.uk (VID: None)
+2026-03-12 16:30:52 [INFO] corev2.executor.engine: Processing contact: info@incityestates.co.uk (VID: None)
+2026-03-12 16:30:52 [INFO] corev2.executor.engine:   Archiving info@incityestates.co.uk in Mailchimp...
+2026-03-12 16:30:52 [INFO] corev2.executor.engine:   ✓ Archived info@incityestates.co.uk
+2026-03-12 16:30:52 [INFO] corev2.executor.engine: Processing contact: mark.bainbridge@exp.uk.com (VID: None)
+2026-03-12 16:30:52 [INFO] corev2.executor.engine: Processing contact: mark.bainbridge@exp.uk.com (VID: None)
+2026-03-12 16:30:52 [INFO] corev2.executor.engine:   Archiving mark.bainbridge@exp.uk.com in Mailchimp...
+2026-03-12 16:30:53 [INFO] corev2.executor.engine:   ✓ Archived mark.bainbridge@exp.uk.com
+2026-03-12 16:30:53 [INFO] corev2.executor.engine: Processing contact: properties@diamondestates.co.uk (VID: None)
+2026-03-12 16:30:53 [INFO] corev2.executor.engine: Processing contact: properties@diamondestates.co.uk (VID: None)
+2026-03-12 16:30:53 [INFO] corev2.executor.engine:   Archiving properties@diamondestates.co.uk in Mailchimp...
+2026-03-12 16:30:53 [INFO] corev2.executor.engine:   ✓ Archived properties@diamondestates.co.uk
+2026-03-12 16:30:53 [INFO] corev2.executor.engine: Processing contact: info@mrandmrssimon.com (VID: None)
+2026-03-12 16:30:54 [INFO] corev2.executor.engine: Processing contact: info@mrandmrssimon.com (VID: None)
+2026-03-12 16:30:54 [INFO] corev2.executor.engine:   Archiving info@mrandmrssimon.com in Mailchimp...
+2026-03-12 16:30:54 [INFO] corev2.executor.engine:   ✓ Archived info@mrandmrssimon.com
+2026-03-12 16:30:54 [INFO] corev2.executor.engine: Processing contact: info@hooperestateagents.co.uk (VID: None)
+2026-03-12 16:30:54 [INFO] corev2.executor.engine: Processing contact: info@hooperestateagents.co.uk (VID: None)
+2026-03-12 16:30:54 [INFO] corev2.executor.engine:   Archiving info@hooperestateagents.co.uk in Mailchimp...
+2026-03-12 16:30:55 [INFO] corev2.executor.engine:   ✓ Archived info@hooperestateagents.co.uk
+2026-03-12 16:30:55 [INFO] corev2.executor.engine: Processing contact: nfo@flagstonespg.co.uk (VID: None)
+2026-03-12 16:30:55 [INFO] corev2.executor.engine: Processing contact: nfo@flagstonespg.co.uk (VID: None)
+2026-03-12 16:30:55 [INFO] corev2.executor.engine:   Archiving nfo@flagstonespg.co.uk in Mailchimp...
+2026-03-12 16:30:55 [INFO] corev2.executor.engine:   ✓ Archived nfo@flagstonespg.co.uk
+2026-03-12 16:30:55 [INFO] corev2.executor.engine: Processing contact: sales@citywest.co.uk (VID: None)
+2026-03-12 16:30:56 [INFO] corev2.executor.engine: Processing contact: sales@citywest.co.uk (VID: None)
+2026-03-12 16:30:56 [INFO] corev2.executor.engine:   Archiving sales@citywest.co.uk in Mailchimp...
+2026-03-12 16:30:56 [INFO] corev2.executor.engine:   ✓ Archived sales@citywest.co.uk
+2026-03-12 16:30:56 [INFO] corev2.executor.engine: Processing contact: hemel@northwooduk.com (VID: None)
+2026-03-12 16:30:56 [INFO] corev2.executor.engine: Processing contact: hemel@northwooduk.com (VID: None)
+2026-03-12 16:30:56 [INFO] corev2.executor.engine:   Archiving hemel@northwooduk.com in Mailchimp...
+2026-03-12 16:30:57 [INFO] corev2.executor.engine:   ✓ Archived hemel@northwooduk.com
+2026-03-12 16:30:57 [INFO] corev2.executor.engine: Processing contact: welcome@fexcopropertyservices.co.uk (VID: None)
+2026-03-12 16:30:57 [INFO] corev2.executor.engine:   Unsubscribing welcome@fexcopropertyservices.co.uk in Mailchimp (reason: opted_out_in_hubspot)...
+2026-03-12 16:30:57 [INFO] corev2.executor.engine:   ✓ Unsubscribed welcome@fexcopropertyservices.co.uk
+2026-03-12 16:30:57 [INFO] corev2.executor.engine: Processing contact: welcome@fexcopropertyservices.co.uk (VID: None)
+2026-03-12 16:30:57 [INFO] corev2.executor.engine: Processing contact: welcome@fexcopropertyservices.co.uk (VID: None)
+2026-03-12 16:30:57 [INFO] corev2.executor.engine:   Archiving welcome@fexcopropertyservices.co.uk in Mailchimp...
+2026-03-12 16:30:58 [INFO] corev2.executor.engine:   ✓ Archived welcome@fexcopropertyservices.co.uk
+2026-03-12 16:30:58 [INFO] corev2.executor.engine: Processing contact: info@theparklanegroup.com (VID: None)
+2026-03-12 16:30:58 [INFO] corev2.executor.engine: Processing contact: info@theparklanegroup.com (VID: None)
+2026-03-12 16:30:58 [INFO] corev2.executor.engine:   Archiving info@theparklanegroup.com in Mailchimp...
+2026-03-12 16:30:58 [INFO] corev2.executor.engine:   ✓ Archived info@theparklanegroup.com
+2026-03-12 16:30:58 [INFO] corev2.executor.engine: Processing contact: demi.collins@truthrealestate.co.uk (VID: None)
+2026-03-12 16:30:59 [INFO] corev2.executor.engine: Processing contact: demi.collins@truthrealestate.co.uk (VID: None)
+2026-03-12 16:30:59 [INFO] corev2.executor.engine:   Archiving demi.collins@truthrealestate.co.uk in Mailchimp...
+2026-03-12 16:30:59 [INFO] corev2.executor.engine:   ✓ Archived demi.collins@truthrealestate.co.uk
+2026-03-12 16:30:59 [INFO] corev2.executor.engine: Processing contact: simon.spicer@simon.com (VID: None)
+2026-03-12 16:30:59 [INFO] corev2.executor.engine: Processing contact: simon.spicer@simon.com (VID: None)
+2026-03-12 16:30:59 [INFO] corev2.executor.engine:   Archiving simon.spicer@simon.com in Mailchimp...
+2026-03-12 16:31:00 [INFO] corev2.executor.engine:   ✓ Archived simon.spicer@simon.com
+2026-03-12 16:31:00 [INFO] corev2.executor.engine: Processing contact: pgleave@deloitte.co.uk (VID: None)
+2026-03-12 16:31:00 [INFO] corev2.executor.engine: Processing contact: pgleave@deloitte.co.uk (VID: None)
+2026-03-12 16:31:00 [INFO] corev2.executor.engine:   Archiving pgleave@deloitte.co.uk in Mailchimp...
+2026-03-12 16:31:00 [INFO] corev2.executor.engine:   ✓ Archived pgleave@deloitte.co.uk
+2026-03-12 16:31:00 [INFO] corev2.executor.engine: Processing contact: rgreen@akinternationalestates.com (VID: None)
+2026-03-12 16:31:00 [INFO] corev2.executor.engine: Processing contact: rgreen@akinternationalestates.com (VID: None)
+2026-03-12 16:31:00 [INFO] corev2.executor.engine:   Archiving rgreen@akinternationalestates.com in Mailchimp...
+2026-03-12 16:31:01 [INFO] corev2.executor.engine:   ✓ Archived rgreen@akinternationalestates.com
+2026-03-12 16:31:01 [INFO] corev2.executor.engine: Processing contact: jdahms@totalise.co.uk (VID: None)
+2026-03-12 16:31:01 [INFO] corev2.executor.engine: Processing contact: jdahms@totalise.co.uk (VID: None)
+2026-03-12 16:31:01 [INFO] corev2.executor.engine:   Archiving jdahms@totalise.co.uk in Mailchimp...
+2026-03-12 16:31:02 [INFO] corev2.executor.engine:   ✓ Archived jdahms@totalise.co.uk
+2026-03-12 16:31:02 [INFO] corev2.executor.engine: Processing contact: richard.wright@struttandparker.com (VID: None)
+2026-03-12 16:31:02 [INFO] corev2.executor.engine: Processing contact: richard.wright@struttandparker.com (VID: None)
+2026-03-12 16:31:02 [INFO] corev2.executor.engine:   Archiving richard.wright@struttandparker.com in Mailchimp...
+2026-03-12 16:31:02 [INFO] corev2.executor.engine:   ✓ Archived richard.wright@struttandparker.com
+2026-03-12 16:31:02 [INFO] corev2.executor.engine: Processing contact: sphilipp@ashtonsproperty.com (VID: None)
+2026-03-12 16:31:03 [INFO] corev2.executor.engine: Processing contact: sphilipp@ashtonsproperty.com (VID: None)
+2026-03-12 16:31:03 [INFO] corev2.executor.engine:   Archiving sphilipp@ashtonsproperty.com in Mailchimp...
+2026-03-12 16:31:03 [INFO] corev2.executor.engine:   ✓ Archived sphilipp@ashtonsproperty.com
+2026-03-12 16:31:03 [INFO] corev2.executor.engine: Processing contact: dlindsell@talktalk.net (VID: None)
+2026-03-12 16:31:03 [INFO] corev2.executor.engine: Processing contact: dlindsell@talktalk.net (VID: None)
+2026-03-12 16:31:03 [INFO] corev2.executor.engine:   Archiving dlindsell@talktalk.net in Mailchimp...
+2026-03-12 16:31:03 [INFO] corev2.executor.engine:   ✓ Archived dlindsell@talktalk.net
+2026-03-12 16:31:03 [INFO] corev2.executor.engine: Processing contact: timchambers@driversjonas.com (VID: None)
+2026-03-12 16:31:04 [INFO] corev2.executor.engine: Processing contact: timchambers@driversjonas.com (VID: None)
+2026-03-12 16:31:04 [INFO] corev2.executor.engine:   Archiving timchambers@driversjonas.com in Mailchimp...
+2026-03-12 16:31:04 [INFO] corev2.executor.engine:   ✓ Archived timchambers@driversjonas.com
+2026-03-12 16:31:04 [INFO] corev2.executor.engine: Processing contact: fkavanagh@btconnect.com (VID: None)
+2026-03-12 16:31:04 [INFO] corev2.executor.engine: Processing contact: fkavanagh@btconnect.com (VID: None)
+2026-03-12 16:31:04 [INFO] corev2.executor.engine:   Archiving fkavanagh@btconnect.com in Mailchimp...
+2026-03-12 16:31:05 [INFO] corev2.executor.engine:   ✓ Archived fkavanagh@btconnect.com
+2026-03-12 16:31:05 [INFO] corev2.executor.engine: Processing contact: henry.leighton@dejlevy.co.uk (VID: None)
+2026-03-12 16:31:05 [INFO] corev2.executor.engine: Processing contact: henry.leighton@dejlevy.co.uk (VID: None)
+2026-03-12 16:31:05 [INFO] corev2.executor.engine:   Archiving henry.leighton@dejlevy.co.uk in Mailchimp...
+2026-03-12 16:31:06 [INFO] corev2.executor.engine:   ✓ Archived henry.leighton@dejlevy.co.uk
+2026-03-12 16:31:06 [INFO] corev2.executor.engine: Processing contact: gemma.harvey-perry@struttandparker.com (VID: None)
+2026-03-12 16:31:06 [INFO] corev2.executor.engine: Processing contact: gemma.harvey-perry@struttandparker.com (VID: None)
+2026-03-12 16:31:06 [INFO] corev2.executor.engine:   Archiving gemma.harvey-perry@struttandparker.com in Mailchimp...
+2026-03-12 16:31:06 [INFO] corev2.executor.engine:   ✓ Archived gemma.harvey-perry@struttandparker.com
+2026-03-12 16:31:06 [INFO] corev2.executor.engine: Processing contact: tan.khan@capita.co.uk (VID: None)
+2026-03-12 16:31:07 [INFO] corev2.executor.engine: Processing contact: tan.khan@capita.co.uk (VID: None)
+2026-03-12 16:31:07 [INFO] corev2.executor.engine:   Archiving tan.khan@capita.co.uk in Mailchimp...
+2026-03-12 16:31:07 [INFO] corev2.executor.engine:   ✓ Archived tan.khan@capita.co.uk
+2026-03-12 16:31:07 [INFO] corev2.executor.engine: Processing contact: richard@hmredfield.co.uk (VID: None)
+2026-03-12 16:31:07 [INFO] corev2.executor.engine: Processing contact: richard@hmredfield.co.uk (VID: None)
+2026-03-12 16:31:07 [INFO] corev2.executor.engine:   Archiving richard@hmredfield.co.uk in Mailchimp...
+2026-03-12 16:31:08 [INFO] corev2.executor.engine:   ✓ Archived richard@hmredfield.co.uk
+2026-03-12 16:31:08 [INFO] corev2.executor.engine: Processing contact: jamesbeard@countyenergy.co.uk (VID: None)
+2026-03-12 16:31:08 [INFO] corev2.executor.engine: Processing contact: jamesbeard@countyenergy.co.uk (VID: None)
+2026-03-12 16:31:08 [INFO] corev2.executor.engine:   Archiving jamesbeard@countyenergy.co.uk in Mailchimp...
+2026-03-12 16:31:08 [INFO] corev2.executor.engine:   ✓ Archived jamesbeard@countyenergy.co.uk
+2026-03-12 16:31:08 [INFO] corev2.executor.engine: Processing contact: finnledwidge@keningtons.com (VID: None)
+2026-03-12 16:31:08 [INFO] corev2.executor.engine: Processing contact: finnledwidge@keningtons.com (VID: None)
+2026-03-12 16:31:08 [INFO] corev2.executor.engine:   Archiving finnledwidge@keningtons.com in Mailchimp...
+2026-03-12 16:31:09 [INFO] corev2.executor.engine:   ✓ Archived finnledwidge@keningtons.com
+2026-03-12 16:31:09 [INFO] corev2.executor.engine: Processing contact: sales@curtisandparker.co.uk (VID: None)
+2026-03-12 16:31:09 [INFO] corev2.executor.engine: Processing contact: sales@curtisandparker.co.uk (VID: None)
+2026-03-12 16:31:09 [INFO] corev2.executor.engine:   Archiving sales@curtisandparker.co.uk in Mailchimp...
+2026-03-12 16:31:09 [INFO] corev2.executor.engine:   ✓ Archived sales@curtisandparker.co.uk
+2026-03-12 16:31:09 [INFO] corev2.executor.engine: Processing contact: beverley@countryandvillage.co.uk (VID: None)
+2026-03-12 16:31:10 [INFO] corev2.executor.engine: Processing contact: beverley@countryandvillage.co.uk (VID: None)
+2026-03-12 16:31:10 [INFO] corev2.executor.engine:   Archiving beverley@countryandvillage.co.uk in Mailchimp...
+2026-03-12 16:31:10 [INFO] corev2.executor.engine:   ✓ Archived beverley@countryandvillage.co.uk
+2026-03-12 16:31:10 [INFO] corev2.executor.engine: Processing contact: henrysimmons1990@gmail.com (VID: None)
+2026-03-12 16:31:11 [INFO] corev2.executor.engine: Processing contact: henrysimmons1990@gmail.com (VID: None)
+2026-03-12 16:31:11 [INFO] corev2.executor.engine:   Archiving henrysimmons1990@gmail.com in Mailchimp...
+2026-03-12 16:31:11 [INFO] corev2.executor.engine:   ✓ Archived henrysimmons1990@gmail.com
+2026-03-12 16:31:11 [INFO] corev2.executor.engine: Processing contact: info@myproperties.com (VID: None)
+2026-03-12 16:31:11 [INFO] corev2.executor.engine: Processing contact: info@myproperties.com (VID: None)
+2026-03-12 16:31:11 [INFO] corev2.executor.engine:   Archiving info@myproperties.com in Mailchimp...
+2026-03-12 16:31:11 [INFO] corev2.executor.engine:   ✓ Archived info@myproperties.com
+2026-03-12 16:31:11 [INFO] corev2.executor.engine: Processing contact: info@tonbridgeproperty.co.uk (VID: None)
+2026-03-12 16:31:12 [INFO] corev2.executor.engine: Processing contact: info@tonbridgeproperty.co.uk (VID: None)
+2026-03-12 16:31:12 [INFO] corev2.executor.engine:   Archiving info@tonbridgeproperty.co.uk in Mailchimp...
+2026-03-12 16:31:12 [INFO] corev2.executor.engine:   ✓ Archived info@tonbridgeproperty.co.uk
+2026-03-12 16:31:12 [INFO] corev2.executor.engine: Processing contact: mark.jones@dtz.com (VID: None)
+2026-03-12 16:31:12 [INFO] corev2.executor.engine: Processing contact: mark.jones@dtz.com (VID: None)
+2026-03-12 16:31:12 [INFO] corev2.executor.engine:   Archiving mark.jones@dtz.com in Mailchimp...
+2026-03-12 16:31:13 [INFO] corev2.executor.engine:   ✓ Archived mark.jones@dtz.com
+2026-03-12 16:31:13 [INFO] corev2.executor.engine: Processing contact: ray.mccoll@hsh-nordbank.co.uk (VID: None)
+2026-03-12 16:31:13 [INFO] corev2.executor.engine: Processing contact: ray.mccoll@hsh-nordbank.co.uk (VID: None)
+2026-03-12 16:31:13 [INFO] corev2.executor.engine:   Archiving ray.mccoll@hsh-nordbank.co.uk in Mailchimp...
+2026-03-12 16:31:14 [INFO] corev2.executor.engine:   ✓ Archived ray.mccoll@hsh-nordbank.co.uk
+2026-03-12 16:31:14 [INFO] corev2.executor.engine: Processing contact: patrick.j.neville@rbs.co.uk (VID: None)
+2026-03-12 16:31:14 [INFO] corev2.executor.engine: Processing contact: patrick.j.neville@rbs.co.uk (VID: None)
+2026-03-12 16:31:14 [INFO] corev2.executor.engine:   Archiving patrick.j.neville@rbs.co.uk in Mailchimp...
+2026-03-12 16:31:14 [INFO] corev2.executor.engine:   ✓ Archived patrick.j.neville@rbs.co.uk
+2026-03-12 16:31:14 [INFO] corev2.executor.engine: Processing contact: property.chigwell@lawlors.co.uk (VID: None)
+2026-03-12 16:31:14 [INFO] corev2.executor.engine: Processing contact: property.chigwell@lawlors.co.uk (VID: None)
+2026-03-12 16:31:14 [INFO] corev2.executor.engine:   Archiving property.chigwell@lawlors.co.uk in Mailchimp...
+2026-03-12 16:31:15 [INFO] corev2.executor.engine:   ✓ Archived property.chigwell@lawlors.co.uk
+2026-03-12 16:31:15 [INFO] corev2.executor.engine: Processing contact: info@4saleltd.co.uk (VID: None)
+2026-03-12 16:31:15 [INFO] corev2.executor.engine: Processing contact: info@4saleltd.co.uk (VID: None)
+2026-03-12 16:31:15 [INFO] corev2.executor.engine:   Archiving info@4saleltd.co.uk in Mailchimp...
+2026-03-12 16:31:16 [INFO] corev2.executor.engine:   ✓ Archived info@4saleltd.co.uk
+2026-03-12 16:31:16 [INFO] corev2.executor.engine: Processing contact: info@kingdom-property.co.uk (VID: None)
+2026-03-12 16:31:16 [INFO] corev2.executor.engine: Processing contact: info@kingdom-property.co.uk (VID: None)
+2026-03-12 16:31:16 [INFO] corev2.executor.engine:   Archiving info@kingdom-property.co.uk in Mailchimp...
+2026-03-12 16:31:16 [INFO] corev2.executor.engine:   ✓ Archived info@kingdom-property.co.uk
+2026-03-12 16:31:16 [INFO] corev2.executor.engine: Processing contact: sales@flatmanagency.co.uk (VID: None)
+2026-03-12 16:31:17 [INFO] corev2.executor.engine: Processing contact: sales@flatmanagency.co.uk (VID: None)
+2026-03-12 16:31:17 [INFO] corev2.executor.engine:   Archiving sales@flatmanagency.co.uk in Mailchimp...
+2026-03-12 16:31:17 [INFO] corev2.executor.engine:   ✓ Archived sales@flatmanagency.co.uk
+2026-03-12 16:31:17 [INFO] corev2.executor.engine: Processing contact: tunbridgewells@bardensestates.co.uk (VID: None)
+2026-03-12 16:31:17 [INFO] corev2.executor.engine: Processing contact: tunbridgewells@bardensestates.co.uk (VID: None)
+2026-03-12 16:31:17 [INFO] corev2.executor.engine:   Archiving tunbridgewells@bardensestates.co.uk in Mailchimp...
+2026-03-12 16:31:18 [INFO] corev2.executor.engine:   ✓ Archived tunbridgewells@bardensestates.co.uk
+2026-03-12 16:31:18 [INFO] corev2.executor.engine: Processing contact: billie@amberestateagency.co.uk (VID: None)
+2026-03-12 16:31:18 [INFO] corev2.executor.engine: Processing contact: billie@amberestateagency.co.uk (VID: None)
+2026-03-12 16:31:18 [INFO] corev2.executor.engine:   Archiving billie@amberestateagency.co.uk in Mailchimp...
+2026-03-12 16:31:18 [INFO] corev2.executor.engine:   ✓ Archived billie@amberestateagency.co.uk
+2026-03-12 16:31:18 [INFO] corev2.executor.engine: Processing contact: magda@hometime-property.com (VID: None)
+2026-03-12 16:31:19 [INFO] corev2.executor.engine: Processing contact: magda@hometime-property.com (VID: None)
+2026-03-12 16:31:19 [INFO] corev2.executor.engine:   Archiving magda@hometime-property.com in Mailchimp...
+2026-03-12 16:31:19 [INFO] corev2.executor.engine:   ✓ Archived magda@hometime-property.com
+2026-03-12 16:31:19 [INFO] corev2.executor.engine: Processing contact: helen@nashpartnership.co.uk (VID: None)
+2026-03-12 16:31:19 [INFO] corev2.executor.engine: Processing contact: helen@nashpartnership.co.uk (VID: None)
+2026-03-12 16:31:19 [INFO] corev2.executor.engine:   Archiving helen@nashpartnership.co.uk in Mailchimp...
+2026-03-12 16:31:20 [INFO] corev2.executor.engine:   ✓ Archived helen@nashpartnership.co.uk
+2026-03-12 16:31:20 [INFO] corev2.executor.engine: Processing contact: stalbans@bradfordandhowley.com (VID: None)
+2026-03-12 16:31:20 [INFO] corev2.executor.engine: Processing contact: stalbans@bradfordandhowley.com (VID: None)
+2026-03-12 16:31:20 [INFO] corev2.executor.engine:   Archiving stalbans@bradfordandhowley.com in Mailchimp...
+2026-03-12 16:31:20 [INFO] corev2.executor.engine:   ✓ Archived stalbans@bradfordandhowley.com
+2026-03-12 16:31:20 [INFO] corev2.executor.engine: Processing contact: info@ramestateagent.com (VID: None)
+2026-03-12 16:31:20 [INFO] corev2.executor.engine: Processing contact: info@ramestateagent.com (VID: None)
+2026-03-12 16:31:20 [INFO] corev2.executor.engine:   Archiving info@ramestateagent.com in Mailchimp...
+2026-03-12 16:31:21 [INFO] corev2.executor.engine:   ✓ Archived info@ramestateagent.com
+2026-03-12 16:31:21 [INFO] corev2.executor.engine: Processing contact: enquiries@aph-sussex.co (VID: None)
+2026-03-12 16:31:21 [INFO] corev2.executor.engine: Processing contact: enquiries@aph-sussex.co (VID: None)
+2026-03-12 16:31:21 [INFO] corev2.executor.engine:   Archiving enquiries@aph-sussex.co in Mailchimp...
+2026-03-12 16:31:21 [INFO] corev2.executor.engine:   ✓ Archived enquiries@aph-sussex.co
+2026-03-12 16:31:21 [INFO] corev2.executor.engine: Processing contact: lettings@jacksmithestateagents.co.uk (VID: None)
+2026-03-12 16:31:22 [INFO] corev2.executor.engine: Processing contact: lettings@jacksmithestateagents.co.uk (VID: None)
+2026-03-12 16:31:22 [INFO] corev2.executor.engine:   Archiving lettings@jacksmithestateagents.co.uk in Mailchimp...
+2026-03-12 16:31:22 [INFO] corev2.executor.engine:   ✓ Archived lettings@jacksmithestateagents.co.uk
+2026-03-12 16:31:22 [INFO] corev2.executor.engine: Processing contact: nadim@landestate.co.uk (VID: None)
+2026-03-12 16:31:22 [INFO] corev2.executor.engine: Processing contact: nadim@landestate.co.uk (VID: None)
+2026-03-12 16:31:22 [INFO] corev2.executor.engine:   Archiving nadim@landestate.co.uk in Mailchimp...
+2026-03-12 16:31:23 [INFO] corev2.executor.engine:   ✓ Archived nadim@landestate.co.uk
+2026-03-12 16:31:23 [INFO] corev2.executor.engine: Processing contact: peter@yourcompany.com (VID: None)
+2026-03-12 16:31:23 [INFO] corev2.executor.engine: Processing contact: peter@yourcompany.com (VID: None)
+2026-03-12 16:31:23 [INFO] corev2.executor.engine:   Archiving peter@yourcompany.com in Mailchimp...
+2026-03-12 16:31:23 [INFO] corev2.executor.engine:   ✓ Archived peter@yourcompany.com
+2026-03-12 16:31:23 [INFO] corev2.executor.engine: Processing contact: hello@swiftproperty.co.uk (VID: None)
+2026-03-12 16:31:24 [INFO] corev2.executor.engine: Processing contact: hello@swiftproperty.co.uk (VID: None)
+2026-03-12 16:31:24 [INFO] corev2.executor.engine:   Archiving hello@swiftproperty.co.uk in Mailchimp...
+2026-03-12 16:31:24 [INFO] corev2.executor.engine:   ✓ Archived hello@swiftproperty.co.uk
+2026-03-12 16:31:24 [INFO] corev2.executor.engine: Processing contact: gurol@hansonsestates.co.uk (VID: None)
+2026-03-12 16:31:25 [INFO] corev2.executor.engine: Processing contact: gurol@hansonsestates.co.uk (VID: None)
+2026-03-12 16:31:25 [INFO] corev2.executor.engine:   Archiving gurol@hansonsestates.co.uk in Mailchimp...
+2026-03-12 16:31:25 [INFO] corev2.executor.engine:   ✓ Archived gurol@hansonsestates.co.uk
+2026-03-12 16:31:25 [INFO] corev2.executor.engine: Processing contact: info@leaflettings.co.uk (VID: None)
+2026-03-12 16:31:25 [INFO] corev2.executor.engine: Processing contact: info@leaflettings.co.uk (VID: None)
+2026-03-12 16:31:25 [INFO] corev2.executor.engine:   Archiving info@leaflettings.co.uk in Mailchimp...
+2026-03-12 16:31:25 [INFO] corev2.executor.engine:   ✓ Archived info@leaflettings.co.uk
+2026-03-12 16:31:25 [INFO] corev2.executor.engine: Processing contact: info@saxonsrentals.com (VID: None)
+2026-03-12 16:31:26 [INFO] corev2.executor.engine: Processing contact: info@saxonsrentals.com (VID: None)
+2026-03-12 16:31:26 [INFO] corev2.executor.engine:   Archiving info@saxonsrentals.com in Mailchimp...
+2026-03-12 16:31:26 [INFO] corev2.executor.engine:   ✓ Archived info@saxonsrentals.com
+2026-03-12 16:31:26 [INFO] corev2.executor.engine: Processing contact: enquiries@barringtonlettings.com (VID: None)
+2026-03-12 16:31:26 [INFO] corev2.executor.engine: Processing contact: enquiries@barringtonlettings.com (VID: None)
+2026-03-12 16:31:26 [INFO] corev2.executor.engine:   Archiving enquiries@barringtonlettings.com in Mailchimp...
+2026-03-12 16:31:27 [INFO] corev2.executor.engine:   ✓ Archived enquiries@barringtonlettings.com
+2026-03-12 16:31:27 [INFO] corev2.executor.engine: Processing contact: stephanie@annuletproperty.co.uk (VID: None)
+2026-03-12 16:31:27 [INFO] corev2.executor.engine: Processing contact: stephanie@annuletproperty.co.uk (VID: None)
+2026-03-12 16:31:27 [INFO] corev2.executor.engine:   Archiving stephanie@annuletproperty.co.uk in Mailchimp...
+2026-03-12 16:31:28 [INFO] corev2.executor.engine:   ✓ Archived stephanie@annuletproperty.co.uk
+2026-03-12 16:31:28 [INFO] corev2.executor.engine: Processing contact: steven.hammond@bartletthammond.co.uk (VID: None)
+2026-03-12 16:31:28 [INFO] corev2.executor.engine: Processing contact: steven.hammond@bartletthammond.co.uk (VID: None)
+2026-03-12 16:31:28 [INFO] corev2.executor.engine:   Archiving steven.hammond@bartletthammond.co.uk in Mailchimp...
+2026-03-12 16:31:28 [INFO] corev2.executor.engine:   ✓ Archived steven.hammond@bartletthammond.co.uk
+2026-03-12 16:31:28 [INFO] corev2.executor.engine: Processing contact: info@mylondonpad.net (VID: None)
+2026-03-12 16:31:29 [INFO] corev2.executor.engine: Processing contact: info@mylondonpad.net (VID: None)
+2026-03-12 16:31:29 [INFO] corev2.executor.engine:   Archiving info@mylondonpad.net in Mailchimp...
+2026-03-12 16:31:29 [INFO] corev2.executor.engine:   ✓ Archived info@mylondonpad.net
+2026-03-12 16:31:29 [INFO] corev2.executor.engine: Processing contact: immaz@propertyco.org (VID: None)
+2026-03-12 16:31:29 [INFO] corev2.executor.engine: Processing contact: immaz@propertyco.org (VID: None)
+2026-03-12 16:31:29 [INFO] corev2.executor.engine:   Archiving immaz@propertyco.org in Mailchimp...
+2026-03-12 16:31:30 [INFO] corev2.executor.engine:   ✓ Archived immaz@propertyco.org
+2026-03-12 16:31:30 [INFO] corev2.executor.engine: Processing contact: info@shores-property.co.uk (VID: None)
+2026-03-12 16:31:30 [INFO] corev2.executor.engine: Processing contact: info@shores-property.co.uk (VID: None)
+2026-03-12 16:31:30 [INFO] corev2.executor.engine:   Archiving info@shores-property.co.uk in Mailchimp...
+2026-03-12 16:31:30 [INFO] corev2.executor.engine:   ✓ Archived info@shores-property.co.uk
+2026-03-12 16:31:30 [INFO] corev2.executor.engine: Processing contact: enquires@edgefield-property.com (VID: None)
+2026-03-12 16:31:31 [INFO] corev2.executor.engine: Processing contact: enquires@edgefield-property.com (VID: None)
+2026-03-12 16:31:31 [INFO] corev2.executor.engine:   Archiving enquires@edgefield-property.com in Mailchimp...
+2026-03-12 16:31:31 [INFO] corev2.executor.engine:   ✓ Archived enquires@edgefield-property.com
+2026-03-12 16:31:31 [INFO] corev2.executor.engine: Processing contact: enquiries@carthews.com (VID: None)
+2026-03-12 16:31:31 [INFO] corev2.executor.engine: Processing contact: enquiries@carthews.com (VID: None)
+2026-03-12 16:31:31 [INFO] corev2.executor.engine:   Archiving enquiries@carthews.com in Mailchimp...
+2026-03-12 16:31:32 [INFO] corev2.executor.engine:   ✓ Archived enquiries@carthews.com
+2026-03-12 16:31:32 [INFO] corev2.executor.engine: Processing contact: charles@daviddoyle.com (VID: None)
+2026-03-12 16:31:32 [INFO] corev2.executor.engine: Processing contact: charles@daviddoyle.com (VID: None)
+2026-03-12 16:31:32 [INFO] corev2.executor.engine:   Archiving charles@daviddoyle.com in Mailchimp...
+2026-03-12 16:31:32 [INFO] corev2.executor.engine:   ✓ Archived charles@daviddoyle.com
+2026-03-12 16:31:32 [INFO] corev2.executor.engine: Processing contact: christian@christianreid.co.uk (VID: None)
+2026-03-12 16:31:32 [INFO] corev2.executor.engine: Processing contact: christian@christianreid.co.uk (VID: None)
+2026-03-12 16:31:32 [INFO] corev2.executor.engine:   Archiving christian@christianreid.co.uk in Mailchimp...
+2026-03-12 16:31:33 [INFO] corev2.executor.engine:   ✓ Archived christian@christianreid.co.uk
+2026-03-12 16:31:33 [INFO] corev2.executor.engine: Processing contact: padam@kpgllettings.co.uk (VID: None)
+2026-03-12 16:31:33 [INFO] corev2.executor.engine: Processing contact: padam@kpgllettings.co.uk (VID: None)
+2026-03-12 16:31:33 [INFO] corev2.executor.engine:   Archiving padam@kpgllettings.co.uk in Mailchimp...
+2026-03-12 16:31:33 [INFO] corev2.executor.engine:   ✓ Archived padam@kpgllettings.co.uk
+2026-03-12 16:31:33 [INFO] corev2.executor.engine: Processing contact: info@howlands-property.co.uk (VID: None)
+2026-03-12 16:31:34 [INFO] corev2.executor.engine: Processing contact: info@howlands-property.co.uk (VID: None)
+2026-03-12 16:31:34 [INFO] corev2.executor.engine:   Archiving info@howlands-property.co.uk in Mailchimp...
+2026-03-12 16:31:34 [INFO] corev2.executor.engine:   ✓ Archived info@howlands-property.co.uk
+2026-03-12 16:31:34 [INFO] corev2.executor.engine: Processing contact: roger@reiddean.com (VID: None)
+2026-03-12 16:31:35 [INFO] corev2.executor.engine: Processing contact: roger@reiddean.com (VID: None)
+2026-03-12 16:31:35 [INFO] corev2.executor.engine:   Archiving roger@reiddean.com in Mailchimp...
+2026-03-12 16:31:35 [INFO] corev2.executor.engine:   ✓ Archived roger@reiddean.com
+2026-03-12 16:31:35 [INFO] corev2.executor.engine: Processing contact: mounirouarzane@easymoveea.com (VID: None)
+2026-03-12 16:31:35 [INFO] corev2.executor.engine:   Unsubscribing mounirouarzane@easymoveea.com in Mailchimp (reason: opted_out_in_hubspot)...
+2026-03-12 16:31:35 [INFO] corev2.executor.engine:   ✓ Unsubscribed mounirouarzane@easymoveea.com
+2026-03-12 16:31:35 [INFO] corev2.executor.engine: Processing contact: mounirouarzane@easymoveea.com (VID: None)
+2026-03-12 16:31:36 [INFO] corev2.executor.engine: Processing contact: mounirouarzane@easymoveea.com (VID: None)
+2026-03-12 16:31:36 [INFO] corev2.executor.engine:   Archiving mounirouarzane@easymoveea.com in Mailchimp...
+2026-03-12 16:31:36 [INFO] corev2.executor.engine:   ✓ Archived mounirouarzane@easymoveea.com
+2026-03-12 16:31:36 [INFO] corev2.executor.engine: Processing contact: hello@gkproperty.co.uk (VID: None)
+2026-03-12 16:31:36 [INFO] corev2.executor.engine: Processing contact: hello@gkproperty.co.uk (VID: None)
+2026-03-12 16:31:36 [INFO] corev2.executor.engine:   Archiving hello@gkproperty.co.uk in Mailchimp...
+2026-03-12 16:31:37 [INFO] corev2.executor.engine:   ✓ Archived hello@gkproperty.co.uk
+2026-03-12 16:31:37 [INFO] corev2.executor.engine: Processing contact: robert@potterandford.co.uk (VID: None)
+2026-03-12 16:31:37 [INFO] corev2.executor.engine: Processing contact: robert@potterandford.co.uk (VID: None)
+2026-03-12 16:31:37 [INFO] corev2.executor.engine:   Archiving robert@potterandford.co.uk in Mailchimp...
+2026-03-12 16:31:37 [INFO] corev2.executor.engine:   ✓ Archived robert@potterandford.co.uk
+2026-03-12 16:31:37 [INFO] corev2.executor.engine: Processing contact: lettings@smithandcosussex.co.uk (VID: None)
+2026-03-12 16:31:37 [INFO] corev2.executor.engine: Processing contact: lettings@smithandcosussex.co.uk (VID: None)
+2026-03-12 16:31:37 [INFO] corev2.executor.engine:   Archiving lettings@smithandcosussex.co.uk in Mailchimp...
+2026-03-12 16:31:38 [INFO] corev2.executor.engine:   ✓ Archived lettings@smithandcosussex.co.uk
+2026-03-12 16:31:38 [INFO] corev2.executor.engine: Processing contact: london.essex@btconnect.com (VID: None)
+2026-03-12 16:31:38 [INFO] corev2.executor.engine: Processing contact: london.essex@btconnect.com (VID: None)
+2026-03-12 16:31:38 [INFO] corev2.executor.engine:   Archiving london.essex@btconnect.com in Mailchimp...
+2026-03-12 16:31:38 [INFO] corev2.executor.engine:   ✓ Archived london.essex@btconnect.com
+2026-03-12 16:31:38 [INFO] corev2.executor.engine: Processing contact: conor.bracken@arcww.co.uk (VID: None)
+2026-03-12 16:31:39 [INFO] corev2.executor.engine: Processing contact: conor.bracken@arcww.co.uk (VID: None)
+2026-03-12 16:31:39 [INFO] corev2.executor.engine:   Archiving conor.bracken@arcww.co.uk in Mailchimp...
+2026-03-12 16:31:39 [INFO] corev2.executor.engine:   ✓ Archived conor.bracken@arcww.co.uk
+2026-03-12 16:31:39 [INFO] corev2.executor.engine: Processing contact: info@auraestates.co.uk (VID: None)
+2026-03-12 16:31:39 [INFO] corev2.executor.engine: Processing contact: info@auraestates.co.uk (VID: None)
+2026-03-12 16:31:39 [INFO] corev2.executor.engine:   Archiving info@auraestates.co.uk in Mailchimp...
+2026-03-12 16:31:40 [INFO] corev2.executor.engine:   ✓ Archived info@auraestates.co.uk
+2026-03-12 16:31:40 [INFO] corev2.executor.engine: Processing contact: info@hollandssmith.co.uk (VID: None)
+2026-03-12 16:31:40 [INFO] corev2.executor.engine: Processing contact: info@hollandssmith.co.uk (VID: None)
+2026-03-12 16:31:40 [INFO] corev2.executor.engine:   Archiving info@hollandssmith.co.uk in Mailchimp...
+2026-03-12 16:31:40 [INFO] corev2.executor.engine:   ✓ Archived info@hollandssmith.co.uk
+2026-03-12 16:31:40 [INFO] corev2.executor.engine: Processing contact: info@cartierestates.co.uk (VID: None)
+2026-03-12 16:31:40 [INFO] corev2.executor.engine: Processing contact: info@cartierestates.co.uk (VID: None)
+2026-03-12 16:31:41 [INFO] corev2.executor.engine:   Archiving info@cartierestates.co.uk in Mailchimp...
+2026-03-12 16:31:41 [INFO] corev2.executor.engine:   ✓ Archived info@cartierestates.co.uk
+2026-03-12 16:31:41 [INFO] corev2.executor.engine: Processing contact: pontingsproperty@btconnect.com (VID: None)
+2026-03-12 16:31:41 [INFO] corev2.executor.engine: Processing contact: pontingsproperty@btconnect.com (VID: None)
+2026-03-12 16:31:41 [INFO] corev2.executor.engine:   Archiving pontingsproperty@btconnect.com in Mailchimp...
+2026-03-12 16:31:42 [INFO] corev2.executor.engine:   ✓ Archived pontingsproperty@btconnect.com
+2026-03-12 16:31:42 [INFO] corev2.executor.engine: Processing contact: cortlin.whitehead@lets-do-business.co.uk (VID: None)
+2026-03-12 16:31:42 [INFO] corev2.executor.engine: Processing contact: cortlin.whitehead@lets-do-business.co.uk (VID: None)
+2026-03-12 16:31:42 [INFO] corev2.executor.engine:   Archiving cortlin.whitehead@lets-do-business.co.uk in Mailchimp...
+2026-03-12 16:31:42 [INFO] corev2.executor.engine:   ✓ Archived cortlin.whitehead@lets-do-business.co.uk
+2026-03-12 16:31:42 [INFO] corev2.executor.engine: Processing contact: sarah.wilkins@throughthedoorproperty.co.uk (VID: None)
+2026-03-12 16:31:43 [INFO] corev2.executor.engine: Processing contact: sarah.wilkins@throughthedoorproperty.co.uk (VID: None)
+2026-03-12 16:31:43 [INFO] corev2.executor.engine:   Archiving sarah.wilkins@throughthedoorproperty.co.uk in Mailchimp...
+2026-03-12 16:31:43 [INFO] corev2.executor.engine:   ✓ Archived sarah.wilkins@throughthedoorproperty.co.uk
+2026-03-12 16:31:43 [INFO] corev2.executor.engine: Processing contact: tristan@lettingprofessionals.com (VID: None)
+2026-03-12 16:31:43 [INFO] corev2.executor.engine: Processing contact: tristan@lettingprofessionals.com (VID: None)
+2026-03-12 16:31:43 [INFO] corev2.executor.engine:   Archiving tristan@lettingprofessionals.com in Mailchimp...
+2026-03-12 16:31:43 [INFO] corev2.executor.engine:   ✓ Archived tristan@lettingprofessionals.com
+2026-03-12 16:31:43 [INFO] corev2.executor.engine: Processing contact: kathryn@marrion.co.uk (VID: None)
+2026-03-12 16:31:44 [INFO] corev2.executor.engine: Processing contact: kathryn@marrion.co.uk (VID: None)
+2026-03-12 16:31:44 [INFO] corev2.executor.engine:   Archiving kathryn@marrion.co.uk in Mailchimp...
+2026-03-12 16:31:44 [INFO] corev2.executor.engine:   ✓ Archived kathryn@marrion.co.uk
+2026-03-12 16:31:44 [INFO] corev2.executor.engine: Processing contact: e.williams@williams.properties (VID: None)
+2026-03-12 16:31:44 [INFO] corev2.executor.engine: Processing contact: e.williams@williams.properties (VID: None)
+2026-03-12 16:31:44 [INFO] corev2.executor.engine:   Archiving e.williams@williams.properties in Mailchimp...
+2026-03-12 16:31:45 [INFO] corev2.executor.engine:   ✓ Archived e.williams@williams.properties
+2026-03-12 16:31:45 [INFO] corev2.executor.engine: Processing contact: info@jsestatemanagement.co.uk (VID: 133267229918)
+2026-03-12 16:31:45 [INFO] corev2.executor.engine:   Removing contact VID 133267229918 from HubSpot List 969 (reason: contact_in_exclusion_list)
+2026-03-12 16:31:45 [INFO] corev2.executor.engine: Processing contact: sam@samuelandco.co.uk (VID: 653461410005)
+2026-03-12 16:31:45 [INFO] corev2.executor.engine:   Removing contact VID 653461410005 from HubSpot List 719 (reason: contact_in_exclusion_list)
+2026-03-12 16:31:45 [INFO] corev2.executor.engine: Processing contact: info@fcrhomes.co.uk (VID: 37717470923)
+2026-03-12 16:31:45 [INFO] corev2.executor.engine:   Removing contact VID 37717470923 from HubSpot List 969 (reason: contact_in_exclusion_list)
+2026-03-12 16:31:46 [INFO] corev2.executor.engine: Processing contact: rhoque@eldridgeestates.co.uk (VID: 158773127375)
+2026-03-12 16:31:46 [INFO] corev2.executor.engine:   Removing contact VID 158773127375 from HubSpot List 719 (reason: contact_in_exclusion_list)
+2026-03-12 16:31:46 [INFO] corev2.executor.engine: Processing contact: info@astonestates.co.uk (VID: 370772294902)
+2026-03-12 16:31:46 [INFO] corev2.executor.engine:   Removing contact VID 370772294902 from HubSpot List 969 (reason: contact_in_exclusion_list)
+2026-03-12 16:31:46 [INFO] corev2.executor.engine: Processing contact: info@hillcrestestates.co.uk (VID: 194268039369)
+2026-03-12 16:31:46 [INFO] corev2.executor.engine:   Removing contact VID 194268039369 from HubSpot List 719 (reason: contact_in_exclusion_list)
+2026-03-12 16:31:46 [INFO] corev2.executor.engine: Processing contact: miles@edinburghlettingcentre.com (VID: 310161581269)
+2026-03-12 16:31:46 [INFO] corev2.executor.engine:   Removing contact VID 310161581269 from HubSpot List 720 (reason: contact_in_exclusion_list)
+2026-03-12 16:31:47 [INFO] corev2.executor.engine: Execution complete: 585 successful, 0 failed, 47 skipped
+2026-03-12 16:31:47 [INFO] __main__: Ô£ô Execution complete:
+2026-03-12 16:31:47 [INFO] __main__:   Total operations: 632
+2026-03-12 16:31:47 [INFO] __main__:   Successful: 585
+2026-03-12 16:31:47 [INFO] __main__:   Failed: 0
+2026-03-12 16:31:47 [INFO] __main__:   Skipped: 47
+2026-03-12 16:31:47 [INFO] __main__:   Contacts processed: 423
