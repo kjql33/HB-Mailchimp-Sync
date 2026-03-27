@@ -102,9 +102,53 @@ exclusion_matrix:
 # Example: "source_list_id": ["excluded_list_id_1", "excluded_list_id_2"]
 list_exclusion_rules: {}
 
-# INV-011: Exit tag routing (Mailchimp tag → HubSpot list)
-# Not yet implemented - placeholder for future secondary sync
-secondary_sync_mappings: {}
+# INV-011: Secondary sync (Mailchimp → HubSpot exit tag routing)
+secondary_sync:
+  enabled: true
+  archive_after_sync: true
+  contact_limit: 0  # UNLIMITED — no cap on contacts processed
+  mappings:
+    - exit_tag: "General Finished"
+      destination_list: "946"
+      destination_name: "General Handover"
+      source_list: "987"
+      source_name: "General"
+      remove_from_source: false  # Dynamic list - HubSpot auto-excludes
+
+    - exit_tag: "Recruitment Finished"
+      destination_list: "947"
+      destination_name: "Recruitment Handover"
+      source_list: "719"
+      source_name: "Recruitment"
+      remove_from_source: true   # Manual list - must remove
+
+    - exit_tag: "Competition Finished"
+      destination_list: "948"
+      destination_name: "Competition Handover"
+      source_list: "720"
+      source_name: "Competition"
+      remove_from_source: true   # Manual list - must remove
+
+    - exit_tag: "Sub Agents Finished"
+      destination_list: "1005"
+      destination_name: "Sub Agents Handover"
+      source_list: "989"
+      source_name: "Network Agents"
+      remove_from_source: false  # Dynamic list - HubSpot auto-excludes
+
+    - exit_tag: "New Agents Finished"
+      destination_list: "949"
+      destination_name: "New Agents Handover"
+      source_list: "945"
+      source_name: "New Agents"
+      remove_from_source: true   # Manual list - must remove
+
+    - exit_tag: "Sanctioned Finished"
+      destination_list: "1006"
+      destination_name: "Sanctioned Handover"
+      source_list: "969"
+      source_name: "Sanctioned"
+      remove_from_source: true   # Manual list - must remove
 
 # INV-006: Smart archival preservation
 archival:

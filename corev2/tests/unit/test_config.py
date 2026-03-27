@@ -112,8 +112,14 @@ exclusion_matrix:
 list_exclusion_rules:
   "718": ["719"]
 
-secondary_sync_mappings:
-  "Exit_Journey_1": "700"
+secondary_sync:
+  enabled: true
+  mappings:
+    - exit_tag: "Exit_Journey_1"
+      destination_list: "700"
+      destination_name: "Test Destination"
+      source_list: "718"
+      source_name: "Test Source"
 
 archival:
   exempt_tags: ["VIP"]
@@ -173,7 +179,7 @@ exclusion_matrix:
     exclude: ["762", "773"]
 
 list_exclusion_rules: {}
-secondary_sync_mappings: {}
+secondary_sync: {}
 archival:
   exempt_tags: []
   preservation_patterns: []
@@ -227,7 +233,7 @@ exclusion_matrix:
     exclude: ["762", "773"]
 
 list_exclusion_rules: {}
-secondary_sync_mappings: {}
+secondary_sync: {}
 archival:
   exempt_tags: []
   preservation_patterns: []
@@ -284,7 +290,7 @@ exclusion_matrix:
     exclude: ["762", "773"]
 
 list_exclusion_rules: {}
-secondary_sync_mappings: {}
+secondary_sync: {}
 archival:
   exempt_tags: []
   preservation_patterns: []

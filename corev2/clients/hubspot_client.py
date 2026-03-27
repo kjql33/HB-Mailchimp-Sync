@@ -167,11 +167,11 @@ class HubSpotClient(HTTPBaseClient):
         contact_vid: int
     ) -> Dict[str, Any]:
         """
-        Add contact to a list.
+        Add contact to a list (v3 API).
         
         Args:
             list_id: HubSpot list ID
-            contact_vid: Contact VID
+            contact_vid: Contact record ID
         
         Returns:
             {
@@ -180,11 +180,11 @@ class HubSpotClient(HTTPBaseClient):
                 "contact_vid": int
             }
         """
-        endpoint = f"/contacts/v1/lists/{list_id}/add"
+        endpoint = f"/crm/v3/lists/{list_id}/memberships/add"
         
-        payload = {"vids": [contact_vid]}
+        payload = [str(contact_vid)]
         
-        result = await self.post(endpoint, json=payload)
+        result = await self.put(endpoint, json=payload)
         
         if result["status"] in [200, 204]:
             return {
@@ -201,11 +201,11 @@ class HubSpotClient(HTTPBaseClient):
         contact_vid: int
     ) -> Dict[str, Any]:
         """
-        Remove contact from a list.
+        Remove contact from a list (v3 API).
         
         Args:
             list_id: HubSpot list ID
-            contact_vid: Contact VID
+            contact_vid: Contact record ID
         
         Returns:
             {
@@ -214,11 +214,11 @@ class HubSpotClient(HTTPBaseClient):
                 "contact_vid": int
             }
         """
-        endpoint = f"/contacts/v1/lists/{list_id}/remove"
+        endpoint = f"/crm/v3/lists/{list_id}/memberships/remove"
         
-        payload = {"vids": [contact_vid]}
+        payload = [str(contact_vid)]
         
-        result = await self.post(endpoint, json=payload)
+        result = await self.put(endpoint, json=payload)
         
         if result["status"] in [200, 204]:
             return {
@@ -228,6 +228,7 @@ class HubSpotClient(HTTPBaseClient):
             }
         else:
             raise Exception(f"HubSpot remove from list failed: {result['status']} - {result['data']}")
+
     
     async def update_contact_property(
         self,

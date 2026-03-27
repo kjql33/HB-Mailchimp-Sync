@@ -220,6 +220,9 @@ class SyncExecutor:
             elif op_type == "update_hs_property":
                 return await self._execute_update_hs_property(op, journal)
             
+            elif op_type == "add_hs_to_list":
+                return await self._execute_add_hs_to_list(op, journal)
+            
             elif op_type == "remove_hs_from_list":
                 return await self._execute_remove_hs_from_list(op, journal)
             
@@ -530,6 +533,84 @@ class SyncExecutor:
             logger.error(f"Property update failed for VID {vid}: {e}")
             raise
     
+    async def _execute_add_hs_to_list(
+        self,
+        op: Dict[str, Any],
+        journal: OperationJournal
+    ) -> Dict[str, Any]:
+        """
+        Execute HubSpot list addition operation (secondary sync).
+
+        Adds contact to a HubSpot list (used for handover/destination lists).
+
+        Args:
+            op: {
+                "type": "add_hs_to_list",
+                "list_id": str,
+                "vid": int,
+                "email": str,
+                "reason": str
+            }
+            journal: Operation journal
+
+        Returns:
+            Result dict
+        """
+        list_id = op["list_id"]
+        vid = op["vid"]
+        email = op.get("email", "unknown")
+        reason = op.get("reason", "unknown")
+
+        logger.info(f"  Adding contact {email} (VID {vid}) to HubSpot List {list_id} (reason: {reason})")
+
+        # Check run mode (simulation)
+        if self.config.safety.run_mode == "dry-run":
+            journal.log({
+                "event": "operation_simulated",
+                "operation_type": "add_hs_to_list",
+                "list_id": list_id,
+                "vid": vid,
+                "email": email,
+                "reason": reason,
+                "dry_run": True
+            })
+            return {"success": True, "skipped": False, "simulated": True}
+
+        try:
+            result = await self.hs_client.add_contact_to_list(list_id, vid)
+
+            journal.log({
+                "event": "operation_executed",
+                "operation_type": "add_hs_to_list",
+                "list_id": list_id,
+                "vid": vid,
+                "email": email,
+                "reason": reason,
+                "result": result
+            })
+
+            logger.info(f"  \u2713 Added {email} (VID {vid}) to HubSpot List {list_id}")
+            return {"success": True, "skipped": False}
+
+        except Exception as e:
+            # Handle "already in list" as success (idempotent)
+            error_str = str(e).lower()
+            if "already" in error_str or "existing" in error_str:
+                logger.debug(f"  Contact {email} (VID {vid}) already in List {list_id}")
+                journal.log({
+                    "event": "operation_skipped",
+                    "operation_type": "add_hs_to_list",
+                    "list_id": list_id,
+                    "vid": vid,
+                    "email": email,
+                    "reason": "already_in_list"
+                })
+                return {"success": True, "skipped": True}
+
+            # Other errors - log and raise
+            logger.error(f"HubSpot list addition failed for {email} (VID {vid}) to List {list_id}: {e}")
+            raise
+
     async def _execute_remove_hs_from_list(
         self,
         op: Dict[str, Any],

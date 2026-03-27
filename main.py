@@ -152,6 +152,41 @@ async def main():
             logger.info(f"  ⊘ Skipped: {results['skipped']}")
             logger.info(f"  Contacts touched: {results['contacts_processed']}")
             
+            # STEP 4: Secondary Sync (Mailchimp → HubSpot)
+            if config.secondary_sync.enabled and config.secondary_sync.mappings:
+                logger.info("\n" + "="*70)
+                logger.info("STEP 4: Secondary Sync (Mailchimp → HubSpot)")
+                logger.info("="*70)
+                logger.info("Scanning Mailchimp for exit-tagged contacts...")
+                
+                from corev2.planner.secondary import SecondaryPlanner
+                
+                secondary_planner = SecondaryPlanner(config, hs_client, mc_client)
+                secondary_plan = await secondary_planner.generate_plan()
+                
+                sec_summary = secondary_plan["summary"]
+                logger.info(f"\n✓ Secondary Plan Generated:")
+                logger.info(f"  Mailchimp scanned: {sec_summary['total_mailchimp_scanned']}")
+                logger.info(f"  Exit-tagged found: {sec_summary['exit_tagged_contacts_found']}")
+                logger.info(f"  Contacts with operations: {sec_summary['contacts_with_operations']}")
+                for op_type, count in sec_summary.get("operations_by_type", {}).items():
+                    logger.info(f"    • {op_type}: {count}")
+                
+                if secondary_plan["operations"]:
+                    logger.info("\n🚨 Executing secondary sync operations...")
+                    secondary_executor = SyncExecutor(config, hs_client, mc_client, dry_run=False)
+                    sec_results = await secondary_executor.execute_plan(secondary_plan)
+                    
+                    logger.info(f"\n✓ Secondary Sync Complete:")
+                    logger.info(f"  Total operations: {sec_results['total_operations']}")
+                    logger.info(f"  ✓ Successful: {sec_results['successful']}")
+                    logger.info(f"  ✗ Failed: {sec_results['failed']}")
+                    logger.info(f"  ⊘ Skipped: {sec_results['skipped']}")
+                else:
+                    logger.info("\n  No exit-tagged contacts to process.")
+            else:
+                logger.info("\nℹ️  Secondary sync disabled or no mappings configured")
+            
             logger.info("\n" + "="*70)
             logger.info("  ✓ SYNC COMPLETE")
             logger.info("="*70)

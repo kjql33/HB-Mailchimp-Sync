@@ -1,15 +1,17 @@
 # 🎯 HubSpot ↔ Mailchimp Bidirectional Sync
 
-**Production-ready bidirectional synchronization between HubSpot and Mailchimp with intelligent compliance handling and anti-remarketing protection.**
+**Production bidirectional synchronization between HubSpot and Mailchimp with intelligent compliance handling, anti-remarketing protection, and exit tag routing.**
+
+**Last Updated:** 2026-03-06
 
 ## 🚀 Quick Start
 
 ```bash
-# Run the bidirectional sync
+# Run the full bidirectional sync (primary + secondary)
 python main.py
-
-# See RUNBOOK.md for detailed operational guides
 ```
+
+**Automated:** Runs every 8 hours via GitHub Actions (`0 */8 * * *`)
 
 ## 🔧 Environment Setup
 
@@ -25,30 +27,55 @@ This installs:
 - `hubspot-api-client==9.0.0` - HubSpot API client
 - `requests==2.31.0` - HTTP library
 
-## � For v2 Work, Start Here
+## 🔄 System Architecture
 
-**Current Mission (Post-Reset):** Build robust v2 sync/reconciliation engine for fresh-start world.
+### Sync Flow (main.py)
 
-### Essential v2 Documents
+| Step | Direction | Purpose |
+|---|---|---|
+| STEP 1 | MC → HS | Unsubscribe sync (opt-out propagation) |
+| STEP 2 | HS → MC | Primary sync plan (generate operations) |
+| STEP 3 | HS → MC | Primary sync execution (tags, upserts, archival) |
+| STEP 4 | MC → HS | Secondary sync (exit tag routing into handover lists) |
 
-1. **[SYSTEM_OVERVIEW_V2_PLANNING.md](SYSTEM_OVERVIEW_V2_PLANNING.md)** ⭐ **V2 SPEC**
-   - Complete v2 architecture design document
-   - Current system analysis, identified problems, v2 design
-   - Performance model, testability framework, implementation roadmap
-   - **Start here for v2 development**
+### Key Documents
 
-2. **[DOC_INDEX_V2.md](DOC_INDEX_V2.md)** 📚 **DOCUMENTATION MAP**
-   - Clear separation: Active vs historical docs
-   - Post-reset baselines (20251222_164314)
-   - Historical baselines (20251128_174732) for regression testing only
+| Document | Location | Purpose |
+|---|---|---|
+| **Primary Sync Rules** | [corev2/PRIMARY_SYNC_RULES.md](corev2/PRIMARY_SYNC_RULES.md) | Verified rules for HubSpot → Mailchimp sync |
+| **Secondary Sync Rules** | [corev2/SECONDARY_SYNC_RULES.md](corev2/SECONDARY_SYNC_RULES.md) | Rules for Mailchimp → HubSpot exit tag routing |
+| **Deployment Guide** | [docs/GITHUB_DEPLOYMENT_GUIDE.md](docs/GITHUB_DEPLOYMENT_GUIDE.md) | GitHub Actions setup |
+| **Secondary Sync Plan** | [docs/SECONDARY_SYNC_PLAN.md](docs/SECONDARY_SYNC_PLAN.md) | Original design document |
+| **V2 Architecture** | [SYSTEM_OVERVIEW_V2_PLANNING.md](SYSTEM_OVERVIEW_V2_PLANNING.md) | V2 architecture design |
 
-3. **[system_testing/audit_results/reconciliation_summary_20251222_164314.md](system_testing/audit_results/reconciliation_summary_20251222_164314.md)**
-   - Current post-reset baseline
-   - HubSpot: 3,563 contacts | Mailchimp: 0 members
-   - **Use this as current system state**
+### HubSpot Lists
 
-### Key Principle
-**v2 is building for a fresh-start world** (empty MC, HS as source of truth). Phase 7B/20251128 baselines are **test fixtures only**, not live execution targets.
+**Source Lists (synced to Mailchimp):**
+| ID | Name | Type | Tag |
+|---|---|---|---|
+| 969 | Sanctioned | MANUAL | Sanctioned |
+| 719 | Recruitment | MANUAL | Recruitment |
+| 720 | Competition | MANUAL | Competition |
+| 989 | Network Agents | DYNAMIC | EXP |
+| 945 | New Agents | MANUAL | New agents |
+| 987 | General | DYNAMIC | General |
+
+**Handover Lists (secondary sync destinations):**
+| ID | Name | Exit Tag | Source |
+|---|---|---|---|
+| 946 | General Handover | General Finished | 987 |
+| 947 | Recruitment Handover | Recruitment Finished | 719 |
+| 948 | Competition Handover | Competition Finished | 720 |
+| 1005 | Sub Agents Handover | Sub Agents Finished | 989 |
+| 949 | New Agents Handover | New Agents Finished | 945 |
+| 1006 | Sanctioned Handover | Sanctioned Finished | 969 |
+
+**Exclusion Lists (never sync):**
+| ID | Name | Type |
+|---|---|---|
+| 762 | Unsubscribed / Opted Out | DYNAMIC |
+| 773 | Manual Disengagement | DYNAMIC |
+| 717 | Active Deals | DYNAMIC |
 
 ---
 

@@ -103,6 +103,33 @@ class ArchivalConfig(BaseModel):
     )
 
 
+class SecondaryMappingConfig(BaseModel):
+    """Single secondary sync mapping: exit tag → destination list."""
+    exit_tag: str = Field(..., description="Mailchimp tag that triggers this mapping (e.g. 'General Finished')")
+    destination_list: str = Field(..., description="HubSpot list ID to add contact to (handover list)")
+    destination_name: str = Field(..., description="Destination list name (for logging)")
+    source_list: str = Field(..., description="HubSpot list the contact originally came from")
+    source_name: str = Field(..., description="Source list name (for logging)")
+    remove_from_source: bool = Field(
+        default=False,
+        description="Remove from source list after import (true for MANUAL lists, false for DYNAMIC)"
+    )
+
+
+class SecondarySyncConfig(BaseModel):
+    """Secondary sync configuration (Mailchimp → HubSpot exit tag routing)."""
+    enabled: bool = Field(default=False, description="Enable secondary sync step")
+    archive_after_sync: bool = Field(
+        default=True, description="Archive contact from Mailchimp after importing to HubSpot"
+    )
+    contact_limit: int = Field(
+        default=0, ge=0, description="Max contacts per run (0 = unlimited, for testing use 5-10)"
+    )
+    mappings: List[SecondaryMappingConfig] = Field(
+        default_factory=list, description="Exit tag → destination list mappings"
+    )
+
+
 class SafetyConfig(BaseModel):
     """Safety gates for destructive actions (INV-010 triple-lock)."""
     test_contact_limit: int = Field(
@@ -141,8 +168,9 @@ class V2Config(BaseModel):
     list_exclusion_rules: Dict[str, List[str]] = Field(
         ..., description="Anti-remarketing map: source_list → [destination_lists_to_remove_from]"
     )
-    secondary_sync_mappings: Dict[str, str] = Field(
-        ..., description="Exit tag → destination HubSpot list ID"
+    secondary_sync: SecondarySyncConfig = Field(
+        default_factory=SecondarySyncConfig,
+        description="Secondary sync: Mailchimp exit tag → HubSpot handover list routing"
     )
     archival: ArchivalConfig
     safety: SafetyConfig
