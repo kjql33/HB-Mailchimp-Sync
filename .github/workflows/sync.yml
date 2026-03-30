@@ -15,10 +15,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.13'
 
@@ -99,8 +99,24 @@ jobs:
             corev2/artifacts/*.json
           retention-days: 7
 
-      - name: Notify on failure
+      - name: Notify Teams on failure
         if: ${{ failure() }}
         run: |
-          echo "❌ Sync failed - check logs above"
-          echo "📊 Run details: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          ERROR_SNIPPET=""
+          if [ -f /tmp/sync_error.log ]; then
+            ERROR_SNIPPET=$(tail -n 5 /tmp/sync_error.log | head -c 500)
+          elif [ -f /tmp/apply_output.log ]; then
+            ERROR_SNIPPET=$(tail -n 5 /tmp/apply_output.log | head -c 500)
+          elif [ -f /tmp/plan_output.log ]; then
+            ERROR_SNIPPET=$(tail -n 5 /tmp/plan_output.log | head -c 500)
+          fi
+          
+          # Escape JSON special characters
+          ERROR_SNIPPET=$(echo "$ERROR_SNIPPET" | python3 -c "import sys,json; print(json.dumps(sys.stdin.read()))" | sed 's/^"//;s/"$//')
+          
+          curl -s -o /dev/null -w "%{http_code}" \
+            -H "Content-Type: application/json" \
+            -d "{\"text\": \"❌ CRM Sync FAILED\\n\\nRun #${{ github.run_number }}\\nTriggered: ${{ github.event_name }}\\nLogs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\\n\\nError:\\n${ERROR_SNIPPET}\"}" \
+            "$TEAMS_WEBHOOK_URL" || echo "⚠️ Teams notification failed"
+        env:
+          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
