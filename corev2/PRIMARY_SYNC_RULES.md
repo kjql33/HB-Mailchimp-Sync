@@ -1,7 +1,9 @@
-﻿# Verified System Rules & Behaviors
-**Last Updated:** 2026-01-30  
-**Status:** Live Production Testing  
-**Mode:** Unlimited contacts, archival enabled
+﻿# Primary Sync Rules & Verified Behaviors
+**Last Updated:** 2026-03-06  
+**Scope:** Primary sync (HubSpot → Mailchimp)  
+**Status:** Live Production  
+**Mode:** Unlimited contacts, archival enabled  
+**See also:** [SECONDARY_SYNC_RULES.md](SECONDARY_SYNC_RULES.md) for Mailchimp → HubSpot exit tag routing
 
 ---
 

@@ -1,16 +1,15 @@
 # PRODUCTION CONFIGURATION for HubSpot ↔ Mailchimp Sync V2
 # 
-# CONFIGURED FOR: Multi-list sync
-#   - HubSpot list 900 "EXP" → Mailchimp tag "EXP"
-#   - HubSpot list 719 "Recruitment" → Mailchimp tag "Recruitment"
-# SAFETY: Default settings are plan-only (allow_apply=false)
+# CONFIGURED FOR: Multi-list sync (6 import lists)
+#   Sanctioned(969) → Recruitment(719) → Competition(720) → Sub Agents(989) → New agents(945) → General(987)
+# SAFETY: allow_apply=true, allow_archive=true, contact_limit=0 (UNLIMITED)
 
 hubspot:
   api_key: ${HUBSPOT_PRIVATE_APP_TOKEN}
   
   lists:
     # GROUP 1: General Marketing - Specific lists FIRST, General LAST (catch-all)
-    # Sync order: Sanctioned → Recruitment → Competition → Network Agents → New agents → General
+    # Sync order: Sanctioned → Recruitment → Competition → Sub Agents → New agents → General
     general_marketing:
       - id: "969"
         name: "Sanctioned"
@@ -22,8 +21,8 @@ hubspot:
         name: "Competition"
         tag: "Competition"
       - id: "989"
-        name: "Network Agents"
-        tag: "EXP"
+        name: "Sub Agents"
+        tag: "Sub Agents"
       - id: "945"
         name: "New agents"
         tag: "New agents"
@@ -68,13 +67,13 @@ sync:
 
 # INV-001: Three-tier import stream exclusion matrix
 exclusion_matrix:
-  # GROUP 1: Specific lists FIRST, General LAST - Sync order: Sanctioned → Recruitment → Competition → Network Agents → New agents → General
+  # GROUP 1: Specific lists FIRST, General LAST - Sync order: Sanctioned → Recruitment → Competition → Sub Agents → New agents → General
   general_marketing:
     lists:
       - "969"  # Sanctioned
       - "719"  # Recruitment
       - "720"  # Competition
-      - "989"  # Network Agents
+      - "989"  # Sub Agents
       - "945"  # New agents
       - "987"  # General (LAST - catch-all)
     exclude:
@@ -133,8 +132,15 @@ secondary_sync:
       destination_list: "1005"
       destination_name: "Sub Agents Handover"
       source_list: "989"
-      source_name: "Network Agents"
+      source_name: "Sub Agents"
       remove_from_source: false  # Dynamic list - HubSpot auto-excludes
+      additional_remove_lists:   # Static sublists feeding dynamic list 989
+        - list_id: "900"
+          list_name: "EXP"
+        - list_id: "972"
+          list_name: "Keller Williams Agents"
+        - list_id: "971"
+          list_name: "IAD Agents"
 
     - exit_tag: "New Agents Finished"
       destination_list: "949"

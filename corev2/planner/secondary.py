@@ -13,9 +13,13 @@ Flow:
    c) remove_mc_tag: Remove ALL tags from Mailchimp (clean slate before archive)
    d) archive_mc_member: Archive from Mailchimp (journey complete)
 
-Dynamic source lists (987 General, 989 Network Agents) do NOT need
-manual removal — HubSpot auto-excludes contacts in handover lists
-from the dynamic filter criteria.
+Dynamic source lists (987 General) do NOT need manual removal —
+HubSpot auto-excludes contacts in handover lists from the dynamic
+filter criteria.
+
+Dynamic source list 989 (Sub Agents) also auto-excludes from the
+dynamic list, but its static SUBLISTS (900, 972, 971) must be
+removed explicitly via additional_remove_lists.
 
 Manual source lists (719, 720, 945, 969) MUST be removed explicitly
 because HubSpot cannot auto-manage static list membership.
@@ -248,7 +252,8 @@ class SecondaryPlanner:
             f"  {email}: exit_tag='{exit_tag}' → "
             f"add to {mapping.destination_name} ({mapping.destination_list}), "
             f"source={mapping.source_name} ({mapping.source_list})"
-            f"{', REMOVE from source' if mapping.remove_from_source else ''} "
+            f"{', REMOVE from source' if mapping.remove_from_source else ''}"
+            f"{f', REMOVE from {len(mapping.additional_remove_lists)} sublists' if mapping.additional_remove_lists else ''} "
             f"(VID: {vid})"
         )
 
@@ -271,6 +276,18 @@ class SecondaryPlanner:
                 "list_id": mapping.source_list,
                 "list_name": mapping.source_name,
                 "reason": f"anti_remarketing:{exit_tag}"
+            })
+
+        # Operation 2b: Remove from additional static source lists
+        # (e.g. Sub Agents 989 is dynamic, fed by static sublists 900/972/971)
+        for extra_list in mapping.additional_remove_lists:
+            operations.append({
+                "type": "remove_hs_from_list",
+                "email": email,
+                "vid": vid,
+                "list_id": extra_list.list_id,
+                "list_name": extra_list.list_name,
+                "reason": f"anti_remarketing_sublist:{exit_tag}"
             })
 
         # Operation 3: Remove ALL tags from Mailchimp (clean slate before archive)

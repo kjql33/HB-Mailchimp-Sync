@@ -103,6 +103,12 @@ class ArchivalConfig(BaseModel):
     )
 
 
+class AdditionalRemoveList(BaseModel):
+    """Additional static list to remove contacts from during secondary sync."""
+    list_id: str = Field(..., description="HubSpot list ID")
+    list_name: str = Field(..., description="List name (for logging)")
+
+
 class SecondaryMappingConfig(BaseModel):
     """Single secondary sync mapping: exit tag → destination list."""
     exit_tag: str = Field(..., description="Mailchimp tag that triggers this mapping (e.g. 'General Finished')")
@@ -113,6 +119,10 @@ class SecondaryMappingConfig(BaseModel):
     remove_from_source: bool = Field(
         default=False,
         description="Remove from source list after import (true for MANUAL lists, false for DYNAMIC)"
+    )
+    additional_remove_lists: List[AdditionalRemoveList] = Field(
+        default_factory=list,
+        description="Extra static lists to also remove from (e.g. sublists feeding a dynamic source list)"
     )
 
 
