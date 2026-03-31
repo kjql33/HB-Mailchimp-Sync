@@ -33,8 +33,11 @@ hubspot:
     # GROUP 2: Special Campaigns (empty for now)
     special_campaigns: []
     
-    # GROUP 3: Manual Override (empty for now)
-    manual_override: []
+    # GROUP 3: Manual Override - Bypasses Active Deals exclusion (717), still blocked by compliance (762, 773)
+    manual_override:
+      - id: "784"
+        name: "Manual Inclusion"
+        tag: "General"
   
   # Supplemental Tags: Lists that are NOT synced themselves, but add extra tags to contacts already being synced
   # DISABLED: T2 subdivision removed - using single "General" tag only
@@ -89,13 +92,13 @@ exclusion_matrix:
       - "773"
       - "717"
   
-  # GROUP 3: Empty for now
+  # GROUP 3: Manual Inclusion - bypasses Active Deals (717), still blocked by compliance (762, 773)
   manual_override:
-    lists: []
+    lists:
+      - "784"  # Manual Inclusion → tagged "General", bypasses Active Deals exclusion
     exclude:
-      - "762"
-      - "773"
-      - "717"
+      - "762"  # Unsubscribed/Opted Out (REQUIRED by INV-002)
+      - "773"  # Manual Disengagement (REQUIRED by INV-002)
 
 # INV-009: Anti-remarketing rules (optional)
 # Example: "source_list_id": ["excluded_list_id_1", "excluded_list_id_2"]
