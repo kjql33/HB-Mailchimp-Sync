@@ -250,21 +250,67 @@ def apply_mode(plan_path: Path, dry_run: bool = False) -> int:
                 # STEP 2: Execute primary sync operations
                 logger.info("­ƒöä Step 2: Executing primary sync operations...")
                 executor = SyncExecutor(config, hs_client, mc_client, dry_run=dry_run)
-                return await executor.execute_plan(plan_data)
+                primary_results = await executor.execute_plan(plan_data)
+                
+                # STEP 3: Secondary Sync (Mailchimp exit tags → HubSpot handover lists)
+                secondary_results = None
+                if not dry_run and config.secondary_sync.enabled and config.secondary_sync.mappings:
+                    logger.info("Step 3: Secondary Sync (Mailchimp exit tags → HubSpot handover lists)...")
+                    from corev2.planner.secondary import SecondaryPlanner
+                    
+                    secondary_planner = SecondaryPlanner(config, hs_client, mc_client)
+                    secondary_plan = await secondary_planner.generate_plan()
+                    
+                    sec_summary = secondary_plan["summary"]
+                    logger.info(f"  Mailchimp scanned: {sec_summary['total_mailchimp_scanned']}")
+                    logger.info(f"  Exit-tagged found: {sec_summary['exit_tagged_contacts_found']}")
+                    logger.info(f"  Contacts with operations: {sec_summary['contacts_with_operations']}")
+                    for op_type, count in sec_summary.get("operations_by_type", {}).items():
+                        logger.info(f"    {op_type}: {count}")
+                    
+                    if secondary_plan["operations"]:
+                        has_sec_archive = any(
+                            any(op.get("type") == "archive_mc_member" for op in contact["operations"])
+                            for contact in secondary_plan.get("operations", [])
+                        )
+                        if has_sec_archive and not config.safety.allow_archive:
+                            logger.warning("Secondary sync has archive ops but allow_archive=false, skipping execution")
+                        else:
+                            logger.info("Executing secondary sync operations...")
+                            sec_executor = SyncExecutor(config, hs_client, mc_client, dry_run=False)
+                            secondary_results = await sec_executor.execute_plan(secondary_plan)
+                            
+                            logger.info("Secondary Sync Complete:")
+                            logger.info(f"  Total operations: {secondary_results['total_operations']}")
+                            logger.info(f"  Successful: {secondary_results['successful']}")
+                            logger.info(f"  Failed: {secondary_results['failed']}")
+                            logger.info(f"  Skipped: {secondary_results['skipped']}")
+                    else:
+                        logger.info("  No exit-tagged contacts to process.")
+                elif not dry_run and not config.secondary_sync.enabled:
+                    logger.info("Secondary sync disabled in config")
+                elif dry_run:
+                    logger.info("DRY-RUN: Skipping secondary sync")
+                
+                return primary_results, secondary_results
         
         if not dry_run:
             logger.info("­ƒÜ¿ EXECUTING LIVE OPERATIONS ­ƒÜ¿")
         
-        results = asyncio.run(run_execution())
+        primary_results, secondary_results = asyncio.run(run_execution())
         
-        logger.info(f"Ô£ô Execution complete:")
-        logger.info(f"  Total operations: {results['total_operations']}")
-        logger.info(f"  Successful: {results['successful']}")
-        logger.info(f"  Failed: {results['failed']}")
-        logger.info(f"  Skipped: {results['skipped']}")
-        logger.info(f"  Contacts processed: {results['contacts_processed']}")
+        logger.info("Primary Sync Complete:")
+        logger.info(f"  Total operations: {primary_results['total_operations']}")
+        logger.info(f"  Successful: {primary_results['successful']}")
+        logger.info(f"  Failed: {primary_results['failed']}")
+        logger.info(f"  Skipped: {primary_results['skipped']}")
+        logger.info(f"  Contacts processed: {primary_results['contacts_processed']}")
         
-        if results['failed'] > 0:
+        total_failed = primary_results['failed']
+        if secondary_results:
+            total_failed += secondary_results['failed']
+        
+        if total_failed > 0:
             return 1
         
         return 0
@@ -273,6 +319,27 @@ def apply_mode(plan_path: Path, dry_run: bool = False) -> int:
         import traceback
         traceback.print_exc()
         return 1
+
+
+
+def sync_mode(config_path: Path, dry_run: bool = False) -> int:
+    """Full sync pipeline: plan + apply + secondary in one command."""
+    from datetime import datetime
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_path = Path(f"corev2/artifacts/plan_{timestamp}.json")
+    
+    logger.info("=" * 70)
+    logger.info("  Full Sync: Plan \u2192 Apply \u2192 Secondary")
+    logger.info("=" * 70)
+    
+    # Generate plan
+    result = plan_mode(config_path, output_path)
+    if result != 0:
+        return result
+    
+    # Apply plan (includes unsubscribe sync + primary + secondary)
+    return apply_mode(output_path, dry_run=dry_run)
 
 
 def main():
@@ -292,10 +359,13 @@ Examples:
   
   # Execute plan (LIVE MUTATIONS - requires safety gates)
   python -m corev2.cli apply --plan plan.json
+  
+  # Full sync in one command (plan + apply + secondary)
+  python -m corev2.cli sync --config config.yaml
         """
     )
     
-    parser.add_argument("mode", choices=["validate-config", "plan", "apply"],
+    parser.add_argument("mode", choices=["validate-config", "plan", "apply", "sync"],
                        help="Execution mode")
     parser.add_argument("--config", type=Path, default=Path("corev2/config/defaults.yaml"),
                        help="Path to config YAML file")
@@ -329,6 +399,9 @@ Examples:
                 logger.error("--plan required for apply mode")
                 return 1
             return apply_mode(args.plan, dry_run=args.dry_run)
+        
+        elif args.mode == "sync":
+            return sync_mode(args.config, dry_run=args.dry_run)
     
     except KeyboardInterrupt:
         logger.info("\nInterrupted by user")
