@@ -29,6 +29,10 @@ hubspot:
       - id: "987"
         name: "General"
         tag: "General"
+        tag_overrides:
+          - property: "branches"
+            condition: "gt:1"
+            tag: "General Multi"
     
     # GROUP 2: Special Campaigns (empty for now)
     special_campaigns: []
@@ -111,6 +115,13 @@ secondary_sync:
   contact_limit: 0  # UNLIMITED — no cap on contacts processed
   mappings:
     - exit_tag: "General Finished"
+      destination_list: "946"
+      destination_name: "General Handover"
+      source_list: "987"
+      source_name: "General"
+      remove_from_source: false  # Dynamic list - HubSpot auto-excludes
+
+    - exit_tag: "General Multi Finished"
       destination_list: "946"
       destination_name: "General Handover"
       source_list: "987"

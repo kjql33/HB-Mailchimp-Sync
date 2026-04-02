@@ -1,8 +1,10 @@
 # Secondary Sync Rules & Verified Behaviors
 **Created:** 2026-03-06  
-**Status:** Implemented — Awaiting First Test  
+**Updated:** 2026-04-01  
+**Status:** Live Production (wired into CLI `apply_mode()` Step 3)  
 **Direction:** Mailchimp → HubSpot (reverse of primary sync)  
 **Purpose:** Route exit-tagged contacts from Mailchimp into HubSpot handover lists  
+**Entrypoint:** `corev2/cli.py` — runs as Step 3 of `apply_mode()` (both GitHub Actions and local dev)  
 **See also:** [PRIMARY_SYNC_RULES.md](PRIMARY_SYNC_RULES.md) for HubSpot → Mailchimp rules
 
 ---
@@ -59,11 +61,18 @@ For each exit-tagged contact found in Mailchimp, the following operations execut
 3. ✅ Remove ALL Mailchimp tags (Recruitment, Recruitment Finished, etc.)
 4. ✅ Archive from Mailchimp — journey complete
 
-### Example: "General Finished" Contact
+### Example: "General Finished" Contact (from List 987)
 1. ✅ Add to HubSpot list **946** (General Handover)
 2. ⊘ *Skip* — list 987 is DYNAMIC, HubSpot auto-excludes
 3. ✅ Remove ALL Mailchimp tags
 4. ✅ Archive from Mailchimp
+
+### Example: "General Finished" Contact (from Manual Inclusion List 784)
+1. ✅ Add to HubSpot list **946** (General Handover)
+2. ⊘ *Skip removal from 987* — may not be in 987 (404 = success)
+3. ✅ Remove ALL Mailchimp tags
+4. ✅ Archive from Mailchimp
+5. ⚠️ Contact stays in list 784 permanently — secondary sync does NOT touch 784
 
 ---
 
@@ -130,21 +139,25 @@ No local tracking needed — HubSpot stores this natively.
 | `corev2/config/schema.py` | SecondaryMappingConfig + SecondarySyncConfig models |
 | `corev2/config/production.yaml` | 6 exit tag mappings + settings |
 | `corev2/executor/engine.py` | Executor handlers (add_hs_to_list, remove_mc_tag, etc.) |
-| `main.py` | STEP 4 integration — runs after primary sync |
+| `corev2/cli.py` | Step 3 of `apply_mode()` — runs secondary sync after primary |
+| `main.py` | Thin wrapper — delegates to `cli.sync_mode()` |
 
 ---
 
-## 🔄 EXECUTION FLOW (in main.py)
+## 🔄 EXECUTION FLOW (in corev2/cli.py)
 
 ```
-STEP 1: Unsubscribe Sync (Mailchimp → HubSpot opt-outs)
-STEP 2: Primary Sync Plan (HubSpot → Mailchimp)
-STEP 3: Primary Sync Execution
-STEP 4: Secondary Sync (Mailchimp → HubSpot exit tag routing)  ← THIS
-  └─ Phase 1: Scan Mailchimp for exit-tagged contacts
-  └─ Phase 2: Look up each in HubSpot, generate operations
-  └─ Phase 3: Execute operations (add to list, remove, untag, archive)
+apply_mode():
+  STEP 1: Unsubscribe Sync (Mailchimp → HubSpot opt-outs + List 443 archive)
+  STEP 2: Primary Sync (HubSpot → Mailchimp: tags, subscribe, orphan cleanup)
+  STEP 3: Secondary Sync (Mailchimp → HubSpot exit tag routing)  ← THIS
+    └─ Phase 1: Scan Mailchimp for exit-tagged contacts
+    └─ Phase 2: Look up each in HubSpot, generate operations
+    └─ Phase 3: Execute operations (add to list, remove, untag, archive)
 ```
+
+sync_mode() = plan_mode() + apply_mode() in sequence (convenience for local dev).
+GitHub Actions calls `python -m corev2.cli plan` then `python -m corev2.cli apply`.
 
 ---
 

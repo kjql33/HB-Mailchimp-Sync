@@ -1,8 +1,9 @@
 ﻿# Primary Sync Rules & Verified Behaviors
-**Last Updated:** 2026-03-06  
+**Last Updated:** 2026-04-01  
 **Scope:** Primary sync (HubSpot → Mailchimp)  
 **Status:** Live Production  
 **Mode:** Unlimited contacts, archival enabled  
+**Entrypoint:** `corev2/cli.py` (unified CLI — used by both GitHub Actions and local dev)  
 **See also:** [SECONDARY_SYNC_RULES.md](SECONDARY_SYNC_RULES.md) for Mailchimp → HubSpot exit tag routing
 
 ---
@@ -197,26 +198,36 @@
 
 ---
 
-## ­ƒöº SYSTEM CONFIGURATION
+## 🔧 SYSTEM CONFIGURATION
 
 ### Current Production Settings
-**File:** `corev2/config/production.yaml`
+**File:** `corev2/config/production.yaml`  
+**Updated:** 2026-04-01
 
 ```yaml
 hubspot:
   lists:
     general_marketing:
-      - id: "900"
-        name: "EXP"
-        tag: "EXP"
-      - id: "719"
-        name: "Recruitment"
-        tag: "Recruitment"
-  
-  exclusions:
-    critical:
-      - "762"  # Unsubscribed
-      - "773"  # Manual Disengagement
+      - {id: "969", name: "Sanctioned Agents", tag: "Sanctioned"}
+      - {id: "719", name: "Recruitment", tag: "Recruitment"}
+      - {id: "720", name: "Competition", tag: "Competition"}
+      - {id: "989", name: "Network Agents", tag: "Sub Agents"}
+      - {id: "945", name: "New Agents", tag: "New Agents"}
+      - {id: "987", name: "General MailChimp Import", tag: "General"}
+    special_campaigns: []  # Reserved for future use
+    manual_override:
+      - {id: "784", name: "Manual Inclusion", tag: "General"}
+
+exclusion_matrix:
+  general_marketing:
+    lists: ["969", "719", "720", "989", "945", "987"]
+    exclude: ["762", "773", "717"]  # Compliance + Active Deals
+  special_campaigns:
+    lists: []
+    exclude: ["762", "773"]
+  manual_override:
+    lists: ["784"]
+    exclude: ["762", "773"]  # Compliance only — bypasses Active Deals (717)
 
 mailchimp:
   audience_id: ${MAILCHIMP_LIST_ID}
@@ -224,16 +235,28 @@ mailchimp:
 sync:
   batch_size: 100
   force_subscribe: true
-
-archival:
-  max_archive_per_run: 25
 ```
 
-### Safety Settings (LIVE TESTING MODE)
-- Ô£à `test_contact_limit: 0` (UNLIMITED - processes all contacts)
-- Ô£à `allow_archive: true` (archival enabled)
-- Ô£à `allow_apply: true` (live mutations enabled)
-- ÔÜá´©Å  **RISKY:** No safety limits, operating on full dataset
+### Exclusion Groups Explained
+
+| Group | Lists | Exclusions | Purpose |
+|---|---|---|---|
+| `general_marketing` | 969, 719, 720, 989, 945, 987 | 762, 773, **717** | Standard marketing — blocked by compliance + active deals |
+| `special_campaigns` | (empty) | 762, 773 | Reserved for future use |
+| `manual_override` | **784** | 762, 773 | Manual Inclusion — bypasses Active Deals (717) |
+
+**List 784 "Manual Inclusion":**
+- Contacts manually placed here to force sync to Mailchimp
+- Tagged "General" in Mailchimp (same tag as list 987)
+- Only blocked by compliance lists (762, 773) — NOT by Active Deals (717)
+- Secondary sync "General Finished" does NOT touch list 784 (contact stays permanently)
+- INV-002 validator enforces compliance lists (762, 773) in every group
+
+### Safety Settings
+- ✅ `test_contact_limit: 0` (UNLIMITED - processes all contacts)
+- ✅ `allow_archive: true` (archival enabled)
+- ✅ `allow_apply: true` (live mutations enabled)
+- ✅ `run_mode: prod`
 
 ---
 
@@ -343,14 +366,40 @@ archival:
 
 ## ­ƒôØ COMMAND REFERENCE
 
+### CLI Modes (`corev2/cli.py`)
+```bash
+# Generate plan only (safe, read-only)
+python -m corev2.cli plan
+
+# Execute plan (LIVE — runs unsub sync + primary sync + secondary sync)
+python -m corev2.cli apply
+
+# Plan + Apply in one command (convenience for local dev)
+python -m corev2.cli sync
+
+# Validate config only
+python -m corev2.cli validate-config
+```
+
+### Execution Steps (in `apply_mode()`)
+```
+Step 1: Unsubscribe Sync (Mailchimp → HubSpot opt-outs + List 443 archive)
+Step 2: Primary Sync (HubSpot → Mailchimp: tags, subscribe, orphan cleanup)
+Step 3: Secondary Sync (Mailchimp → HubSpot: exit tag routing + archive)
+```
+
+### `main.py` (Thin Wrapper)
+`main.py` is a 19-line thin wrapper that sets `LOAD_DOTENV=1` and delegates to `cli.sync_mode()`.
+GitHub Actions calls `corev2/cli.py` directly (plan → apply).
+
 ### Generate Plan (Safe)
 ```bash
-python -m corev2.cli plan --config corev2/config/production.yaml --output plan.json
+python -m corev2.cli plan
 ```
 
 ### Execute Plan (LIVE)
 ```bash
-python -m corev2.cli apply --plan plan.json
+python -m corev2.cli apply
 ```
 
 ### Check Journal (Post-Execution)

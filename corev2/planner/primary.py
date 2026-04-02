@@ -55,20 +55,85 @@ class SyncPlanner:
                 return True
         return False
     
+    def _evaluate_tag_override(self, condition: str, property_value: str) -> bool:
+        """
+        Evaluate a tag override condition against a property value.
+        
+        Supports: 'gt:N' (greater than N)
+        
+        Args:
+            condition: Condition string (e.g., 'gt:1')
+            property_value: Raw property value from HubSpot
+        
+        Returns:
+            True if condition matches
+        """
+        if not property_value:
+            return False
+        
+        try:
+            if condition.startswith("gt:"):
+                threshold = int(condition.split(":")[1])
+                return int(property_value) > threshold
+        except (ValueError, IndexError):
+            return False
+        
+        return False
+    
+    def _apply_tag_overrides(
+        self,
+        list_id: str,
+        primary_tag: str,
+        properties: Dict[str, Any]
+    ) -> str:
+        """
+        Check if a tag override applies for the matched list based on contact properties.
+        
+        Args:
+            list_id: The HubSpot list that was matched
+            primary_tag: The default tag from list config
+            properties: Contact properties
+        
+        Returns:
+            Override tag if condition matches, otherwise original primary_tag
+        """
+        # Find the list config
+        for group_name, list_configs in self.config.hubspot.lists.items():
+            for list_config in list_configs:
+                if list_config.id == list_id and list_config.tag_overrides:
+                    for override in list_config.tag_overrides:
+                        prop_value = properties.get(override.property, "")
+                        if isinstance(prop_value, dict):
+                            prop_value = prop_value.get("value", "")
+                        else:
+                            prop_value = str(prop_value) if prop_value else ""
+                        
+                        if self._evaluate_tag_override(override.condition, prop_value):
+                            logger.info(
+                                f"Tag override: {override.property}={prop_value} "
+                                f"matches {override.condition} → tag '{override.tag}' "
+                                f"(was '{primary_tag}')"
+                            )
+                            return override.tag
+        return primary_tag
+    
     def _determine_target_tag(
         self,
         contact_list_ids: Set[str],
-        email: str
+        email: str,
+        properties: Optional[Dict[str, Any]] = None
     ) -> Optional[List[str]]:
         """
         Determine target tags based on exclusion matrix (INV-004: Single-tag enforcement).
         
         Priority: general_marketing → special_campaigns → manual_override
         NEW: Returns list of tags (primary + additional) from list config.
+        Applies property-based tag overrides if configured.
         
         Args:
             contact_list_ids: Set of list IDs the contact is in
             email: Contact email for logging
+            properties: Contact properties (needed for tag overrides)
         
         Returns:
             List of tags [primary, additional...] from first matching list, or None if excluded from all groups
@@ -88,7 +153,15 @@ class SyncPlanner:
                         for hs_group_name, list_configs in self.config.hubspot.lists.items():
                             for list_config in list_configs:
                                 if list_config.id == list_id:
-                                    all_tags = [list_config.tag] + list_config.additional_tags
+                                    primary_tag = list_config.tag
+                                    
+                                    # Apply property-based tag overrides
+                                    if properties and list_config.tag_overrides:
+                                        primary_tag = self._apply_tag_overrides(
+                                            list_id, primary_tag, properties
+                                        )
+                                    
+                                    all_tags = [primary_tag] + list_config.additional_tags
                                     logger.debug(f"Contact {email} matched list {list_id} ({list_config.name}) → tags: {all_tags}")
                                     return all_tags
                         
@@ -197,6 +270,14 @@ class SyncPlanner:
         # Collect contacts from all lists
         contacts_by_email = {}
         
+        # Build list of properties to fetch (base + tag override properties)
+        fetch_properties = ["email", "firstname", "lastname", self.config.sync.ori_lists_field]
+        for group_lists in self.config.hubspot.lists.values():
+            for list_config in group_lists:
+                for override in list_config.tag_overrides:
+                    if override.property not in fetch_properties:
+                        fetch_properties.append(override.property)
+        
         for list_id in sorted(all_lists_to_scan):
             logger.info(f"Fetching members from list {list_id}...")
             count = 0
@@ -204,7 +285,7 @@ class SyncPlanner:
             try:
                 async for contact in self.hs_client.get_list_members(
                     list_id,
-                    properties=["email", "firstname", "lastname", self.config.sync.ori_lists_field]
+                    properties=fetch_properties
                 ):
                     email = contact.get("email")
                     if not email:
@@ -484,7 +565,7 @@ class SyncPlanner:
             return []
         
         # Determine target tags (single primary tag + optional additional tags for subdivisions)
-        target_tags = self._determine_target_tag(list_ids, email)
+        target_tags = self._determine_target_tag(list_ids, email, properties)
         
         if not target_tags:
             # Check whether exclusion is due to an active-deals or other non-compliance exclusion list
@@ -538,6 +619,9 @@ class SyncPlanner:
         for group_name, list_configs in self.config.hubspot.lists.items():
             for list_config in list_configs:
                 all_source_tags.add(list_config.tag)
+                # Include tag override tags so first-tag priority recognises them
+                for override in list_config.tag_overrides:
+                    all_source_tags.add(override.tag)
         
         # Add supplemental tags to the source tags set
         for supp_config in self.config.hubspot.supplemental_tags:

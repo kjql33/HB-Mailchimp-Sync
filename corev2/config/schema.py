@@ -19,12 +19,20 @@ class RunMode(str, Enum):
     PROD = "prod"
 
 
+class TagOverrideConfig(BaseModel):
+    """Property-based tag override: if a HubSpot contact property meets a condition, use a different tag."""
+    property: str = Field(..., description="HubSpot contact property name to check (e.g., 'branches')")
+    condition: str = Field(..., description="Condition: 'gt:N' (greater than N)")
+    tag: str = Field(..., description="Override tag to use when condition matches (e.g., 'General Multi')")
+
+
 class ListConfig(BaseModel):
     """Single HubSpot list configuration."""
     id: str = Field(..., description="HubSpot list ID")
     name: str = Field(..., description="List name (for logging)")
     tag: str = Field(..., description="Mailchimp tag to apply for this list")
     additional_tags: List[str] = Field(default_factory=list, description="Extra tags for subdivisions (e.g., T2)")
+    tag_overrides: List[TagOverrideConfig] = Field(default_factory=list, description="Property-based tag overrides")
 
 
 class SupplementalTagConfig(BaseModel):
