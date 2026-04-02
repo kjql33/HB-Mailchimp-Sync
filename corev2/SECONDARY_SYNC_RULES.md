@@ -1,82 +1,123 @@
-# Secondary Sync Rules & Verified Behaviors
+﻿# Secondary Sync Rules
 **Created:** 2026-03-06  
-**Updated:** 2026-04-01  
+**Updated:** 2026-04-02  
 **Status:** Live Production (wired into CLI `apply_mode()` Step 3)  
-**Direction:** Mailchimp → HubSpot (reverse of primary sync)  
+**Direction:** Mailchimp -> HubSpot (reverse of primary sync)  
 **Purpose:** Route exit-tagged contacts from Mailchimp into HubSpot handover lists  
-**Entrypoint:** `corev2/cli.py` — runs as Step 3 of `apply_mode()` (both GitHub Actions and local dev)  
-**See also:** [PRIMARY_SYNC_RULES.md](PRIMARY_SYNC_RULES.md) for HubSpot → Mailchimp rules
+**Entrypoint:** `corev2/cli.py` - runs as Step 3 of `apply_mode()` (both GitHub Actions and local dev)  
+**See also:** [PRIMARY_SYNC_RULES.md](PRIMARY_SYNC_RULES.md) for HubSpot -> Mailchimp rules
 
 ---
 
-## 📋 OVERVIEW
+## OVERVIEW
 
 The secondary sync scans Mailchimp for contacts tagged with "Finished" exit tags,
 then routes them into the correct HubSpot handover list, cleans up Mailchimp, and archives.
 
-**Trigger:** Contact is tagged in Mailchimp with an exit tag (e.g., "General Finished")  
+**Trigger:** Contact is tagged in Mailchimp with an exit tag (e.g., "General Single Finished")  
 **Result:** Contact lands in the correct HubSpot handover list, removed from Mailchimp
 
 ---
 
-## 🗺️ EXIT TAG MAPPINGS
+## EXIT TAG MAPPINGS (9 total)
 
-| # | Exit Tag (Mailchimp) | Destination List (HubSpot) | Source List (HubSpot) | Remove from Source? |
-|---|---|---|---|---|
-| 1 | `General Finished` | 946 — General Handover | 987 — General | No (DYNAMIC) |
-| 2 | `Recruitment Finished` | 947 — Recruitment Handover | 719 — Recruitment | Yes (MANUAL) |
-| 3 | `Competition Finished` | 948 — Competition Handover | 720 — Competition | Yes (MANUAL) |
-| 4 | `Sub Agents Finished` | 1005 — Sub Agents Handover | 989 — Network Agents | No (DYNAMIC) |
-| 5 | `New Agents Finished` | 949 — New Agents Handover | 945 — New Agents | Yes (MANUAL) |
-| 6 | `Sanctioned Finished` | 1006 — Sanctioned Handover | 969 — Sanctioned | Yes (MANUAL) |
-
-**All list IDs verified against HubSpot API on 2026-03-06.**
+| # | Exit Tag (Mailchimp) | Destination List (HubSpot) | Source List (HubSpot) | Remove from Source? | Notes |
+|---|---|---|---|---|---|
+| 1 | `General Single Finished` | 946 - General Handover | 987 - General Mailchimp Import | No (DYNAMIC) | branches <= 1 |
+| 2 | `General Multi Finished` | 946 - General Handover | 987 - General Mailchimp Import | No (DYNAMIC) | branches > 1 |
+| 3 | `Recruitment Finished` | 947 - Recruitment Handover | 719 - Recruitment | Yes (MANUAL) | |
+| 4 | `Competition Finished` | 948 - Competition Handover | 720 - Competition | Yes (MANUAL) | |
+| 5 | `Sub Agents Finished` | 1005 - Sub Agents Handover | 989 - Sub Agents | No (DYNAMIC) | + remove from 900, 972, 971 |
+| 6 | `New Agents Finished` | 949 - New Agents Handover | 945 - New Agents | Yes (MANUAL) | |
+| 7 | `Sanctioned Finished` | 1006 - Sanctioned Handover | 969 - Sanctioned | Yes (MANUAL) | |
+| 8 | `Long Term Single Finished` | (none) | 1032 - Long Term Marketing | No | MC cleanup only |
+| 9 | `Long Term Multi Finished` | (none) | 1032 - Long Term Marketing | No | MC cleanup only |
 
 ### Why Dynamic Lists Don't Need Removal
-Lists 987 (General) and 989 (Network Agents) are **DYNAMIC** — HubSpot auto-manages membership
-based on filter criteria. When a contact is added to a handover list, the dynamic filter
-automatically excludes them. No manual removal needed.
+Lists 987 (General Mailchimp Import) and 989 (Sub Agents) are **DYNAMIC** - HubSpot auto-manages
+membership based on filter criteria. No manual removal needed.
 
 ### Why Manual Lists DO Need Removal
-Lists 719, 720, 945, 969 are **MANUAL/STATIC** — HubSpot will not auto-remove contacts.
+Lists 719, 720, 945, 969 are **MANUAL/STATIC** - HubSpot will not auto-remove contacts.
 The system must explicitly call `remove_contact_from_list` to prevent the contact from
 remaining in both the source and handover lists simultaneously.
 
+### Sub Agents Additional Removals
+When "Sub Agents Finished" fires, the system also removes the contact from three static
+sublists that feed dynamic list 989:
+- **900** - EXP
+- **972** - Keller Williams Agents
+- **971** - IAD Agents
+
+This ensures the contact is fully cleaned out of all Sub Agents pipelines.
+
+### Long Term Mappings (No Destination)
+Mappings 8 and 9 have NO destination list. When a Long Term journey completes:
+- Contact stays in HubSpot list 1032
+- Mailchimp tags are removed
+- Contact is archived from Mailchimp
+- No HubSpot handover list is involved (MC cleanup only)
+
 ---
 
-## ⚙️ PER-CONTACT OPERATION CHAIN
+## EXEMPT TAGS
+
+```yaml
+exempt_tags:
+  - "Manual Inclusion"
+```
+
+Contacts with the `Manual Inclusion` tag in Mailchimp are **SKIPPED ENTIRELY** by secondary sync.
+Even if they acquire a "Finished" exit tag, they will NOT be processed. This protects manually
+included contacts (from list 784) from being accidentally archived.
+
+---
+
+## PER-CONTACT OPERATION CHAIN
 
 For each exit-tagged contact found in Mailchimp, the following operations execute **in order**:
 
 | Step | Operation | Description | Condition |
 |---|---|---|---|
-| 1 | `add_hs_to_list` | Add contact to destination handover list in HubSpot | Always |
+| 1 | `add_hs_to_list` | Add contact to destination handover list | Only if destination_list is set |
 | 2 | `remove_hs_from_list` | Remove from source list in HubSpot | Manual lists only (719, 720, 945, 969) |
+| 2b | `remove_hs_from_list` | Remove from additional lists | Sub Agents only (900, 972, 971) |
 | 3 | `remove_mc_tag` | Remove ALL tags from Mailchimp (clean slate) | When `archive_after_sync: true` |
 | 4 | `archive_mc_member` | Archive contact from Mailchimp | When `archive_after_sync: true` |
 
 ### Example: "Recruitment Finished" Contact
-1. ✅ Add to HubSpot list **947** (Recruitment Handover)
-2. ✅ Remove from HubSpot list **719** (Recruitment) — manual list
-3. ✅ Remove ALL Mailchimp tags (Recruitment, Recruitment Finished, etc.)
-4. ✅ Archive from Mailchimp — journey complete
+1. Add to HubSpot list **947** (Recruitment Handover)
+2. Remove from HubSpot list **719** (Recruitment) - manual list
+3. Remove ALL Mailchimp tags (Recruitment, Recruitment Finished, etc.)
+4. Archive from Mailchimp - journey complete
 
-### Example: "General Finished" Contact (from List 987)
-1. ✅ Add to HubSpot list **946** (General Handover)
-2. ⊘ *Skip* — list 987 is DYNAMIC, HubSpot auto-excludes
-3. ✅ Remove ALL Mailchimp tags
-4. ✅ Archive from Mailchimp
+### Example: "General Single Finished" Contact
+1. Add to HubSpot list **946** (General Handover)
+2. Skip removal - list 987 is DYNAMIC
+3. Remove ALL Mailchimp tags
+4. Archive from Mailchimp
 
-### Example: "General Finished" Contact (from Manual Inclusion List 784)
-1. ✅ Add to HubSpot list **946** (General Handover)
-2. ⊘ *Skip removal from 987* — may not be in 987 (404 = success)
-3. ✅ Remove ALL Mailchimp tags
-4. ✅ Archive from Mailchimp
-5. ⚠️ Contact stays in list 784 permanently — secondary sync does NOT touch 784
+### Example: "Sub Agents Finished" Contact
+1. Add to HubSpot list **1005** (Sub Agents Handover)
+2. Skip removal from 989 - DYNAMIC
+3. Remove from lists **900** (EXP), **972** (Keller Williams), **971** (IAD Agents)
+4. Remove ALL Mailchimp tags
+5. Archive from Mailchimp
+
+### Example: "Long Term Single Finished" Contact
+1. NO HubSpot handover (no destination list)
+2. Contact stays in list 1032
+3. Remove ALL Mailchimp tags
+4. Archive from Mailchimp - MC cleanup only
+
+### Example: Contact with "Manual Inclusion" Tag
+1. SKIPPED entirely - exempt_tags match
+2. Even if "General Single Finished" tag exists, NO operations generated
+3. Contact stays in Mailchimp untouched
 
 ---
 
-## 🔒 SAFETY RULES
+## SAFETY RULES
 
 ### SEC-001: No Global Archival
 Secondary sync **only** archives contacts it processes (those with exit tags).
@@ -96,64 +137,58 @@ and prevents stale tag data if the contact is ever unarchived later.
 
 ### SEC-005: Idempotent Operations
 - `add_hs_to_list`: Already in list = success (no duplicate add)
-- `remove_hs_from_list`: Already removed = success
+- `remove_hs_from_list`: Already removed = success (404 = ok)
 - `remove_mc_tag`: Tag doesn't exist = success
 - `archive_mc_member`: Already archived = success
 
 ### SEC-006: Contact Limit
 `contact_limit: 0` means unlimited. Can be set to a positive number to cap
-processing during testing. Only affects secondary sync, not primary.
+processing during testing.
 
 ### SEC-007: Archive Gate
 `archive_after_sync: true` enables steps 3 + 4 (untag + archive).
 If set to `false`, the system only performs steps 1 + 2 (HubSpot list moves).
 
----
+### SEC-008: Exempt Tags
+Contacts with any tag in `exempt_tags` are NEVER processed by secondary sync.
+Currently: `["Manual Inclusion"]`.
 
-## 📊 HANDOVER LIST TRACKING
+### SEC-009: Optional Destination List
+Mappings without a `destination_list` (Long Term Single/Multi Finished) skip the
+`add_hs_to_list` step entirely. Only MC cleanup (untag + archive) is performed.
 
-### Membership Timestamps (for 2-week tracking)
-HubSpot's `/crm/v3/lists/{listId}/memberships` endpoint returns `membershipTimestamp`
-for every contact — the exact moment they were added to that specific list.
-
-**Verified 2026-03-06:** API returns ISO-8601 timestamps per record.
-
-```json
-{
-  "results": [
-    { "recordId": "123", "membershipTimestamp": "2026-03-06T14:30:00Z" }
-  ]
-}
-```
-
-This can be queried at any time to determine how long a contact has been in a handover list.
-No local tracking needed — HubSpot stores this natively.
+### SEC-010: Audience Cap Integration
+Secondary sync shares the `AudienceCapGuard` with primary sync. The cap is checked
+before any operations that might add subscribers (though secondary sync typically
+archives rather than adds).
 
 ---
 
-## 🏗️ IMPLEMENTATION FILES
+## IMPLEMENTATION FILES
 
 | File | Purpose |
 |---|---|
-| `corev2/planner/secondary.py` | SecondaryPlanner — scans MC, generates operations |
+| `corev2/planner/secondary.py` | SecondaryPlanner - scans MC, generates operations |
 | `corev2/config/schema.py` | SecondaryMappingConfig + SecondarySyncConfig models |
-| `corev2/config/production.yaml` | 6 exit tag mappings + settings |
+| `corev2/config/production.yaml` | 9 exit tag mappings + settings |
 | `corev2/executor/engine.py` | Executor handlers (add_hs_to_list, remove_mc_tag, etc.) |
-| `corev2/cli.py` | Step 3 of `apply_mode()` — runs secondary sync after primary |
-| `main.py` | Thin wrapper — delegates to `cli.sync_mode()` |
+| `corev2/cli.py` | Step 3 of `apply_mode()` - runs secondary sync after primary |
+| `corev2/notifications.py` | Teams webhook alerts (audience cap, errors) |
+| `main.py` | Thin wrapper - delegates to `cli.sync_mode()` |
 
 ---
 
-## 🔄 EXECUTION FLOW (in corev2/cli.py)
+## EXECUTION FLOW (in corev2/cli.py)
 
 ```
 apply_mode():
-  STEP 1: Unsubscribe Sync (Mailchimp → HubSpot opt-outs + List 443 archive)
-  STEP 2: Primary Sync (HubSpot → Mailchimp: tags, subscribe, orphan cleanup)
-  STEP 3: Secondary Sync (Mailchimp → HubSpot exit tag routing)  ← THIS
-    └─ Phase 1: Scan Mailchimp for exit-tagged contacts
-    └─ Phase 2: Look up each in HubSpot, generate operations
-    └─ Phase 3: Execute operations (add to list, remove, untag, archive)
+  STEP 1: Unsubscribe Sync (Mailchimp -> HubSpot opt-outs)
+  STEP 2: Primary Sync (HubSpot -> Mailchimp: tags, subscribe, orphan cleanup)
+  STEP 3: Secondary Sync (Mailchimp -> HubSpot exit tag routing)  <-- THIS
+    Phase 1: Scan Mailchimp for exit-tagged contacts
+    Phase 2: Filter out exempt_tags contacts
+    Phase 3: Look up each in HubSpot, generate operations
+    Phase 4: Execute operations (add to list, remove, untag, archive)
 ```
 
 sync_mode() = plan_mode() + apply_mode() in sequence (convenience for local dev).
@@ -161,19 +196,28 @@ GitHub Actions calls `python -m corev2.cli plan` then `python -m corev2.cli appl
 
 ---
 
-## ✅ CONFIGURATION (production.yaml)
+## PRODUCTION CONFIG (production.yaml)
 
 ```yaml
 secondary_sync:
   enabled: true
   archive_after_sync: true
   contact_limit: 0  # UNLIMITED
+  exempt_tags:
+    - "Manual Inclusion"
   mappings:
-    - exit_tag: "General Finished"
+    - exit_tag: "General Single Finished"
       destination_list: "946"
       destination_name: "General Handover"
       source_list: "987"
-      source_name: "General"
+      source_name: "General Mailchimp Import"
+      remove_from_source: false
+
+    - exit_tag: "General Multi Finished"
+      destination_list: "946"
+      destination_name: "General Handover"
+      source_list: "987"
+      source_name: "General Mailchimp Import"
       remove_from_source: false
 
     - exit_tag: "Recruitment Finished"
@@ -194,8 +238,15 @@ secondary_sync:
       destination_list: "1005"
       destination_name: "Sub Agents Handover"
       source_list: "989"
-      source_name: "Network Agents"
+      source_name: "Sub Agents"
       remove_from_source: false
+      additional_remove_lists:
+        - list_id: "900"
+          list_name: "EXP"
+        - list_id: "972"
+          list_name: "Keller Williams Agents"
+        - list_id: "971"
+          list_name: "IAD Agents"
 
     - exit_tag: "New Agents Finished"
       destination_list: "949"
@@ -210,53 +261,33 @@ secondary_sync:
       source_list: "969"
       source_name: "Sanctioned"
       remove_from_source: true
+
+    - exit_tag: "Long Term Single Finished"
+      source_list: "1032"
+      source_name: "Long Term Marketing"
+      remove_from_source: false
+
+    - exit_tag: "Long Term Multi Finished"
+      source_list: "1032"
+      source_name: "Long Term Marketing"
+      remove_from_source: false
 ```
 
 ---
 
-## 🧪 TEST STATUS
+## VERIFIED BEHAVIORS
 
-| Test | Status | Date |
-|---|---|---|
-| Schema imports & validation | ✅ Passed | 2026-03-06 |
-| Config loads with 6 mappings | ✅ Passed | 2026-03-06 |
-| SecondaryPlanner imports | ✅ Passed | 2026-03-06 |
-| Executor handlers exist | ✅ Passed | 2026-03-06 |
-| All 12 list IDs verified vs HubSpot API | ✅ Passed | 2026-03-06 |
-| membershipTimestamp confirmed available | ✅ Passed | 2026-03-06 |
-| Live test with tagged contacts | ⏳ Pending | — |
-| End-to-end production run | ⏳ Pending | — |
-
----
-
-## 📝 VERIFIED BEHAVIORS (to be filled after testing)
-
-### 1. Exit Tag Detection
-**Status:** ⏳ Pending first test  
-**Expected:** Scans all MC members, filters by exit tags, skips archived/cleaned
-
-### 2. HubSpot List Addition
-**Status:** ⏳ Pending first test  
-**Expected:** Adds contact to correct handover list, idempotent
-
-### 3. Source List Removal (Manual Lists)
-**Status:** ⏳ Pending first test  
-**Expected:** Removes from 719/720/945/969 when configured, skips 987/989
-
-### 4. Tag Cleanup Before Archive
-**Status:** ⏳ Pending first test  
-**Expected:** Removes ALL tags from contact before archiving
-
-### 5. Mailchimp Archive
-**Status:** ⏳ Pending first test  
-**Expected:** Archives contact from Mailchimp after tag cleanup
-
-### 6. Contact Not in HubSpot
-**Status:** ⏳ Pending first test  
-**Expected:** Skips with warning, no operations generated
+| # | Feature | Status | Notes |
+|---|---------|--------|-------|
+| 1 | Exit tag detection | VERIFIED | Scans all MC members, filters by configured exit tags |
+| 2 | HubSpot list addition | VERIFIED | Adds to correct handover list, idempotent |
+| 3 | Source list removal (manual) | VERIFIED | Removes from 719/720/945/969, skips dynamic 987/989 |
+| 4 | Sub Agents additional removals | VERIFIED | Cleans 900, 972, 971 on Sub Agents Finished |
+| 5 | Tag cleanup before archive | VERIFIED | Removes ALL tags before archiving |
+| 6 | Mailchimp archive | VERIFIED | Archives after tag cleanup |
+| 7 | HubSpot lookup required | VERIFIED | Skips with warning if not found |
+| 8 | Exempt tags (Manual Inclusion) | VERIFIED | Contacts with exempt tags entirely skipped |
+| 9 | Long Term MC cleanup only | VERIFIED | No HubSpot handover, untag + archive only |
+| 10 | Audience cap integration | VERIFIED | Shared guard with primary sync |
 
 ---
-
-**Git Status:** Local only — NOT pushed to remote  
-**Remote HEAD:** `3f5c99b` (primary sync fixes only)  
-**Push Policy:** NEVER push without explicit user permission

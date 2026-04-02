@@ -1,6 +1,6 @@
 # 🚀 GitHub Deployment Guide - corev2
 
-**Date:** March 3, 2026  
+**Date:** March 3, 2026 (updated April 2, 2026)  
 **Purpose:** Complete guide for deploying corev2 to GitHub Actions with automated scheduling
 
 ---
@@ -18,7 +18,8 @@ Add these secrets:
 | `HUBSPOT_PRIVATE_APP_TOKEN` | HubSpot Private App API token | HubSpot → Settings → Integrations → Private Apps |
 | `MAILCHIMP_API_KEY` | Mailchimp API key | Mailchimp → Profile → Extras → API keys |
 | `MAILCHIMP_AUDIENCE_ID` | Mailchimp audience/list ID | Mailchimp → Audience → Settings → Unique ID |
-| `MAILCHIMP_DC` | Mailchimp data center (e.g., `us21`) | Extract from your Mailchimp API key or account URL |
+| `MAILCHIMP_DC` | Mailchimp data center (e.g., `us22`) | Extract from your Mailchimp API key or account URL |
+| `TEAMS_WEBHOOK_URL` | Microsoft Teams webhook for alerts | Teams → Channel → Connectors → Incoming Webhook |
 
 ---
 
@@ -35,7 +36,7 @@ Add these secrets:
 
 1. **Checkout code** - Pulls latest from repository
 2. **Setup Python 3.13** - Installs Python environment
-3. **Install dependencies** - Runs `pip install -r requirements.txt`
+3. **Install dependencies** - Runs `pip install -r requirements-v2.txt`
 4. **Debug environment** - Validates corev2 module import
 5. **Generate plan** - Creates operations plan (dry-run)
    ```bash
@@ -109,6 +110,7 @@ Required:
 ✅ MAILCHIMP_API_KEY  
 ✅ MAILCHIMP_AUDIENCE_ID
 ✅ MAILCHIMP_DC
+✅ TEAMS_WEBHOOK_URL
 ```
 
 ### Step 2: Update Workflow (Already Done)
@@ -135,11 +137,6 @@ git commit -m "feat: Deploy corev2 with 8-hour automated sync
 ### Step 4: Push to GitHub
 ```powershell
 # Force push to override old content if needed
-git push origin v2-reonboard-local --force
-
-# Or merge to main branch
-git checkout main
-git merge v2-reonboard-local
 git push origin main
 ```
 
