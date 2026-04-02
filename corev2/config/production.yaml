@@ -1,7 +1,7 @@
 # PRODUCTION CONFIGURATION for HubSpot ↔ Mailchimp Sync V2
 # 
 # CONFIGURED FOR: Multi-list sync (6 import lists)
-#   Sanctioned(969) → Recruitment(719) → Competition(720) → Sub Agents(989) → New agents(945) → General(987)
+#   Sanctioned(969) → Recruitment(719) → Competition(720) → Sub Agents(989) → New Agents(945) → General(987)
 # SAFETY: allow_apply=true, allow_archive=true, contact_limit=0 (UNLIMITED)
 
 hubspot:
@@ -9,7 +9,7 @@ hubspot:
   
   lists:
     # GROUP 1: General Marketing - Specific lists FIRST, General LAST (catch-all)
-    # Sync order: Sanctioned → Recruitment → Competition → Sub Agents → New agents → General
+    # Sync order: Sanctioned → Recruitment → Competition → Sub Agents → New Agents → General
     general_marketing:
       - id: "969"
         name: "Sanctioned"
@@ -24,10 +24,10 @@ hubspot:
         name: "Sub Agents"
         tag: "Sub Agents"
       - id: "945"
-        name: "New agents"
-        tag: "New agents"
+        name: "New Agents"
+        tag: "New Agents"
       - id: "987"
-        name: "General"
+        name: "General Mailchimp Import"
         tag: "General Single"
         tag_overrides:
           - property: "branches"
@@ -40,7 +40,7 @@ hubspot:
     # GROUP 3: Manual Override - Bypasses Active Deals exclusion (717), still blocked by compliance (762, 773)
     manual_override:
       - id: "784"
-        name: "Manual Inclusion"
+        name: "Manual Inclusion MC"
         tag: "General Single"
         tag_overrides:
           - property: "branches"
@@ -48,6 +48,16 @@ hubspot:
             tag: "General Multi"
         additional_tags:
           - "Manual Inclusion"
+    
+    # GROUP 4: Long Term Marketing - same exclusions as GROUP 1
+    long_term_marketing:
+      - id: "1032"
+        name: "Long Term Marketing"
+        tag: "General Single Long Term"
+        tag_overrides:
+          - property: "branches"
+            condition: "gt:1"
+            tag: "General Multi Long Term"
   
   # Supplemental Tags: Lists that are NOT synced themselves, but add extra tags to contacts already being synced
   # DISABLED: T2 subdivision removed - using single "General" tag only
@@ -80,15 +90,15 @@ sync:
 
 # INV-001: Three-tier import stream exclusion matrix
 exclusion_matrix:
-  # GROUP 1: Specific lists FIRST, General LAST - Sync order: Sanctioned → Recruitment → Competition → Sub Agents → New agents → General
+  # GROUP 1: Specific lists FIRST, General LAST - Sync order: Sanctioned → Recruitment → Competition → Sub Agents → New Agents → General
   general_marketing:
     lists:
       - "969"  # Sanctioned
       - "719"  # Recruitment
       - "720"  # Competition
       - "989"  # Sub Agents
-      - "945"  # New agents
-      - "987"  # General (LAST - catch-all)
+      - "945"  # New Agents
+      - "987"  # General Mailchimp Import (LAST - catch-all)
     exclude:
       - "762"  # Unsubscribed/Opted Out (DYNAMIC LIST - auto-managed, REQUIRED by INV-002)
       - "773"  # Manual Disengagement (DYNAMIC LIST - auto-managed, REQUIRED by INV-002)
@@ -105,10 +115,19 @@ exclusion_matrix:
   # GROUP 3: Manual Inclusion - bypasses Active Deals (717), still blocked by compliance (762, 773)
   manual_override:
     lists:
-      - "784"  # Manual Inclusion → tagged "General", bypasses Active Deals exclusion
+      - "784"  # Manual Inclusion MC → tagged "General Single", bypasses Active Deals exclusion
     exclude:
       - "762"  # Unsubscribed/Opted Out (REQUIRED by INV-002)
       - "773"  # Manual Disengagement (REQUIRED by INV-002)
+  
+  # GROUP 4: Long Term Marketing - same exclusions as GROUP 1 (compliance + active deals)
+  long_term_marketing:
+    lists:
+      - "1032"  # Long Term Marketing
+    exclude:
+      - "762"  # Unsubscribed/Opted Out (REQUIRED by INV-002)
+      - "773"  # Manual Disengagement (REQUIRED by INV-002)
+      - "717"  # Active Deals (REQUIRED - no marketing during sales)
 
 # INV-009: Anti-remarketing rules (optional)
 # Example: "source_list_id": ["excluded_list_id_1", "excluded_list_id_2"]
@@ -126,14 +145,14 @@ secondary_sync:
       destination_list: "946"
       destination_name: "General Handover"
       source_list: "987"
-      source_name: "General"
+      source_name: "General Mailchimp Import"
       remove_from_source: false  # Dynamic list - HubSpot auto-excludes
 
     - exit_tag: "General Multi Finished"
       destination_list: "946"
       destination_name: "General Handover"
       source_list: "987"
-      source_name: "General"
+      source_name: "General Mailchimp Import"
       remove_from_source: false  # Dynamic list - HubSpot auto-excludes
 
     - exit_tag: "Recruitment Finished"
@@ -177,6 +196,16 @@ secondary_sync:
       source_list: "969"
       source_name: "Sanctioned"
       remove_from_source: true   # Manual list - must remove
+
+    - exit_tag: "Long Term Single Finished"
+      source_list: "1032"
+      source_name: "Long Term Marketing"
+      remove_from_source: false  # Stay in list 1032, MC cleanup only (untag + archive)
+
+    - exit_tag: "Long Term Multi Finished"
+      source_list: "1032"
+      source_name: "Long Term Marketing"
+      remove_from_source: false  # Stay in list 1032, MC cleanup only (untag + archive)
 
 # INV-006: Smart archival preservation
 archival:

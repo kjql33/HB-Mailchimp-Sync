@@ -272,3 +272,10 @@ class HubSpotClient(HTTPBaseClient):
             }
         else:
             raise Exception(f"HubSpot property update failed: {result['status']} - {result['data']}")
+
+    async def get_list_name(self, list_id: str) -> Optional[str]:
+        """Fetch the display name of a HubSpot list by ID (v3 API)."""
+        result = await self.get(f"/crm/v3/lists/{list_id}")
+        if result["status"] == 200:
+            return result["data"].get("list", {}).get("name")
+        return None

@@ -86,7 +86,7 @@ class ExclusionMatrixGroupConfig(BaseModel):
 
 
 class ExclusionMatrixConfig(BaseModel):
-    """Three-tier import stream exclusion matrix (INV-001)."""
+    """Import stream exclusion matrix (INV-001)."""
     general_marketing: ExclusionMatrixGroupConfig = Field(
         ..., description="GROUP 1: Excludes ALL (critical + active_deals + exit)"
     )
@@ -95,6 +95,10 @@ class ExclusionMatrixConfig(BaseModel):
     )
     manual_override: ExclusionMatrixGroupConfig = Field(
         ..., description="GROUP 3: Excludes critical only (bypasses deals + exit)"
+    )
+    long_term_marketing: ExclusionMatrixGroupConfig = Field(
+        default_factory=lambda: ExclusionMatrixGroupConfig(lists=[], exclude=[]),
+        description="GROUP 4: Long Term Marketing — same exclusions as GROUP 1"
     )
 
 
@@ -120,8 +124,8 @@ class AdditionalRemoveList(BaseModel):
 class SecondaryMappingConfig(BaseModel):
     """Single secondary sync mapping: exit tag → destination list."""
     exit_tag: str = Field(..., description="Mailchimp tag that triggers this mapping (e.g. 'General Finished')")
-    destination_list: str = Field(..., description="HubSpot list ID to add contact to (handover list)")
-    destination_name: str = Field(..., description="Destination list name (for logging)")
+    destination_list: Optional[str] = Field(default=None, description="HubSpot list ID to add contact to (None = MC cleanup only, no HubSpot handover)")
+    destination_name: Optional[str] = Field(default=None, description="Destination list name (for logging)")
     source_list: str = Field(..., description="HubSpot list the contact originally came from")
     source_name: str = Field(..., description="Source list name (for logging)")
     remove_from_source: bool = Field(
@@ -204,7 +208,7 @@ class V2Config(BaseModel):
         compliance_lists = {"762", "773"}
         
         # Check all groups exclude compliance lists
-        for group_name in ["general_marketing", "special_campaigns", "manual_override"]:
+        for group_name in ["general_marketing", "special_campaigns", "manual_override", "long_term_marketing"]:
             group = getattr(v, group_name)
             
             # Compliance lists must be in exclusion list
@@ -231,7 +235,7 @@ class V2Config(BaseModel):
                         all_declared_ids.add(list_config.id)
                 
                 # Check all exclusion_matrix list references
-                for group_name in ["general_marketing", "special_campaigns", "manual_override"]:
+                for group_name in ["general_marketing", "special_campaigns", "manual_override", "long_term_marketing"]:
                     group = getattr(v, group_name)
                     for list_id in group.lists:
                         if list_id not in all_declared_ids:

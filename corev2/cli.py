@@ -34,6 +34,100 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+async def _refresh_list_names(config_path: Path, hs_client) -> None:
+    """Fetch current HubSpot list names and update the YAML config file if any differ."""
+    import yaml, re
+
+    with open(config_path, encoding="utf-8") as f:
+        raw_text = f.read()
+
+    # Collect every list ID referenced in config
+    list_ids: set[str] = set()
+    raw_data = yaml.safe_load(raw_text)
+    for group in (raw_data.get("hubspot", {}).get("lists", {}) or {}).values():
+        for entry in group or []:
+            if isinstance(entry, dict) and "id" in entry:
+                list_ids.add(str(entry["id"]))
+    for mapping in (raw_data.get("secondary_sync", {}) or {}).get("mappings", []):
+        for key in ("source_list", "destination_list"):
+            if mapping.get(key):
+                list_ids.add(str(mapping[key]))
+        for extra in mapping.get("additional_remove_lists", []):
+            if extra.get("list_id"):
+                list_ids.add(str(extra["list_id"]))
+
+    # Fetch live names from HubSpot
+    live_names: dict[str, str] = {}
+    for lid in sorted(list_ids):
+        name = await hs_client.get_list_name(lid)
+        if name:
+            live_names[lid] = name
+
+    if not live_names:
+        return
+
+    # Walk through YAML and patch name fields in-place (preserves comments/formatting)
+    updated_text = raw_text
+    changes: list[str] = []
+
+    # Pattern: id: "NNN"\n        name: "OLD"  → update OLD with live name
+    def _replace_list_name(m):
+        lid = m.group(1)
+        old_name = m.group(2)
+        new_name = live_names.get(lid, old_name)
+        if old_name != new_name:
+            changes.append(f"  List {lid}: \"{old_name}\" → \"{new_name}\"")
+        return f'id: "{lid}"\n{m.group(3)}name: "{new_name}"'
+
+    updated_text = re.sub(
+        r'id: "(\d+)"\n(\s+)name: "([^"]*)"',
+        lambda m: _replace_list_name(type("M", (), {"group": lambda s, i: [None, m.group(1), m.group(3), m.group(2)][i]})()),
+        updated_text,
+    )
+
+    # Simpler approach: direct per-field patching
+    updated_text = raw_text  # reset
+    changes.clear()
+
+    for lid, live_name in live_names.items():
+        # Primary list names:  id: "LID"\n<spaces>name: "OLD"
+        pattern = re.compile(rf'(id: "{lid}"\n\s+name: )"([^"]*)"')
+        match = pattern.search(updated_text)
+        if match and match.group(2) != live_name:
+            changes.append(f"  List {lid} name: \"{match.group(2)}\" → \"{live_name}\"")
+            updated_text = pattern.sub(rf'\1"{live_name}"', updated_text, count=1)
+
+        # source_name for this list ID:  source_list: "LID"\n<spaces>source_name: "OLD"
+        pattern = re.compile(rf'(source_list: "{lid}"\n\s+source_name: )"([^"]*)"')
+        for match in pattern.finditer(updated_text):
+            if match.group(2) != live_name:
+                changes.append(f"  List {lid} source_name: \"{match.group(2)}\" → \"{live_name}\"")
+        updated_text = pattern.sub(rf'\1"{live_name}"', updated_text)
+
+        # destination_name:  destination_list: "LID"\n<spaces>destination_name: "OLD"
+        pattern = re.compile(rf'(destination_list: "{lid}"\n\s+destination_name: )"([^"]*)"')
+        for match in pattern.finditer(updated_text):
+            if match.group(2) != live_name:
+                changes.append(f"  List {lid} destination_name: \"{match.group(2)}\" → \"{live_name}\"")
+        updated_text = pattern.sub(rf'\1"{live_name}"', updated_text)
+
+        # additional_remove_lists:  list_id: "LID"\n<spaces>list_name: "OLD"
+        pattern = re.compile(rf'(list_id: "{lid}"\n\s+list_name: )"([^"]*)"')
+        for match in pattern.finditer(updated_text):
+            if match.group(2) != live_name:
+                changes.append(f"  List {lid} list_name: \"{match.group(2)}\" → \"{live_name}\"")
+        updated_text = pattern.sub(rf'\1"{live_name}"', updated_text)
+
+    if changes:
+        with open(config_path, "w", encoding="utf-8") as f:
+            f.write(updated_text)
+        logger.info("Auto-updated config list names from HubSpot:")
+        for c in changes:
+            logger.info(c)
+    else:
+        logger.info("All config list names match HubSpot — no updates needed.")
+
+
 def validate_config_mode(config_path: Path) -> int:
     """Validate config file and exit."""
     try:
@@ -82,6 +176,31 @@ def plan_mode(config_path: Path, output_path: Path, only_email: Optional[str] = 
         )
         
         logger.info("Generating operations plan...")
+        planner = SyncPlanner(config, hs_client, mc_client)
+
+        # Auto-refresh list names in YAML before planning
+        async def refresh_names():
+            async with hs_client:
+                await _refresh_list_names(config_path, hs_client)
+
+        asyncio.run(refresh_names())
+
+        # Reload config after potential name updates (hash must reflect current file)
+        config = load_config(str(config_path))
+        config_hash = compute_config_hash(config)
+        planner = SyncPlanner(config, hs_client, mc_client)
+
+        # Re-init client (session was closed by refresh_names)
+        hs_client = HubSpotClient(
+            api_key=config.hubspot.api_key.get_secret_value(),
+            rate_limit=10.0
+        )
+        mc_client = MailchimpClient(
+            api_key=config.mailchimp.api_key.get_secret_value(),
+            server_prefix=config.mailchimp.server_prefix,
+            audience_id=config.mailchimp.audience_id,
+            rate_limit=10.0
+        )
         planner = SyncPlanner(config, hs_client, mc_client)
         
         # Use test_contact_limit if set

@@ -261,22 +261,23 @@ class SecondaryPlanner:
 
         logger.info(
             f"  {email}: exit_tag='{exit_tag}' → "
-            f"add to {mapping.destination_name} ({mapping.destination_list}), "
+            f"{'add to ' + mapping.destination_name + ' (' + mapping.destination_list + ')' if mapping.destination_list else 'MC cleanup only (no HubSpot handover)'}, "
             f"source={mapping.source_name} ({mapping.source_list})"
             f"{', REMOVE from source' if mapping.remove_from_source else ''}"
             f"{f', REMOVE from {len(mapping.additional_remove_lists)} sublists' if mapping.additional_remove_lists else ''} "
             f"(VID: {vid})"
         )
 
-        # Operation 1: Add to destination handover list
-        operations.append({
-            "type": "add_hs_to_list",
-            "email": email,
-            "vid": vid,
-            "list_id": mapping.destination_list,
-            "list_name": mapping.destination_name,
-            "reason": f"secondary_sync:{exit_tag}"
-        })
+        # Operation 1: Add to destination handover list (if configured)
+        if mapping.destination_list:
+            operations.append({
+                "type": "add_hs_to_list",
+                "email": email,
+                "vid": vid,
+                "list_id": mapping.destination_list,
+                "list_name": mapping.destination_name,
+                "reason": f"secondary_sync:{exit_tag}"
+            })
 
         # Operation 2: Remove from source list (only for manual/static lists)
         if mapping.remove_from_source:

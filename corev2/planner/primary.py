@@ -126,7 +126,7 @@ class SyncPlanner:
         """
         Determine target tags based on exclusion matrix (INV-004: Single-tag enforcement).
         
-        Priority: general_marketing → special_campaigns → manual_override
+        Priority: general_marketing → special_campaigns → manual_override → long_term_marketing
         NEW: Returns list of tags (primary + additional) from list config.
         Applies property-based tag overrides if configured.
         
@@ -139,7 +139,7 @@ class SyncPlanner:
             List of tags [primary, additional...] from first matching list, or None if excluded from all groups
         """
         # Check each group in priority order
-        for group_name in ["general_marketing", "special_campaigns", "manual_override"]:
+        for group_name in ["general_marketing", "special_campaigns", "manual_override", "long_term_marketing"]:
             group_config = getattr(self.config.exclusion_matrix, group_name)
             
             # Check each list in this group (first match wins)
@@ -243,7 +243,7 @@ class SyncPlanner:
         
         # Scan all HubSpot lists in exclusion_matrix
         all_list_ids = set()
-        for group_name in ["general_marketing", "special_campaigns", "manual_override"]:
+        for group_name in ["general_marketing", "special_campaigns", "manual_override", "long_term_marketing"]:
             group_config = getattr(self.config.exclusion_matrix, group_name)
             all_list_ids.update(group_config.lists)
         
@@ -386,7 +386,7 @@ class SyncPlanner:
                 list_ids = contact_data["list_ids"]
                 
                 # Check if contact is in ANY exclusion list
-                for group_name in ["general_marketing", "special_campaigns", "manual_override"]:
+                for group_name in ["general_marketing", "special_campaigns", "manual_override", "long_term_marketing"]:
                     group_config = getattr(self.config.exclusion_matrix, group_name)
                     if self._apply_exclusion_matrix(list_ids, group_config):
                         active_emails.remove(email)
@@ -548,7 +548,7 @@ class SyncPlanner:
         compliance_overlap = self.compliance_lists.intersection(list_ids)
         if compliance_overlap:
             all_sync_ids = set()
-            for gn in ["general_marketing", "special_campaigns", "manual_override"]:
+            for gn in ["general_marketing", "special_campaigns", "manual_override", "long_term_marketing"]:
                 all_sync_ids.update(getattr(self.config.exclusion_matrix, gn).lists)
             sync_overlap = list_ids & all_sync_ids
             if sync_overlap:
