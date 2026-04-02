@@ -67,6 +67,36 @@ class MailchimpClient(HTTPBaseClient):
         """Generate MD5 hash of lowercase email (Mailchimp's subscriber ID)."""
         return hashlib.md5(email.lower().encode()).hexdigest()
     
+    async def get_audience_stats(self) -> Dict[str, Any]:
+        """
+        Get audience stats including subscribed member count.
+        
+        Returns:
+            {
+                "member_count": int,        # subscribed members
+                "unsubscribe_count": int,
+                "cleaned_count": int,
+                "total_contacts": int        # all statuses combined
+            }
+        """
+        endpoint = f"/lists/{self.audience_id}"
+        result = await self.get(endpoint, params={"fields": "stats"})
+        
+        if result["status"] != 200:
+            raise Exception(f"Mailchimp audience stats failed: {result['status']} - {result['data']}")
+        
+        stats = result["data"].get("stats", {})
+        return {
+            "member_count": stats.get("member_count", 0),
+            "unsubscribe_count": stats.get("unsubscribe_count", 0),
+            "cleaned_count": stats.get("cleaned_count", 0),
+            "total_contacts": (
+                stats.get("member_count", 0)
+                + stats.get("unsubscribe_count", 0)
+                + stats.get("cleaned_count", 0)
+            ),
+        }
+
     async def get_member(self, email: str) -> Dict[str, Any]:
         """
         Get member by email.

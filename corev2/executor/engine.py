@@ -7,6 +7,7 @@ Features:
 - Operation journal (JSONL format)
 - Dry-run mode (simulates without mutations)
 - Stops on first dangerous failure
+- Audience cap enforcement with live re-checks
 """
 
 import asyncio
@@ -20,6 +21,133 @@ from corev2.clients.hubspot_client import HubSpotClient
 from corev2.clients.mailchimp_client import MailchimpClient
 
 logger = logging.getLogger(__name__)
+
+
+class AudienceCapGuard:
+    """
+    Enforces a hard cap on Mailchimp subscribed members.
+
+    - Fetches live count at start and every `recheck_interval` new subscribes.
+    - Tracks new subscribes (upsert where action=created or restored_from_archive).
+    - Returns cap_reached=True when the audience would exceed the cap.
+    - Sends Teams alert the moment the cap is hit.
+    """
+
+    def __init__(self, mc_client: MailchimpClient, cap: int, recheck_interval: int = 10):
+        self.mc_client = mc_client
+        self.cap = cap
+        self.recheck_interval = recheck_interval
+        self.enabled = cap > 0
+
+        # State
+        self.live_count: int = 0          # last known subscribed count from API
+        self.new_subscribes: int = 0      # new members added THIS run
+        self.cap_reached: bool = False
+        self.contacts_skipped: int = 0    # contacts skipped due to cap
+        self._since_last_check: int = 0   # new subscribes since last API re-check
+        self._alert_sent: bool = False
+
+    @property
+    def current_count(self) -> int:
+        """Best estimate of current subscribed count."""
+        return self.live_count + self.new_subscribes
+
+    @property
+    def remaining_slots(self) -> int:
+        return max(0, self.cap - self.current_count)
+
+    async def preflight(self) -> bool:
+        """
+        Pre-flight check: fetch live count and determine if we can proceed.
+
+        Returns:
+            True if sync can proceed, False if cap already reached.
+        """
+        if not self.enabled:
+            return True
+
+        stats = await self.mc_client.get_audience_stats()
+        self.live_count = stats["member_count"]
+
+        logger.info(f"Audience cap guard: {self.live_count:,} / {self.cap:,} subscribed "
+                     f"({self.remaining_slots:,} slots remaining)")
+
+        if self.live_count >= self.cap:
+            self.cap_reached = True
+            logger.warning(f"AUDIENCE CAP ALREADY REACHED: {self.live_count:,} >= {self.cap:,}")
+            await self._send_alert()
+            return False
+
+        # Warn if close
+        if self.remaining_slots <= 50:
+            from corev2.notifications import notify_audience_cap_warning
+            await notify_audience_cap_warning(self.live_count, self.cap, self.remaining_slots)
+
+        return True
+
+    async def allow_subscribe(self) -> bool:
+        """
+        Check whether the next subscribe operation is allowed.
+
+        Call this BEFORE executing an upsert_mc_member operation.
+        Returns False if the cap would be exceeded.
+        """
+        if not self.enabled:
+            return True
+        if self.cap_reached:
+            return False
+
+        # Periodic live re-check
+        if self._since_last_check >= self.recheck_interval:
+            await self._recheck_live()
+
+        if self.current_count >= self.cap:
+            self.cap_reached = True
+            logger.warning(f"AUDIENCE CAP HIT during sync: {self.current_count:,} >= {self.cap:,}")
+            await self._send_alert()
+            return False
+
+        return True
+
+    def record_subscribe(self, action: str):
+        """
+        Record a successful subscribe (new member or restored from archive).
+
+        Args:
+            action: upsert result action — "created" or "restored_from_archive"
+        """
+        if action in ("created", "restored_from_archive"):
+            self.new_subscribes += 1
+            self._since_last_check += 1
+
+    async def _recheck_live(self):
+        """Re-fetch live count from Mailchimp API."""
+        try:
+            stats = await self.mc_client.get_audience_stats()
+            self.live_count = stats["member_count"]
+            # Reset counter — the live count now includes our new subscribes
+            self.new_subscribes = 0
+            self._since_last_check = 0
+            logger.info(f"Audience cap re-check: {self.live_count:,} / {self.cap:,} "
+                         f"({self.remaining_slots:,} slots remaining)")
+        except Exception as e:
+            logger.warning(f"Audience cap re-check failed (using estimate): {e}")
+
+    async def _send_alert(self):
+        """Send Teams alert when cap is reached (once per run)."""
+        if self._alert_sent:
+            return
+        self._alert_sent = True
+        try:
+            from corev2.notifications import notify_audience_cap_reached
+            await notify_audience_cap_reached(
+                current_count=self.current_count,
+                cap=self.cap,
+                contacts_synced=self.new_subscribes,
+                contacts_skipped=self.contacts_skipped,
+            )
+        except Exception as e:
+            logger.error(f"Failed to send Teams cap alert: {e}")
 
 
 class OperationJournal:
@@ -68,7 +196,8 @@ class SyncExecutor:
         config: V2Config,
         hs_client: HubSpotClient,
         mc_client: MailchimpClient,
-        dry_run: bool = False
+        dry_run: bool = False,
+        cap_guard: Optional[AudienceCapGuard] = None,
     ):
         """
         Initialize executor.
@@ -78,11 +207,13 @@ class SyncExecutor:
             hs_client: HubSpot API client
             mc_client: Mailchimp API client
             dry_run: If True, simulate without mutations
+            cap_guard: Optional audience cap guard (shared across executor instances)
         """
         self.config = config
         self.hs_client = hs_client
         self.mc_client = mc_client
         self.dry_run = dry_run
+        self.cap_guard = cap_guard
     
     async def execute_plan(
         self,
@@ -130,6 +261,30 @@ class SyncExecutor:
                 email = contact_ops.get("email")
                 vid = contact_ops.get("vid")
                 ops = contact_ops.get("operations", [])
+                
+                # ── Audience cap gate ──────────────────────────────────
+                # If the contact's first op is upsert_mc_member (i.e. it
+                # may create a new subscriber), check the cap BEFORE we
+                # start any ops for this contact.
+                has_upsert = any(o.get("type") == "upsert_mc_member" for o in ops)
+                if has_upsert and self.cap_guard and self.cap_guard.enabled:
+                    if not await self.cap_guard.allow_subscribe():
+                        self.cap_guard.contacts_skipped += 1
+                        summary["skipped"] += len(ops)
+                        summary["total_operations"] += len(ops)
+                        journal.log({
+                            "event": "contact_skipped_cap",
+                            "email": email,
+                            "reason": "audience_cap_reached",
+                            "cap": self.cap_guard.cap,
+                            "current_count": self.cap_guard.current_count,
+                        })
+                        logger.warning(
+                            f"SKIPPED {email}: audience cap {self.cap_guard.cap:,} reached "
+                            f"(current {self.cap_guard.current_count:,})"
+                        )
+                        continue
+                # ── End cap gate ───────────────────────────────────────
                 
                 logger.info(f"Processing contact: {email} (VID: {vid})")
                 summary["contacts_processed"] += 1
@@ -179,6 +334,17 @@ class SyncExecutor:
             })
         
         summary["ended_at"] = datetime.utcnow().isoformat()
+        
+        # Append audience cap stats
+        if self.cap_guard and self.cap_guard.enabled:
+            summary["audience_cap"] = {
+                "cap": self.cap_guard.cap,
+                "current_count": self.cap_guard.current_count,
+                "new_subscribes": self.cap_guard.new_subscribes,
+                "contacts_skipped": self.cap_guard.contacts_skipped,
+                "cap_reached": self.cap_guard.cap_reached,
+            }
+        
         logger.info(f"Execution complete: {summary['successful']} successful, "
                    f"{summary['failed']} failed, {summary['skipped']} skipped")
         
@@ -298,6 +464,10 @@ class SyncExecutor:
                 "email": email,
                 "result": result
             })
+            
+            # Record new subscribe for audience cap tracking
+            if self.cap_guard and result.get("action") in ("created", "restored_from_archive"):
+                self.cap_guard.record_subscribe(result["action"])
             
             return {"success": True, "skipped": False}
         

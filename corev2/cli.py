@@ -344,15 +344,46 @@ def apply_mode(plan_path: Path, dry_run: bool = False) -> int:
         # Execute plan
         async def run_execution():
             async with hs_client, mc_client:
-                # STEP 1: Sync unsubscribes from Mailchimp ÔåÆ HubSpot
+                # ── Audience cap pre-flight ────────────────────────────
+                from corev2.executor.engine import AudienceCapGuard
+                cap_guard = AudienceCapGuard(
+                    mc_client,
+                    cap=config.mailchimp.audience_cap,
+                    recheck_interval=10,
+                )
+                if cap_guard.enabled and not dry_run:
+                    can_proceed = await cap_guard.preflight()
+                    if not can_proceed:
+                        logger.error(
+                            f"ABORT: Mailchimp audience already at cap "
+                            f"({cap_guard.live_count:,} / {cap_guard.cap:,}). "
+                            f"No contacts will be synced."
+                        )
+                        return {
+                            "total_operations": 0,
+                            "successful": 0,
+                            "failed": 0,
+                            "skipped": 0,
+                            "contacts_processed": 0,
+                            "dry_run": dry_run,
+                            "audience_cap": {
+                                "cap": cap_guard.cap,
+                                "current_count": cap_guard.current_count,
+                                "cap_reached": True,
+                                "aborted_preflight": True,
+                            },
+                        }, None
+                # ── End cap pre-flight ─────────────────────────────────
+
+                # STEP 1: Sync unsubscribes from Mailchimp → HubSpot
                 if not dry_run:
-                    logger.info("­ƒöä Step 1: Syncing Mailchimp unsubscribes to HubSpot...")
+                    logger.info("🔄 Step 1: Syncing Mailchimp unsubscribes to HubSpot...")
                     from corev2.sync.unsubscribe_sync import UnsubscribeSyncEngine
                     
                     unsub_engine = UnsubscribeSyncEngine(config, hs_client, mc_client)
                     unsub_results = await unsub_engine.scan_and_sync()
                     
-                    logger.info(f"Ô£ô Unsubscribe sync complete:")
+                    logger.info(f"✔ Unsubscribe sync complete:")
                     logger.info(f"  Mailchimp unsubscribed: {unsub_results['mailchimp_unsubscribed']}")
                     logger.info(f"  HubSpot updates: {unsub_results['hubspot_updates']}")
                     logger.info(f"  Skipped (already unsubscribed): {unsub_results['skipped']}")
@@ -361,14 +392,14 @@ def apply_mode(plan_path: Path, dry_run: bool = False) -> int:
                     
                     # STEP 1B: DISABLED - List 443 no longer exists
                     # List 762 "Unsubscribed/Opted Out" is a DYNAMIC LIST - auto-managed by HubSpot when contacts opt out
-                    # Reverse direction (HubSpot ÔåÆ Mailchimp) handled via subscription status checks + archival reconciliation
+                    # Reverse direction (HubSpot → Mailchimp) handled via subscription status checks + archival reconciliation
                     # NOTE: NEVER manually add/remove contacts from List 762 - it's criteria-based
-                    # logger.info("­ƒöä Step 1B: Syncing HubSpot List 443 (Opted Out) to Mailchimp...")
+                    # logger.info("🔄 Step 1B: Syncing HubSpot List 443 (Opted Out) to Mailchimp...")
                     # list443_results = await unsub_engine.sync_list_443_to_mailchimp()
                 
                 # STEP 2: Execute primary sync operations
-                logger.info("­ƒöä Step 2: Executing primary sync operations...")
-                executor = SyncExecutor(config, hs_client, mc_client, dry_run=dry_run)
+                logger.info("🔄 Step 2: Executing primary sync operations...")
+                executor = SyncExecutor(config, hs_client, mc_client, dry_run=dry_run, cap_guard=cap_guard)
                 primary_results = await executor.execute_plan(plan_data)
                 
                 # STEP 3: Secondary Sync (Mailchimp exit tags → HubSpot handover lists)
@@ -396,7 +427,7 @@ def apply_mode(plan_path: Path, dry_run: bool = False) -> int:
                             logger.warning("Secondary sync has archive ops but allow_archive=false, skipping execution")
                         else:
                             logger.info("Executing secondary sync operations...")
-                            sec_executor = SyncExecutor(config, hs_client, mc_client, dry_run=False)
+                            sec_executor = SyncExecutor(config, hs_client, mc_client, dry_run=False, cap_guard=cap_guard)
                             secondary_results = await sec_executor.execute_plan(secondary_plan)
                             
                             logger.info("Secondary Sync Complete:")
@@ -414,9 +445,24 @@ def apply_mode(plan_path: Path, dry_run: bool = False) -> int:
                 return primary_results, secondary_results
         
         if not dry_run:
-            logger.info("­ƒÜ¿ EXECUTING LIVE OPERATIONS ­ƒÜ¿")
+            logger.info("🚀 EXECUTING LIVE OPERATIONS 🚀")
         
-        primary_results, secondary_results = asyncio.run(run_execution())
+        result = asyncio.run(run_execution())
+
+        # Preflight abort returns a single tuple element
+        if isinstance(result, tuple) and len(result) == 2:
+            primary_results, secondary_results = result
+        else:
+            primary_results, secondary_results = result, None
+
+        # Handle preflight abort (cap already reached before any ops)
+        if primary_results.get("audience_cap", {}).get("aborted_preflight"):
+            cap_info = primary_results["audience_cap"]
+            logger.error(
+                f"RUN ABORTED: Mailchimp audience at cap "
+                f"({cap_info['current_count']:,} / {cap_info['cap']:,})"
+            )
+            return 1
         
         logger.info("Primary Sync Complete:")
         logger.info(f"  Total operations: {primary_results['total_operations']}")
@@ -424,6 +470,13 @@ def apply_mode(plan_path: Path, dry_run: bool = False) -> int:
         logger.info(f"  Failed: {primary_results['failed']}")
         logger.info(f"  Skipped: {primary_results['skipped']}")
         logger.info(f"  Contacts processed: {primary_results['contacts_processed']}")
+
+        # Log audience cap stats if present
+        cap_info = primary_results.get("audience_cap")
+        if cap_info:
+            logger.info(f"  Audience cap: {cap_info.get('current_count', '?'):,} / {cap_info['cap']:,}")
+            if cap_info.get("cap_reached"):
+                logger.warning(f"  ⚠ CAP REACHED — {cap_info.get('contacts_skipped', 0)} contacts skipped")
         
         total_failed = primary_results['failed']
         if secondary_results:

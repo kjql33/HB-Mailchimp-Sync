@@ -81,6 +81,7 @@ mailchimp:
   api_key: ${MAILCHIMP_API_KEY}
   server_prefix: ${MAILCHIMP_DC}
   audience_id: ${MAILCHIMP_LIST_ID}
+  audience_cap: 5000  # Hard cap on subscribed members — sync aborts + Teams alert when reached
 
 sync:
   batch_size: 100

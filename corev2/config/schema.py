@@ -69,6 +69,7 @@ class MailchimpConfig(BaseModel):
     api_key: SecretStr = Field(..., description="Mailchimp API key")
     server_prefix: str = Field(..., description="Server prefix (e.g., us1)")
     audience_id: str = Field(..., description="Primary audience list ID")
+    audience_cap: int = Field(default=0, ge=0, description="Hard cap on subscribed members (0 = no cap). Sync aborts when reached.")
 
 
 class SyncConfig(BaseModel):
