@@ -60,6 +60,9 @@ class SecondaryPlanner:
         # All exit tags we scan for
         self.exit_tags = set(self.exit_tag_map.keys())
 
+        # Exempt tags: contacts with ANY of these are skipped entirely
+        self.exempt_tags = set(config.secondary_sync.exempt_tags)
+
     async def generate_plan(
         self,
         contact_limit: Optional[int] = None
@@ -204,6 +207,14 @@ class SecondaryPlanner:
                     logger.debug(
                         f"  Skipping {member['email_address']} with exit tag "
                         f"(status={status})"
+                    )
+                    continue
+
+                # Skip contacts with exempt tags (e.g. Manual Inclusion)
+                if self.exempt_tags & member_tags:
+                    logger.info(
+                        f"  Skipping {member['email_address']}: has exempt tag "
+                        f"{self.exempt_tags & member_tags} — leaving in Mailchimp"
                     )
                     continue
 

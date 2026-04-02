@@ -28,7 +28,7 @@ hubspot:
         tag: "New agents"
       - id: "987"
         name: "General"
-        tag: "General"
+        tag: "General Single"
         tag_overrides:
           - property: "branches"
             condition: "gt:1"
@@ -41,7 +41,13 @@ hubspot:
     manual_override:
       - id: "784"
         name: "Manual Inclusion"
-        tag: "General"
+        tag: "General Single"
+        tag_overrides:
+          - property: "branches"
+            condition: "gt:1"
+            tag: "General Multi"
+        additional_tags:
+          - "Manual Inclusion"
   
   # Supplemental Tags: Lists that are NOT synced themselves, but add extra tags to contacts already being synced
   # DISABLED: T2 subdivision removed - using single "General" tag only
@@ -113,8 +119,10 @@ secondary_sync:
   enabled: true
   archive_after_sync: true
   contact_limit: 0  # UNLIMITED — no cap on contacts processed
+  exempt_tags:       # Contacts with these tags are SKIPPED entirely (no handover, no archive)
+    - "Manual Inclusion"
   mappings:
-    - exit_tag: "General Finished"
+    - exit_tag: "General Single Finished"
       destination_list: "946"
       destination_name: "General Handover"
       source_list: "987"
@@ -176,6 +184,7 @@ archival:
     - "VIP"
     - "DoNotArchive"
     - "Manual_Override"
+    - "Manual Inclusion"
   preservation_patterns:
     - "^Manual_.*"      # Any tag starting with Manual_
     - "^Custom_.*"      # Any tag starting with Custom_

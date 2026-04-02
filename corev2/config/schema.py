@@ -143,6 +143,10 @@ class SecondarySyncConfig(BaseModel):
     contact_limit: int = Field(
         default=0, ge=0, description="Max contacts per run (0 = unlimited, for testing use 5-10)"
     )
+    exempt_tags: List[str] = Field(
+        default_factory=list,
+        description="Contacts with ANY of these tags are skipped entirely by secondary sync (no handover, no archive)"
+    )
     mappings: List[SecondaryMappingConfig] = Field(
         default_factory=list, description="Exit tag → destination list mappings"
     )
