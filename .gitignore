@@ -1,140 +1,25 @@
-# Python bytecode and cache
-__pycache__/
-*.py[cod]
-*$py.class
-
-# C extensions
-*.so
-
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-
-# PyInstaller
-*.manifest
-*.spec
-
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
-cover/
-
-# Translations
-*.mo
-*.pot
-
-# Django stuff
-# *.log  # DISABLED - we want to track sync logs in GitHub
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-
-# Flask stuff
-instance/
-.webassets-cache
-
-# Scrapy
-.scrapy
-
-# Sphinx docs
-docs/_build/
-
-# PyBuilder
-.pybuilder/
-target/
-
-# Jupyter Notebooks
-.ipynb_checkpoints
-
-# IPython
-profile_default/
-ipython_config.py
-
-# Virtual environments and Python env tools
+# Environment - NEVER commit
 .env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.Python
+*.egg-info/
+
+# Virtual environments
 .venv/
 venv/
-ENV/
 env/
-env.bak/
-venv.bak/
-.pdm.toml
-.pdm-python
-.pdm-build/
-.poetry.lock
-__pypackages__/
 
-# IDEs
+# Logs (committed separately by GitHub Actions)
+logs/*.log
+
+# IDE
 .vscode/
 .idea/
-*.swo
-*.swp
 
 # OS
 .DS_Store
 Thumbs.db
-
-# Type checkers and linters
-.mypy_cache/
-.dmypy.json
-.pyre/
-.pytype/
-.ruff_cache/
-
-# PyPI
-.pypirc
-
-# =============================================================================
-# 🚫 HUBSPOT ↔ MAILCHIMP SYNC - PROJECT SPECIFIC IGNORES
-# =============================================================================
-
-# Raw data and snapshots (generated during sync operations)
-raw_data/metadata/
-raw_data/snapshots/
-raw_data/*.json
-
-# Logs directory (allow sync logs to be tracked)
-# logs/  # DISABLED - GitHub Actions logs should be tracked
-
-# System testing archives (generated test files)
-system_testing/
-
-# Local testing directories (keep local only)
-/Tests/
-
-# Generated test files and debug scripts
-debug_*.py
-
-# Generated documentation and plans
-info/NEW_CLAUDE_ONBOARDING_PLAN.md
-info/RULES.md

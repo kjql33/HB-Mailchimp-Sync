@@ -1,271 +1,227 @@
 """
-Pydantic models for type-safe config validation.
+Pydantic config models - updated for full production rule set.
 
-Enforces behavioral invariants from V1:
-- INV-001: Three-tier import stream architecture
-- INV-002: Compliance lists (762, 773) NEVER in sync lists
-- INV-010: Safety gate triple-lock for destructive actions
+Changes from previous version:
+- MailchimpConfig replaced by MauticConfig
+- ListConfig now supports tag_overrides (branch split) and additional_tags
+- ExclusionMatrixConfig now has 4 groups (added long_term_marketing)
+- SecondarySyncConfig supports additional_remove_lists and optional destination_list
+- MauticConfig replaces audience_id with audience_cap
+- SafetyConfig unchanged
+- Teams notifications config added
 """
 
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from pydantic import BaseModel, Field, field_validator, SecretStr
 from enum import Enum
 
 
 class RunMode(str, Enum):
-    """Environment tier (separate from orchestration mode)."""
     TEST = "test"
     DRY_RUN = "dry-run"
     PROD = "prod"
 
 
 class TagOverrideConfig(BaseModel):
-    """Property-based tag override: if a HubSpot contact property meets a condition, use a different tag."""
-    property: str = Field(..., description="HubSpot contact property name to check (e.g., 'branches')")
-    condition: str = Field(..., description="Condition: 'gt:N' (greater than N)")
-    tag: str = Field(..., description="Override tag to use when condition matches (e.g., 'General Multi')")
+    """Conditional tag override based on a HubSpot property value."""
+    condition: str = Field(..., description="e.g. 'branches > 1'")
+    tag: str = Field(..., description="Tag to apply when condition is true")
 
 
 class ListConfig(BaseModel):
     """Single HubSpot list configuration."""
-    id: str = Field(..., description="HubSpot list ID")
-    name: str = Field(..., description="List name (for logging)")
-    tag: str = Field(..., description="Mailchimp tag to apply for this list")
-    additional_tags: List[str] = Field(default_factory=list, description="Extra tags for subdivisions (e.g., T2)")
-    tag_overrides: List[TagOverrideConfig] = Field(default_factory=list, description="Property-based tag overrides")
+    id: str
+    name: str
+    tag: str
+    additional_tags: List[str] = Field(default_factory=list)
+    tag_overrides: List[TagOverrideConfig] = Field(
+        default_factory=list,
+        description="Conditional tag overrides based on contact properties"
+    )
 
 
 class SupplementalTagConfig(BaseModel):
-    """Supplemental tag configuration - does NOT sync the list itself, just adds tags to contacts already being synced."""
-    list_id: str = Field(..., description="HubSpot list ID to scan")
-    list_name: str = Field(..., description="List name (for logging)")
-    parent_list_id: str = Field(..., description="Only tag contacts who are ALSO in this parent list")
-    tag: str = Field(..., description="Tag to apply to contacts in both lists")
+    """Supplemental tag - adds extra tag to contacts already being synced."""
+    list_id: str
+    list_name: str
+    parent_list_id: str
+    tag: str
 
 
 class ExclusionsConfig(BaseModel):
-    """Exclusion lists applied to import streams."""
-    critical: List[str] = Field(default_factory=list, description="Applied to ALL groups (762, 773)")
-    active_deals: List[str] = Field(default_factory=list, description="Applied to GROUP 1+2 (717)")
-    exit: List[str] = Field(default_factory=list, description="Applied to GROUP 1 only (700-703)")
+    """Exclusion lists."""
+    critical: List[str] = Field(default_factory=list)
+    active_deals: List[str] = Field(default_factory=list)
+    exit: List[str] = Field(default_factory=list)
 
 
 class HubSpotConfig(BaseModel):
     """HubSpot API configuration."""
-    api_key: SecretStr = Field(..., description="HubSpot private app token")
-    lists: Dict[str, List[ListConfig]] = Field(
-        ...,
-        description="Three-tier import streams: general_marketing, special_campaigns, manual_override"
-    )
-    supplemental_tags: List[SupplementalTagConfig] = Field(
-        default_factory=list,
-        description="Lists that add tags to contacts already being synced (not synced themselves)"
-    )
+    api_key: SecretStr
+    lists: Dict[str, List[ListConfig]]
+    supplemental_tags: List[SupplementalTagConfig] = Field(default_factory=list)
     exclusions: ExclusionsConfig
 
 
-class MailchimpConfig(BaseModel):
-    """Mailchimp API configuration."""
-    api_key: SecretStr = Field(..., description="Mailchimp API key")
-    server_prefix: str = Field(..., description="Server prefix (e.g., us1)")
-    audience_id: str = Field(..., description="Primary audience list ID")
-    audience_cap: int = Field(default=0, ge=0, description="Hard cap on subscribed members (0 = no cap). Sync aborts when reached.")
+class MauticConfig(BaseModel):
+    """Mautic API configuration - replaces MailchimpConfig."""
+    base_url: str = Field(..., description="Root Mautic URL e.g. https://mautic.yourdomain.com")
+    username: SecretStr
+    password: SecretStr
+    audience_cap: int = Field(default=5000, description="Hard subscriber limit - blocks sync if reached")
+
+
+# Legacy alias so any code referencing mailchimp_config still resolves
+MailchimpConfig = MauticConfig
 
 
 class SyncConfig(BaseModel):
-    """Sync behavior configuration."""
-    batch_size: int = Field(default=100, le=100, description="Max batch size (Mailchimp limit)")
-    tag_prefix: str = Field(default="", description="Prefix for managed tags")
-    ori_lists_field: str = Field(default="ORI_LISTS", description="Source tracking field name")
-    force_subscribe: bool = Field(default=True, description="Force status='subscribed' on upsert")
+    batch_size: int = Field(default=100, le=200)
+    tag_prefix: str = Field(default="")
+    ori_lists_field: str = Field(default="ORI_LISTS")
+    force_subscribe: bool = Field(default=True)
 
 
 class ExclusionMatrixGroupConfig(BaseModel):
-    """Single import stream group configuration."""
-    lists: List[str] = Field(..., description="List IDs in this group")
-    exclude: List[str] = Field(..., description="Exclusion list IDs applied to this group")
+    lists: List[str]
+    exclude: List[str]
 
 
 class ExclusionMatrixConfig(BaseModel):
-    """Import stream exclusion matrix (INV-001)."""
-    general_marketing: ExclusionMatrixGroupConfig = Field(
-        ..., description="GROUP 1: Excludes ALL (critical + active_deals + exit)"
-    )
-    special_campaigns: ExclusionMatrixGroupConfig = Field(
-        ..., description="GROUP 2: Excludes critical + active_deals (bypasses exit)"
-    )
-    manual_override: ExclusionMatrixGroupConfig = Field(
-        ..., description="GROUP 3: Excludes critical only (bypasses deals + exit)"
-    )
+    """Four-group exclusion matrix (updated from 3 groups)."""
+    general_marketing: ExclusionMatrixGroupConfig
+    special_campaigns: ExclusionMatrixGroupConfig
+    manual_override: ExclusionMatrixGroupConfig
     long_term_marketing: ExclusionMatrixGroupConfig = Field(
-        default_factory=lambda: ExclusionMatrixGroupConfig(lists=[], exclude=[]),
-        description="GROUP 4: Long Term Marketing — same exclusions as GROUP 1"
+        default_factory=lambda: ExclusionMatrixGroupConfig(lists=[], exclude=["762", "773", "717"])
     )
 
 
 class ArchivalConfig(BaseModel):
-    """Smart archival configuration (INV-006)."""
-    exempt_tags: List[str] = Field(default_factory=list, description="Tags that prevent archival")
-    preservation_patterns: List[str] = Field(
-        default_factory=list, description="Regex patterns for preservation (Manual_*, VIP, etc.)"
-    )
-    max_archive_per_run: int = Field(
-        default=100,
-        ge=1,
-        description="Maximum number of members to archive per run (safety limit)"
-    )
+    exempt_tags: List[str] = Field(default_factory=list)
+    preservation_patterns: List[str] = Field(default_factory=list)
+    max_archive_per_run: int = Field(default=100, ge=1)
 
 
 class AdditionalRemoveList(BaseModel):
-    """Additional static list to remove contacts from during secondary sync."""
-    list_id: str = Field(..., description="HubSpot list ID")
-    list_name: str = Field(..., description="List name (for logging)")
+    """Additional HubSpot list to remove contact from during secondary sync."""
+    list_id: str
+    list_name: str
 
 
 class SecondaryMappingConfig(BaseModel):
-    """Single secondary sync mapping: exit tag → destination list."""
-    exit_tag: str = Field(..., description="Mailchimp tag that triggers this mapping (e.g. 'General Finished')")
-    destination_list: Optional[str] = Field(default=None, description="HubSpot list ID to add contact to (None = MC cleanup only, no HubSpot handover)")
-    destination_name: Optional[str] = Field(default=None, description="Destination list name (for logging)")
-    source_list: str = Field(..., description="HubSpot list the contact originally came from")
-    source_name: str = Field(..., description="Source list name (for logging)")
-    remove_from_source: bool = Field(
-        default=False,
-        description="Remove from source list after import (true for MANUAL lists, false for DYNAMIC)"
-    )
+    """Single exit tag mapping. destination_list is optional (Long Term = MC cleanup only)."""
+    exit_tag: str
+    destination_list: Optional[str] = Field(default=None)
+    destination_name: Optional[str] = Field(default=None)
+    source_list: str
+    source_name: str
+    remove_from_source: bool = Field(default=False)
     additional_remove_lists: List[AdditionalRemoveList] = Field(
         default_factory=list,
-        description="Extra static lists to also remove from (e.g. sublists feeding a dynamic source list)"
+        description="Extra HubSpot lists to remove contact from (e.g. Sub Agents sublists 900, 972, 971)"
     )
 
 
 class SecondarySyncConfig(BaseModel):
-    """Secondary sync configuration (Mailchimp → HubSpot exit tag routing)."""
-    enabled: bool = Field(default=False, description="Enable secondary sync step")
-    archive_after_sync: bool = Field(
-        default=True, description="Archive contact from Mailchimp after importing to HubSpot"
-    )
-    contact_limit: int = Field(
-        default=0, ge=0, description="Max contacts per run (0 = unlimited, for testing use 5-10)"
-    )
+    enabled: bool = Field(default=False)
+    archive_after_sync: bool = Field(default=True)
+    contact_limit: int = Field(default=0, ge=0)
     exempt_tags: List[str] = Field(
         default_factory=list,
-        description="Contacts with ANY of these tags are skipped entirely by secondary sync (no handover, no archive)"
+        description="Contacts with these tags are skipped entirely by secondary sync"
     )
-    mappings: List[SecondaryMappingConfig] = Field(
-        default_factory=list, description="Exit tag → destination list mappings"
-    )
+    mappings: List[SecondaryMappingConfig] = Field(default_factory=list)
+
+
+class TeamsNotificationsConfig(BaseModel):
+    """Microsoft Teams webhook notifications config."""
+    enabled: bool = Field(default=False)
+    webhook_url: Optional[str] = Field(default=None)
 
 
 class SafetyConfig(BaseModel):
-    """Safety gates for destructive actions (INV-010 triple-lock)."""
-    test_contact_limit: int = Field(
-        default=0,
-        ge=0,
-        description="Max contacts to process (0=unlimited, requires allow_unlimited=true)"
-    )
-    run_mode: RunMode = Field(
-        default=RunMode.TEST,
-        description="Environment tier. Must be 'prod' for production"
-    )
-    allow_archive: bool = Field(
-        default=False,
-        description="Enable archival via DELETE. Required if plan contains archive ops"
-    )
-    allow_apply: bool = Field(
-        default=False,
-        description="Enable LIVE mutations. Must be true for apply mode"
-    )
-    allow_unlimited: bool = Field(
-        default=False,
-        description="Allow test_contact_limit=0 (unlimited processing)"
-    )
-    enable_hubspot_writes: bool = Field(
-        default=True,
-        description="Enable HubSpot property updates (update_hs_property operations). Set false to skip."
-    )
+    test_contact_limit: int = Field(default=0, ge=0)
+    run_mode: RunMode = Field(default=RunMode.TEST)
+    allow_archive: bool = Field(default=False)
+    allow_apply: bool = Field(default=False)
+    allow_unlimited: bool = Field(default=False)
+    enable_hubspot_writes: bool = Field(default=True)
 
 
 class V2Config(BaseModel):
     """Root configuration model."""
     hubspot: HubSpotConfig
-    mailchimp: MailchimpConfig
+    mautic: MauticConfig
     sync: SyncConfig
     exclusion_matrix: ExclusionMatrixConfig
-    list_exclusion_rules: Dict[str, List[str]] = Field(
-        ..., description="Anti-remarketing map: source_list → [destination_lists_to_remove_from]"
-    )
-    secondary_sync: SecondarySyncConfig = Field(
-        default_factory=SecondarySyncConfig,
-        description="Secondary sync: Mailchimp exit tag → HubSpot handover list routing"
-    )
+    list_exclusion_rules: Dict[str, List[str]] = Field(default_factory=dict)
+    secondary_sync: SecondarySyncConfig = Field(default_factory=SecondarySyncConfig)
     archival: ArchivalConfig
     safety: SafetyConfig
-    
+    notifications: TeamsNotificationsConfig = Field(default_factory=TeamsNotificationsConfig)
+
+    @property
+    def mailchimp(self) -> MauticConfig:
+        """Legacy alias so existing code using config.mailchimp still works."""
+        return self.mautic
+
     @field_validator("exclusion_matrix")
     @classmethod
-    def validate_compliance_lists_never_synced(cls, v: ExclusionMatrixConfig, info) -> ExclusionMatrixConfig:
-        """INV-002: Compliance lists (762, 773) NEVER in sync lists."""
+    def validate_compliance_lists_never_synced(cls, v, info):
+        """INV-002: Compliance lists 762 and 773 must never appear in sync lists."""
         compliance_lists = {"762", "773"}
-        
-        # Check all groups exclude compliance lists
         for group_name in ["general_marketing", "special_campaigns", "manual_override", "long_term_marketing"]:
             group = getattr(v, group_name)
-            
-            # Compliance lists must be in exclusion list
             for clist in compliance_lists:
                 if clist not in group.exclude:
-                    raise ValueError(
-                        f"INV-002 VIOLATION: Compliance list {clist} not in {group_name}.exclude"
-                    )
-            
-            # Compliance lists NEVER in sync lists
+                    raise ValueError(f"INV-002 VIOLATION: {clist} not in {group_name}.exclude")
             for clist in compliance_lists:
                 if clist in group.lists:
-                    raise ValueError(
-                        f"INV-002 VIOLATION: Compliance list {clist} found in {group_name}.lists"
-                    )
-        
-        # Validate exclusion_matrix references only declared list IDs
+                    raise ValueError(f"INV-002 VIOLATION: {clist} found in {group_name}.lists")
         if info.data and "hubspot" in info.data:
-            hubspot_config = info.data["hubspot"]
-            if hasattr(hubspot_config, "lists"):
-                all_declared_ids = set()
-                for group_lists in hubspot_config.lists.values():
-                    for list_config in group_lists:
-                        all_declared_ids.add(list_config.id)
-                
-                # Check all exclusion_matrix list references
+            hs = info.data["hubspot"]
+            if hasattr(hs, "lists"):
+                declared = {lc.id for gl in hs.lists.values() for lc in gl}
                 for group_name in ["general_marketing", "special_campaigns", "manual_override", "long_term_marketing"]:
                     group = getattr(v, group_name)
-                    for list_id in group.lists:
-                        if list_id not in all_declared_ids:
-                            raise ValueError(
-                                f"exclusion_matrix.{group_name}.lists references undeclared list ID: {list_id}"
-                            )
-        
+                    for lid in group.lists:
+                        if lid not in declared:
+                            raise ValueError(f"exclusion_matrix.{group_name}.lists references undeclared list ID: {lid}")
         return v
-    
+
     @field_validator("hubspot")
     @classmethod
-    def validate_list_ids_unique(cls, v: HubSpotConfig) -> HubSpotConfig:
-        """List IDs must be unique across all groups."""
-        all_list_ids = []
+    def validate_list_ids_unique(cls, v):
+        seen = []
         for group_name, group_lists in v.lists.items():
-            for list_config in group_lists:
-                if list_config.id in all_list_ids:
-                    raise ValueError(f"Duplicate list ID: {list_config.id} in {group_name}")
-                all_list_ids.append(list_config.id)
+            for lc in group_lists:
+                if lc.id in seen:
+                    raise ValueError(f"Duplicate list ID: {lc.id} in {group_name}")
+                seen.append(lc.id)
         return v
-    
+
     def is_production_ready(self) -> bool:
-        """Check if all safety gates are satisfied for production."""
         return (
-            self.safety.run_mode == RunMode.PROD and
-            self.safety.allow_apply and
-            (self.safety.test_contact_limit > 0 or self.safety.allow_unlimited)
+            self.safety.run_mode == RunMode.PROD
+            and self.safety.allow_apply
+            and (self.safety.test_contact_limit > 0 or self.safety.allow_unlimited)
         )
-    
+
     def can_archive(self) -> bool:
-        """Check if archival operations are allowed."""
         return self.safety.allow_archive
+
+    def get_all_source_tags(self) -> set:
+        """Return all possible import tags from config (used for orphan detection)."""
+        tags = set()
+        for group_lists in self.hubspot.lists.values():
+            for lc in group_lists:
+                tags.add(lc.tag)
+                tags.update(lc.additional_tags)
+                for override in lc.tag_overrides:
+                    tags.add(override.tag)
+        return tags
+
+    def get_all_exit_tags(self) -> set:
+        """Return all configured exit tags."""
+        return {m.exit_tag for m in self.secondary_sync.mappings}

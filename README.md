@@ -1,253 +1,440 @@
-# 🎯 HubSpot ↔ Mailchimp Bidirectional Sync
+# HubSpot ↔ Mautic Sync Pipeline
 
-**Production bidirectional synchronization between HubSpot and Mailchimp with intelligent compliance handling, anti-remarketing protection, and exit tag routing.**
+Bidirectional sync between HubSpot CRM and Mautic marketing automation.
+Runs every 8 hours via GitHub Actions. All business rules are enforced deterministically.
 
-**Last Updated:** 2026-03-06
+---
 
-## 🚀 Quick Start
+## Table of Contents
 
-```bash
-# Run the full bidirectional sync (primary + secondary)
-python main.py
+1. [Architecture](#architecture)
+2. [Pipeline Flow](#pipeline-flow)
+3. [Quick Start](#quick-start)
+4. [Configuration](#configuration)
+5. [Running Locally](#running-locally)
+6. [GitHub Actions Setup](#github-actions-setup)
+7. [HubSpot Lists & Tags](#hubspot-lists--tags)
+8. [Secondary Sync - Exit Tags](#secondary-sync--exit-tags)
+9. [Safety Gates](#safety-gates)
+10. [Audience Cap Guard](#audience-cap-guard)
+11. [Troubleshooting](#troubleshooting)
+12. [File Structure](#file-structure)
+
+---
+
+## Architecture
+
+```
+HubSpot CRM  ---- Stage 1 (Primary Sync) ----►  Mautic
+              ◄--- Stage 3 (Secondary Sync) ----  Mautic
+                         ▲
+                Stage 2: Email journeys run in Mautic
+                         (Ejas applies exit tags manually)
 ```
 
-**Automated:** Runs every 8 hours via GitHub Actions (`0 */8 * * *`)
+### Three-Stage Pipeline
 
-## 🔧 Environment Setup
+| Stage   | Direction        | Trigger                   | What it does                                      |
+| ------- | ---------------- | ------------------------- | ------------------------------------------------- |
+| Stage 1 | HubSpot → Mautic | Every 8 hours (scheduled) | Creates/updates contacts with correct tags        |
+| Stage 2 | Inside Mautic    | Ejas applies exit tags    | Email journeys run until contact finishes         |
+| Stage 3 | Mautic → HubSpot | Every 8 hours (scheduled) | Moves finished contacts to HubSpot handover lists |
 
-**Dependencies are required:**
+---
+
+## Pipeline Flow
+
+### Stage 1 - Primary Sync (HubSpot → Mautic)
+
+1. Scans all 8 HubSpot lists using batch API (100 contacts per API call)
+2. Applies 4-group exclusion matrix:
+   - **Excluded always**: Lists 762 (Unsubscribed), 773 (Manual Disengagement)
+   - **Excluded from General/SubAgents/etc**: List 717 (Active Deals)
+   - **Manual Override (784)**: bypasses Active Deals exclusion
+3. Resolves correct Mautic tag per contact:
+   - `branches > 1` → General Multi; else → General Single
+   - Recruitment, Competition, Sub Agents, New Agents, Sanctioned → own tags
+4. Preserves existing tags (first-tag priority, INV-004)
+5. Creates/updates contacts in Mautic
+6. Applies/removes tags
+7. Enforces audience cap (5,000 hard limit)
+
+### Stage 2 - Email Journey (Inside Mautic)
+
+Ejas builds and runs email campaigns in Mautic targeting each tag group.
+When a contact completes a journey, the **exit tag** is applied in Mautic:
+
+| Tag applied in Mautic       | Meaning                                  |
+| --------------------------- | ---------------------------------------- |
+| `General Single Finished`   | General journey complete (1 branch)      |
+| `General Multi Finished`    | General journey complete (2+ branches)   |
+| `Recruitment Finished`      | Recruitment journey complete             |
+| `Competition Finished`      | Competition journey complete             |
+| `Sub Agents Finished`       | Sub Agents journey complete              |
+| `New Agents Finished`       | New Agents journey complete              |
+| `Sanctioned Finished`       | Sanctioned journey complete              |
+| `Long Term Single Finished` | Long Term (1 branch) journey complete    |
+| `Long Term Multi Finished`  | Long Term (2+ branches) journey complete |
+
+### Stage 3 - Secondary Sync (Mautic → HubSpot)
+
+1. Scans all Mautic contacts for exit tags
+2. Skips contacts with `Manual Inclusion` tag (SEC-008)
+3. For each exit-tagged contact:
+   - Adds to HubSpot handover list (destination_list)
+   - Removes from source lists (if remove_from_source=true)
+   - Sub Agents Finished: also removes from lists 900, 972, 971
+   - Long Term Finished: Mautic cleanup only (no HubSpot destination)
+   - Removes all tags from Mautic
+   - Archives contact from Mautic
+
+---
+
+## Quick Start
+
+### Prerequisites
+
+- Python 3.12+
+- HubSpot Private App with scopes: `crm.lists.read`, `crm.lists.write`, `crm.objects.contacts.read`, `crm.objects.contacts.write`
+- Mautic 7 with API enabled and HTTP Basic Auth enabled
+
+### Install
 
 ```bash
-pip install -r requirements-v2.txt
+git clone https://github.com/your-org/HB-Mautic-Sync-V3.git
+cd HB-Mautic-Sync-V3
+pip install -r requirements.txt
 ```
 
-This installs:
-- `python-dotenv==1.0.0` - Environment variable management
-- `mailchimp-marketing==3.0.80` - Mailchimp API client
-- `hubspot-api-client==9.0.0` - HubSpot API client
-- `requests==2.31.0` - HTTP library
+### Set up credentials
 
-## 🔄 System Architecture
+```bash
+cp .env.example .env
+nano .env
+```
 
-### Sync Flow (main.py)
+Fill in:
 
-| Step | Direction | Purpose |
-|---|---|---|
-| STEP 1 | MC → HS | Unsubscribe sync (opt-out propagation) |
-| STEP 2 | HS → MC | Primary sync plan (generate operations) |
-| STEP 3 | HS → MC | Primary sync execution (tags, upserts, archival) |
-| STEP 4 | MC → HS | Secondary sync (exit tag routing into handover lists) |
+```
+HUBSPOT_PRIVATE_APP_TOKEN=pat-eu1-...
+MAUTIC_BASE_URL=https://your-mautic-domain.com
+MAUTIC_USERNAME=admin@yourdomain.com
+MAUTIC_PASSWORD=your_password
+```
 
-### Key Documents
+### Validate config
 
-| Document | Location | Purpose |
-|---|---|---|
-| **Primary Sync Rules** | [corev2/PRIMARY_SYNC_RULES.md](corev2/PRIMARY_SYNC_RULES.md) | Verified rules for HubSpot → Mailchimp sync |
-| **Secondary Sync Rules** | [corev2/SECONDARY_SYNC_RULES.md](corev2/SECONDARY_SYNC_RULES.md) | Rules for Mailchimp → HubSpot exit tag routing |
-| **Deployment Guide** | [docs/GITHUB_DEPLOYMENT_GUIDE.md](docs/GITHUB_DEPLOYMENT_GUIDE.md) | GitHub Actions setup |
-| **Secondary Sync Plan** | [docs/SECONDARY_SYNC_PLAN.md](docs/SECONDARY_SYNC_PLAN.md) | Original design document |
-| **V2 Architecture** | [SYSTEM_OVERVIEW_V2_PLANNING.md](SYSTEM_OVERVIEW_V2_PLANNING.md) | V2 architecture design |
+```bash
+python -m corev2.cli validate-config
+```
 
-### HubSpot Lists
+Expected output:
 
-**Source Lists (synced to Mailchimp):**
-| ID | Name | Type | Tag |
-|---|---|---|---|
-| 969 | Sanctioned | MANUAL | Sanctioned |
-| 719 | Recruitment | MANUAL | Recruitment |
-| 720 | Competition | MANUAL | Competition |
-| 989 | Network Agents | DYNAMIC | EXP |
-| 945 | New Agents | MANUAL | New agents |
-| 987 | General | DYNAMIC | General |
-
-**Handover Lists (secondary sync destinations):**
-| ID | Name | Exit Tag | Source |
-|---|---|---|---|
-| 946 | General Handover | General Finished | 987 |
-| 947 | Recruitment Handover | Recruitment Finished | 719 |
-| 948 | Competition Handover | Competition Finished | 720 |
-| 1005 | Sub Agents Handover | Sub Agents Finished | 989 |
-| 949 | New Agents Handover | New Agents Finished | 945 |
-| 1006 | Sanctioned Handover | Sanctioned Finished | 969 |
-
-**Exclusion Lists (never sync):**
-| ID | Name | Type |
-|---|---|---|
-| 762 | Unsubscribed / Opted Out | DYNAMIC |
-| 773 | Manual Disengagement | DYNAMIC |
-| 717 | Active Deals | DYNAMIC |
+```
+Config valid: 8 lists, 9 secondary mappings, cap=5000
+```
 
 ---
 
-## 📚 Historical Context (Pre-Reset v1)
+## Configuration
 
-**⚠️ The sections below describe the pre-reset system and are kept for design pattern reference only.**
+Config file: `corev2/config/production.yaml`
 
-### For PM / Operator (Historical)
+All sensitive values use `${ENV_VAR}` placeholders resolved at runtime.
 
-**Canonical documentation reading order (pre-reset):**
+### Key settings
 
-1. **[DRY_RUN_VERIFICATION_COMPLETE.md](DRY_RUN_VERIFICATION_COMPLETE.md)** - Historical data baseline (Nov 26, 2025)
-2. **[contact_universe_report.md](system_testing/audit_results/contact_universe_report.md)** - Pre-reset HS↔MC reconciliation
-3. **[PHASE5A_5B_5C_EXECUTION_POLICY.md](PHASE5A_5B_5C_EXECUTION_POLICY.md)** - Historical phase boundaries
-4. **[PHASE7_LIVE_HTTP_IMPLEMENTATION.md](PHASE7_LIVE_HTTP_IMPLEMENTATION.md)** - v1 HTTP layer implementation
+```yaml
+mautic:
+  audience_cap: 5000 # Hard subscriber limit
 
-**Pre-Reset Safety Status (Historical):**
+safety:
+  run_mode: "prod" # Must be "prod" for live apply
+  allow_apply: true # Must be true for live apply
+  allow_archive: true # Must be true to archive contacts
+  allow_unlimited: true # Must be true for full sync (test_contact_limit=0)
+  test_contact_limit: 0 # 0 = no limit
+  enable_hubspot_writes: false # Set true to write ORI_LISTS back to HubSpot
 
-- ⚠️ **System was locked in DRY_RUN mode**; all `--live` execution blocked
-- ⚠️ **Phase 5C / A1 (member creation) was explicitly deferred**
-- ✅ **Mailchimp Reset Event (Dec 2025)** superseded all planned Phase 7B execution
+notifications:
+  enabled: false # Set true to enable Teams alerts
+  webhook_url: "" # Microsoft Teams incoming webhook URL
+```
 
-## 📁 Project Structure
+### Adding a new HubSpot list
 
-- **`core/`** - Core sync functionality and configuration
-- **`info/README.md`** - Complete setup and usage documentation  
-- **`.github/workflows/`** - GitHub Actions automation
-
-## 🎯 Current Status
-
-**System State: POST-RESET / V2 Architecture Planning**
-
-### ⚠️ Mailchimp Reset Event (December 2025)
-
-**Major System Change:**
-- 📅 **December 2025**: Manual Mailchimp reset executed
-- 🧹 **All MC tags removed** from entire audience (~2,400 contacts)
-- 📦 **All MC contacts archived** (clean slate)
-- 🎯 **HubSpot designated as sole source of truth**
-
-**Mission Change:**
-- ❌ **Old mission**: Repair MC using historical anomaly fix plans (Phase 7B)
-- ✅ **New mission**: Build robust v2 sync/reconciliation engine for fresh-start paradigm
-
-### Historical Baselines (Pre-Reset) — Reference Only
-
-**These baselines are NO LONGER VALID for live execution:**
-- ✅ **Phase 7B Baseline (Nov 28, 2025)**: 20251128_174732 - 3,886 unique emails (3,542 HS, 2,417 MC)
-  - 4 categories operational (A3, A4, A2, A5) = 1,924 contacts
-  - **Status**: Historical reference for regression tests only
-- ✅ **Historical DRY_RUN (Nov 26)**: 1,382 planned actions, 0 errors
-  - **Status**: Test fixture for plumbing validation
-- ✅ **Phase 7 Plumbing Verification (Nov 27)**: HTTP clients, safety model validated
-  - **Status**: Design patterns remain valuable
-- ⚠️ **Phase 7B Unlock Plan (Dec 3)**: Safety lock removal strategy documented but NOT implemented
-  - **Status**: Obsolete (will not be executed against pre-reset baseline)
-
-### Current Work (Post-Reset)
-
-- 🔄 **Fresh diagnostic audit pending**: Analyze HS vs empty/archived MC state
-- 📋 **V2 architecture design**: Core sync engine rebuild for fresh-start world
-- 🔒 **All safety locks remain active**: No changes to code safety model
-- ⏸️ **Phase 5C (A1) still deferred**: Member creation awaits v2 sync design + campaign strategy
-
-**Phase 5A Scope (Phase 7B Baseline - 28 Nov):**
-- **OPERATIONAL (4 categories):** 254 contacts (A3: 7, A4: 42, A2: 205)
-- **BLOCKED:** A7_orphans (424 contacts) - taxonomy mismatch; A7_exit (0 contacts) - no anomalies detected
-- **Mailchimp operations:** 255 (tag stripping, archival, list management)
-- **HubSpot operations:** 114 (list additions/removals for A4)
-- Zero new members created, zero new tags added
-
-**Phase 5B Scope (Phase 7B Baseline - 28 Nov):**
-- 1,670 contacts: ORI_LISTS metadata updates only (A5)
-
-**Immediate Operational Readiness:**
-- **Ready for Live Execution:** 1,924 contacts (A3, A4, A2, A5) - DRY_RUN verified with 0 errors
-- **Pending PM Decision:** Proceed with 4 categories OR await A7 taxonomy fix (additional 424 contacts)
-
-**For Contact Universe Details:** See `contact_universe_report.md` (15 active lists tracked)
+1. Add to the appropriate group in `production.yaml` under `hubspot.lists`
+2. Add the list ID to the matching group under `exclusion_matrix`
+3. Add a secondary sync mapping if needed under `secondary_sync.mappings`
+4. Regenerate and apply: `python -m corev2.cli sync`
 
 ---
 
-## 🛤️ Path to Phase 7B (Live Execution)
+## Running Locally
 
-**Current State:** Phase 7B baseline generated and verified. 4 of 6 categories operational (A3, A4, A2, A5). System locked in DRY_RUN mode pending PM authorization.
+### Full sync (plan + apply)
 
-### Canonical Documentation Set (Updated 2025-12-03)
+```bash
+python -m corev2.cli sync
+```
 
-For PM/governance, the authoritative documentation is:
+### Step-by-step
 
-1. **`README.md`** (this file) - Environment, status, documentation index
-2. **`PHASE7B_UNLOCK_PLAN.md`** - **NEW** - Proposed safety lock removal strategy for live execution
-3. **`PHASE7_DRY_RUN_PLUMBING_VERIFIED.md`** - Phase 7B baseline verification (28 Nov) + DRY_RUN results
-4. **`PHASE5A_5B_5C_EXECUTION_POLICY.md`** - Phase boundaries + Phase 7B/7C scope + authorization gates
-5. **`PHASE7_LIVE_HTTP_IMPLEMENTATION.md`** - HTTP behavior, safety model, retry/idempotency
-6. **`DRY_RUN_VERIFICATION_COMPLETE.md`** - Historical 26 Nov baseline (archival reference)
-7. **`contact_universe_report.md`** / **`reconciliation_log_master.md`** - Data baseline sanity checks
+```bash
+# Step 1: Generate plan (read-only, no mutations)
+python -m corev2.cli plan --output corev2/artifacts/plan.json
 
-### Current Baseline Classification
+# Step 2: Review the plan
+cat corev2/artifacts/plan.json | python3 -m json.tool | head -50
 
-**Phase 7B Baseline (28 Nov 2025, 17:47:32) - AUTHORIZED:**
-- `fix_plan_master_20251128_174732.csv` + snapshots (HS, MC)
-- Generated via `enrich_fix_plan.py` from fresh audit
-- **Operational for 4 categories:** A3 (7), A4 (42), A2 (205), A5 (1,670) = 1,924 contacts
-- **Excluded from Phase 7B:** A7 (424 contacts - taxonomy reconciliation), A1 (1,621 contacts - Phase 5C deferred)
+# Step 3: Dry-run apply (simulate, no mutations)
+python -m corev2.cli apply --plan corev2/artifacts/plan.json --dry-run
 
-**Historical Baselines (Test Harnesses Only - NOT for live execution):**
-- `fix_plan_master_20251119_172514.csv` (Nov 19) - DRY_RUN plumbing verification
-- `fix_plan_master_20251126_*` (Nov 26) - Historical DRY_RUN verification
+# Step 4: Live apply
+python -m corev2.cli apply --plan corev2/artifacts/plan.json
+```
 
-### Phase 7B Readiness Status
+### Debug single contact
 
-**Gates Satisfied:**
-- ✅ **Gate 1:** Fresh aligned baseline (20251128_174732)
-- ✅ **Gate 2:** DRY_RUN re-verification complete (4 of 6 categories, 0 errors)
-- ✅ **Gate 3:** Governance documentation updated
-- ⏸️ **Gate 4:** PENDING PM AUTHORIZATION
+```bash
+# By email
+python -m corev2.cli plan --only-email user@example.com --output /tmp/debug.json
 
-**Next Steps (Requires PM Authorization):**
-
-1. **PM Reviews Unlock Plan:**
-   - See `PHASE7B_UNLOCK_PLAN.md` for proposed code changes
-   - Category whitelist approach (orchestrator + individual scripts)
-   - Test batch → manual verification → full run workflow
-
-2. **Category-by-Category Execution (Recommended Order):**
-   - Start with **A3** (7 contacts) - smallest scope, critical compliance
-   - Then **A4** (42 contacts) - unsubscribe sync
-   - Then **A2** (205 contacts) - MC-only archival
-   - Finally **A5** (1,670 contacts) - ORI_LISTS metadata (Phase 5B)
-
-3. **Each Category Follows Pattern:**
-   - Code unlock (orchestrator + script safety lock removal)
-   - Test batch with `--limit` flag
-   - Manual UI verification in HubSpot/Mailchimp
-   - Go/no-go decision
-   - Full category run if test batch clean
-   - Post-execution audit (system_audit.py)
-- Zero errors across all categories
-
-**Gate 3 - Governance Documentation:**
-- Update `PHASE7_DRY_RUN_PLUMBING_VERIFIED.md` with new baseline timestamp
-- Update `PHASE5A_5B_5C_EXECUTION_POLICY.md` with Phase 7B authorization decision
-- Document Phase 7B scope: 5A (removal/archival) + optionally 5B (metadata)
-- Confirm Phase 5C (A1 member creation) remains DEFERRED
-
-**Gate 4 - Safety Model Review:**
-- Review rollout sequence in `PHASE7_LIVE_HTTP_IMPLEMENTATION.md` Section 11
-- Prepare rollback procedures for each category
-- Define manual verification checkpoints (HS/MC UI spot-checks)
-- Agree on first test category (recommend: A3, only 3 records)
-
-**Gate 5 - Campaign Strategy (Phase 5C ONLY):**
-- Not required for Phase 5A/5B
-- If A1 ever considered: requires separate campaign strategy document + PM authorization
-
-**Execution Order (when gates satisfied):**
-1. A3 (3) → A4 (55) → A2 (192) → A7_orphans (119) → A7_exit (306) → A5 (509)
-2. Each category: test batch with `--limit` → UI verification → full run if clean
-3. Manual spot-checks between categories, post-execution audits
-
-**Phase 5C Status:**
-- A1 (member creation) **explicitly DEFERRED**
-- Requires campaign strategy doc + separate authorization
-- Not bundled with Phase 7B
+# By HubSpot VID
+python -m corev2.cli plan --only-vid 123456789 --output /tmp/debug.json
+```
 
 ---
 
-## 📋 Key Features
+## GitHub Actions Setup
 
-- **Scalable**: Handles thousands of contacts with proper pagination
-- **Safe**: Triple-layered safety model (DRY_RUN + ALLOW_WRITE + orchestration locks)
-- **Idempotent**: All operations can be safely retried
-- **Auditable**: Comprehensive logging with PII redaction
-- **Testable**: --limit flag for controlled test batches
+### 1. Push code to GitHub
+
+```bash
+git init
+git add .
+git commit -m "Initial commit"
+git remote add origin https://github.com/your-org/HB-Mautic-Sync-V3.git
+git push -u origin main
+```
+
+### 2. Add repository secrets
+
+Go to: **GitHub repo → Settings → Secrets and variables → Actions → New repository secret**
+
+Add these secrets:
+
+| Secret name                   | Value                            |
+| ----------------------------- | -------------------------------- |
+| `HUBSPOT_PRIVATE_APP_TOKEN`   | Your HubSpot private app token   |
+| `MAUTIC_BASE_URL`             | `https://your-mautic-domain.com` |
+| `MAUTIC_USERNAME`             | Mautic admin email               |
+| `MAUTIC_PASSWORD`             | Mautic admin password            |
+| `TEAMS_WEBHOOK_URL`           | (optional) Teams webhook URL     |
+| `TEAMS_NOTIFICATIONS_ENABLED` | (optional) `true` or `false`     |
+
+### 3. Enable GitHub Actions
+
+Go to **Actions** tab in your repo and enable workflows.
+
+### 4. Test with manual trigger
+
+Go to **Actions → HubSpot ↔ Mautic Bidirectional Sync → Run workflow**
+
+Options:
+
+- **Dry run**: tick to simulate without mutations
+- **Only email**: enter a single email to debug one contact
+
+### 5. Schedule
+
+The workflow runs automatically at:
+
+- 00:00 UTC
+- 08:00 UTC
+- 16:00 UTC
+
+To change the schedule, edit `.github/workflows/sync.yml`:
+
+```yaml
+- cron: "0 0,8,16 * * *"
+```
+
+---
+
+## HubSpot Lists & Tags
+
+### Sync lists (configured in production.yaml)
+
+| List ID | Name             | Tag applied in Mautic                                   |
+| ------- | ---------------- | ------------------------------------------------------- |
+| 969     | Sanctioned       | `Sanctioned`                                            |
+| 719     | Recruitment      | `Recruitment`                                           |
+| 720     | Competition      | `Competition`                                           |
+| 989     | Sub Agents       | `Sub Agents`                                            |
+| 945     | New Agents       | `New Agents`                                            |
+| 987     | General          | `General Single` or `General Multi` (branch split)      |
+| 784     | Manual Inclusion | `General Single` + `Manual Inclusion` tag               |
+| 1032    | Long Term        | `General Single Long Term` or `General Multi Long Term` |
+
+### Exclusion lists (never synced)
+
+| List ID | Name                   | Type                           |
+| ------- | ---------------------- | ------------------------------ |
+| 762     | Unsubscribed/Opted Out | DYNAMIC (HubSpot auto-manages) |
+| 773     | Manual Disengagement   | DYNAMIC (criteria-based)       |
+| 717     | Active Deals           | DYNAMIC (deal pipeline)        |
+
+### Branch split rule
+
+Contacts in lists 987, 784, 1032 get `General Multi` if `branches > 1`,
+otherwise `General Single`.
+
+---
+
+## Secondary Sync - Exit Tags
+
+When Ejas finishes a campaign in Mautic, apply the exit tag to the contact:
+
+```bash
+# Via Mautic API (for testing)
+curl -u "admin@yourdomain.com:password" \
+  -X PATCH \
+  -H "Content-Type: application/json" \
+  -d '{"tags":["General Single Finished"]}' \
+  "https://your-mautic.com/api/contacts/{id}/edit"
+```
+
+### Exit tag mappings
+
+| Exit tag                    | HubSpot destination             | Notes                           |
+| --------------------------- | ------------------------------- | ------------------------------- |
+| `General Single Finished`   | List 946 (General Handover)     |                                 |
+| `General Multi Finished`    | List 946 (General Handover)     |                                 |
+| `Recruitment Finished`      | List 947 (Recruitment Handover) | Removed from list 719           |
+| `Competition Finished`      | List 948 (Competition Handover) | Removed from list 720           |
+| `Sub Agents Finished`       | List 1005 (Sub Agents Handover) | Also removed from 900, 972, 971 |
+| `New Agents Finished`       | List 949 (New Agents Handover)  | Removed from list 945           |
+| `Sanctioned Finished`       | List 1006 (Sanctioned Handover) | Removed from list 969           |
+| `Long Term Single Finished` | None (MC cleanup only)          |                                 |
+| `Long Term Multi Finished`  | None (MC cleanup only)          |                                 |
+
+### Exempt from secondary sync
+
+Contacts with the `Manual Inclusion` tag are **never processed** by secondary sync (SEC-008).
+
+---
+
+## Safety Gates
+
+The apply mode enforces all safety gates before making any mutations:
+
+| Gate            | Config key               | Required value                      |
+| --------------- | ------------------------ | ----------------------------------- |
+| Run mode        | `safety.run_mode`        | `"prod"`                            |
+| Apply enabled   | `safety.allow_apply`     | `true`                              |
+| Unlimited mode  | `safety.allow_unlimited` | `true` (when test_contact_limit=0)  |
+| Archive enabled | `safety.allow_archive`   | `true` (if plan has archive ops)    |
+| Config hash     | (automatic)              | Plan hash must match current config |
+
+If any gate fails, the sync aborts with a clear error message.
+
+---
+
+## Audience Cap Guard
+
+Mautic audience cap is set to **5,000 contacts** by default.
+
+Behaviour:
+
+- **Pre-flight**: fetches live count before sync starts; aborts if >= 5,000
+- **Per-contact**: skips new upserts if cap reached mid-sync
+- **Re-check**: re-fetches live count every 10 new subscribes
+- **Warning**: sends Teams alert if < 50 slots remain
+- **Alert**: sends Teams alert when cap is reached
+
+To change the cap, update `production.yaml`:
+
+```yaml
+mautic:
+  audience_cap: 5000
+```
+
+---
+
+## Troubleshooting
+
+### "Config hash mismatch"
+
+The plan was generated with a different config than what is currently active.
+Regenerate the plan: `python -m corev2.cli plan`
+
+### "audience_cap_reached"
+
+Mautic has hit the 5,000 contact limit. Either:
+
+1. Archive completed contacts (run Stage 3 with exit-tagged contacts)
+2. Increase `audience_cap` in `production.yaml`
+
+### Tags not applied (404 error)
+
+Mautic 7 uses `PATCH /api/contacts/{id}/edit` for tag operations.
+Do NOT use `/api/contacts/{id}/tags/edit` (removed in Mautic 7).
+
+### "This value is too long" (firstname/lastname)
+
+Mautic has a 64-character limit on text fields. The client automatically
+truncates these fields. If you see this error, it is from a legacy version
+
+- update to this version.
+
+### Contact not found after creation (tag fails)
+
+The client invalidates the ID cache before tag operations to handle
+newly-created contacts. If you still see this, check that the `upsert_member`
+returned a successful `created` or `updated` action before the tag op ran.
+
+### HubSpot 403 "missing scopes"
+
+Your HubSpot private app is missing list write permissions. Add:
+
+- `crm.lists.read`
+- `crm.lists.write`
+
+Then regenerate the token in HubSpot and update `HUBSPOT_PRIVATE_APP_TOKEN`.
+
+---
+
+## File Structure
+
+```
+HB-Mautic-Sync-V3/
+├-- .env.example                    # Credentials template
+├-- .gitignore                      # Protects .env
+├-- main.py                         # Entry point (local dev)
+├-- requirements.txt
+├-- .github/
+│   └-- workflows/
+│       └-- sync.yml                # GitHub Actions (8-hourly schedule)
+├-- corev2/
+│   ├-- cli.py                      # CLI modes: validate-config, plan, apply, sync
+│   ├-- notifications.py            # Microsoft Teams adaptive card alerts
+│   ├-- clients/
+│   │   ├-- http_base.py            # Retry/backoff/circuit-breaker base client
+│   │   ├-- hubspot_client.py       # HubSpot API (batch-optimised)
+│   │   └-- mautic_client.py        # Mautic REST API (all endpoints verified)
+│   ├-- config/
+│   │   ├-- schema.py               # Pydantic models (V2Config, all rules)
+│   │   ├-- loader.py               # YAML + env var resolution
+│   │   └-- production.yaml         # Live config (8 lists, 9 mappings)
+│   ├-- planner/
+│   │   ├-- primary.py              # HubSpot → Mautic plan generation
+│   │   ├-- secondary.py            # Mautic → HubSpot exit tag handling
+│   │   └-- reconciliation.py       # Orphan detection and archival
+│   ├-- executor/
+│   │   └-- engine.py               # Executes plan, AudienceCapGuard, JSONL journal
+│   ├-- sync/
+│   │   └-- unsubscribe_sync.py     # Mautic unsubscribes → HubSpot opt-out
+│   └-- artifacts/                  # Generated plans and execution journals
+└-- logs/                           # Sync run logs (committed by GitHub Actions)
+```

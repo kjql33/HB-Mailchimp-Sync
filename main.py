@@ -1,18 +1,14 @@
 #!/usr/bin/env python3
 """
-HubSpot ↔ Mailchimp Sync - Local convenience wrapper.
+HubSpot ↔ Mautic Sync - Entry Point
 
-Delegates to the unified CLI entrypoint: corev2.cli sync
+Local usage:
+    python main.py
 
-For full options, run:  python -m corev2.cli --help
+Loads .env automatically. For GitHub Actions, secrets are injected directly.
 """
-import os
 import sys
 from pathlib import Path
-
-# Auto-load .env for local dev
-os.environ.setdefault("LOAD_DOTENV", "1")
-
 from corev2.cli import sync_mode
 
 if __name__ == "__main__":

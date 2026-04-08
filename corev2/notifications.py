@@ -1,82 +1,44 @@
 """
-Teams webhook notifications for sync system alerts.
+Microsoft Teams webhook notifications.
 
-Sends Adaptive Card messages via Microsoft Teams incoming webhook.
+Sends Adaptive Card alerts for:
+- Audience cap reached (blocks sync)
+- Audience cap warning (< 50 slots remaining)
+- Sync failures
 """
 
-import os
 import logging
-from datetime import datetime
+import aiohttp
 from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-# Webhook URL from environment (set in .env or GitHub secrets)
-_WEBHOOK_URL: Optional[str] = None
 
-
-def _get_webhook_url() -> Optional[str]:
-    global _WEBHOOK_URL
-    if _WEBHOOK_URL is None:
-        _WEBHOOK_URL = os.getenv("TEAMS_WEBHOOK_URL", "")
-    return _WEBHOOK_URL or None
-
-
-async def send_teams_alert(title: str, message: str, facts: dict = None, color: str = "attention") -> bool:
+async def send_teams_alert(
+    webhook_url: str,
+    title: str,
+    message: str,
+    color: str = "attention",
+    facts: Optional[list] = None,
+) -> bool:
     """
-    Send an alert to Microsoft Teams via webhook.
+    Send an Adaptive Card alert to Microsoft Teams.
 
     Args:
-        title: Card title
-        message: Main message body
-        facts: Optional dict of key-value pairs to display
-        color: Adaptive Card style - "attention" (red/yellow), "good" (green), "warning" (orange)
+        webhook_url: Teams incoming webhook URL
+        title:       Card title
+        message:     Card body text
+        color:       "attention" (red), "warning" (yellow), "good" (green)
+        facts:       Optional list of {"title": str, "value": str} dicts
 
     Returns:
         True if sent successfully, False otherwise
     """
-    url = _get_webhook_url()
-    if not url:
-        logger.warning("TEAMS_WEBHOOK_URL not set — skipping Teams notification")
+    if not webhook_url:
+        logger.warning("Teams webhook URL not configured - skipping notification")
         return False
 
-    fact_items = []
-    if facts:
-        for k, v in facts.items():
-            fact_items.append({"title": str(k), "value": str(v)})
-
-    # Build Adaptive Card payload (Teams Workflows format)
-    body_items = [
-        {
-            "type": "TextBlock",
-            "size": "Large",
-            "weight": "Bolder",
-            "text": title,
-            "wrap": True,
-            "style": "heading",
-        },
-        {
-            "type": "TextBlock",
-            "text": message,
-            "wrap": True,
-        },
-    ]
-
-    if fact_items:
-        body_items.append({
-            "type": "FactSet",
-            "facts": fact_items,
-        })
-
-    body_items.append({
-        "type": "TextBlock",
-        "text": f"_Sent at {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}_",
-        "isSubtle": True,
-        "size": "Small",
-        "wrap": True,
-    })
-
-    payload = {
+    body: dict = {
         "type": "message",
         "attachments": [
             {
@@ -85,69 +47,83 @@ async def send_teams_alert(title: str, message: str, facts: dict = None, color: 
                     "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
                     "type": "AdaptiveCard",
                     "version": "1.4",
-                    "body": body_items,
+                    "body": [
+                        {
+                            "type": "TextBlock",
+                            "text": title,
+                            "weight": "Bolder",
+                            "size": "Medium",
+                            "color": color,
+                        },
+                        {
+                            "type": "TextBlock",
+                            "text": message,
+                            "wrap": True,
+                        },
+                    ],
                 },
             }
         ],
     }
 
-    try:
-        import aiohttp
+    if facts:
+        body["attachments"][0]["content"]["body"].append(
+            {
+                "type": "FactSet",
+                "facts": [{"title": f["title"], "value": str(f["value"])} for f in facts],
+            }
+        )
 
+    try:
         async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=15)) as resp:
+            async with session.post(webhook_url, json=body, timeout=aiohttp.ClientTimeout(total=10)) as resp:
                 if resp.status in (200, 202):
                     logger.info(f"Teams alert sent: {title}")
                     return True
                 else:
-                    body = await resp.text()
-                    logger.error(f"Teams webhook failed ({resp.status}): {body}")
+                    text = await resp.text()
+                    logger.warning(f"Teams alert failed ({resp.status}): {text[:200]}")
                     return False
     except Exception as e:
-        logger.error(f"Teams webhook error: {e}")
+        logger.warning(f"Teams notification error: {e}")
         return False
 
 
-async def notify_audience_cap_reached(
+async def send_audience_cap_reached(
+    webhook_url: str,
     current_count: int,
     cap: int,
-    contacts_synced: int,
-    contacts_skipped: int,
+    skipped: int,
 ) -> bool:
-    """Send a Teams alert when the Mailchimp audience cap is reached."""
+    """Send alert when audience cap is hit."""
     return await send_teams_alert(
-        title="⚠️ Mailchimp Audience Cap Reached",
-        message=(
-            f"The sync has been **stopped** because the Mailchimp audience "
-            f"has reached the hard cap of **{cap:,}** subscribed members."
-        ),
-        facts={
-            "Current Subscribed": f"{current_count:,}",
-            "Hard Cap": f"{cap:,}",
-            "Remaining Slots": f"{max(0, cap - current_count):,}",
-            "Contacts Synced This Run": f"{contacts_synced:,}",
-            "Contacts Skipped (cap)": f"{contacts_skipped:,}",
-        },
+        webhook_url=webhook_url,
+        title="Mautic Audience Cap Reached - Sync Blocked",
+        message="The Mautic audience has reached its configured cap. New contacts are being skipped.",
         color="attention",
+        facts=[
+            {"title": "Current count", "value": current_count},
+            {"title": "Cap limit", "value": cap},
+            {"title": "Contacts skipped this run", "value": skipped},
+        ],
     )
 
 
-async def notify_audience_cap_warning(
+async def send_audience_cap_warning(
+    webhook_url: str,
     current_count: int,
     cap: int,
     remaining: int,
 ) -> bool:
-    """Send a Teams warning when approaching the cap (< 50 slots left)."""
+    """Send warning when approaching audience cap."""
     return await send_teams_alert(
-        title="🔶 Mailchimp Audience Approaching Cap",
-        message=(
-            f"Only **{remaining}** slots remaining before the hard cap of "
-            f"**{cap:,}** is reached. The next sync may be partially or fully skipped."
-        ),
-        facts={
-            "Current Subscribed": f"{current_count:,}",
-            "Hard Cap": f"{cap:,}",
-            "Remaining Slots": f"{remaining:,}",
-        },
+        webhook_url=webhook_url,
+        title="Mautic Audience Cap Warning",
+        message=f"Only {remaining} subscriber slots remaining before the cap is reached.",
         color="warning",
+        facts=[
+            {"title": "Current count", "value": current_count},
+            {"title": "Cap limit", "value": cap},
+            {"title": "Remaining slots", "value": remaining},
+        ],
     )

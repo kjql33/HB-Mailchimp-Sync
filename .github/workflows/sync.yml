@@ -1,122 +1,131 @@
-name: HubSpot↔Mailchimp Bidirectional Sync (V2)
+name: HubSpot ↔ Mautic Bidirectional Sync
 
 on:
   schedule:
-    - cron: '0 */8 * * *'    # every 8 hours at minute 0 (00:00, 08:00, 16:00 UTC)
-  workflow_dispatch:         # allows you to trigger manually from the Actions tab
+    # Runs at 00:00, 08:00, 16:00 UTC every day
+    - cron: "0 0,8,16 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (simulate only, no mutations)"
+        required: false
+        default: "false"
+        type: boolean
+      only_email:
+        description: "Debug: sync only this email address"
+        required: false
+        type: string
 
 permissions:
   contents: write
 
+env:
+  PYTHON_VERSION: "3.12"
+  CONFIG_PATH: "corev2/config/production.yaml"
+
 jobs:
   sync:
+    name: Run Sync Pipeline
     runs-on: ubuntu-latest
-    timeout-minutes: 300  # 5 hour timeout to prevent runaway jobs
+    timeout-minutes: 300
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
+      # -- Setup ------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
 
       - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install -r requirements-v2.txt
+        run: pip install -r requirements.txt
 
-      - name: Debug Environment
-        run: |
-          echo "corev2 module check:"
-          python -c "import corev2; print('✅ corev2 import successful')"
-          echo "Config validation:"
-          python -m corev2.cli --help
-      
-      - name: Run HubSpot↔Mailchimp Sync V2 (corev2)
-        run: |
-          SYNC_START=$(date +%s)
-          echo "🚀 Starting corev2 sync at $(date -u)"
-          
-          # Step 1: Generate plan (dry-run)
-          echo "📋 Generating operations plan..."
-          python -m corev2.cli plan \
-            --config corev2/config/production.yaml \
-            --output corev2/artifacts/plan_$(date +%Y%m%d_%H%M%S).json \
-            2>&1 | tee /tmp/plan_output.log || {
-              echo "❌ Plan generation failed"
-              tail -n 20 /tmp/plan_output.log > /tmp/sync_error.log
-              exit 1
-            }
-          
-          # Find the latest plan file
-          PLAN_FILE=$(ls -t corev2/artifacts/plan_*.json | head -1)
-          echo "📄 Plan saved to: $PLAN_FILE"
-          
-          # Step 2: Apply plan (execute operations)
-          echo "⚙️ Applying operations plan..."
-          python -m corev2.cli apply \
-            --plan "$PLAN_FILE" \
-            2>&1 | tee /tmp/apply_output.log || {
-              echo "❌ Apply failed"
-              tail -n 20 /tmp/apply_output.log > /tmp/sync_error.log
-              exit 1
-            }
-          
-          SYNC_END=$(date +%s)
-          DURATION=$((SYNC_END - SYNC_START))
-          echo "✅ corev2 sync completed successfully in ${DURATION} seconds"
-          
-          # Copy logs to workspace for commit
-          mkdir -p logs
-          cp /tmp/plan_output.log logs/plan_$(date +%Y%m%d_%H%M%S).log || true
-          cp /tmp/apply_output.log logs/apply_$(date +%Y%m%d_%H%M%S).log || true
+      # -- Validate config --------------------------------------------
+      - name: Validate config
+        run: python -m corev2.cli validate-config --config ${{ env.CONFIG_PATH }}
         env:
           HUBSPOT_PRIVATE_APP_TOKEN: ${{ secrets.HUBSPOT_PRIVATE_APP_TOKEN }}
-          MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
-          MAILCHIMP_LIST_ID: ${{ secrets.MAILCHIMP_AUDIENCE_ID }}
-          MAILCHIMP_DC: ${{ secrets.MAILCHIMP_DC }}
-          MAILCHIMP_TAG_DELAY: "0.05"      # Reduced from 1.0s to 0.05s (95% faster tag operations)  
-          MAILCHIMP_UPSERT_DELAY: "0.05"   # New configurable delay after upserts (prevents rate limits)
-      
-      - name: Commit sync logs and artifacts
-        if: ${{ success() }}
+          MAUTIC_BASE_URL: ${{ secrets.MAUTIC_BASE_URL }}
+          MAUTIC_USERNAME: ${{ secrets.MAUTIC_USERNAME }}
+          MAUTIC_PASSWORD: ${{ secrets.MAUTIC_PASSWORD }}
+          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          TEAMS_NOTIFICATIONS_ENABLED: ${{ secrets.TEAMS_NOTIFICATIONS_ENABLED }}
+
+      # -- Generate plan ----------------------------------------------
+      - name: Generate operations plan
+        id: plan
         run: |
-          git config user.name "GitHub Actions Bot"
+          PLAN_FILE="corev2/artifacts/plan_$(date +%Y%m%d_%H%M%S).json"
+          echo "plan_file=$PLAN_FILE" >> $GITHUB_OUTPUT
+
+          EXTRA_ARGS=""
+          if [ -n "${{ github.event.inputs.only_email }}" ]; then
+            EXTRA_ARGS="--only-email ${{ github.event.inputs.only_email }}"
+          fi
+
+          python -m corev2.cli plan \
+            --config ${{ env.CONFIG_PATH }} \
+            --output "$PLAN_FILE" \
+            $EXTRA_ARGS \
+            2>&1 | tee /tmp/plan.log
+        env:
+          HUBSPOT_PRIVATE_APP_TOKEN: ${{ secrets.HUBSPOT_PRIVATE_APP_TOKEN }}
+          MAUTIC_BASE_URL: ${{ secrets.MAUTIC_BASE_URL }}
+          MAUTIC_USERNAME: ${{ secrets.MAUTIC_USERNAME }}
+          MAUTIC_PASSWORD: ${{ secrets.MAUTIC_PASSWORD }}
+          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          TEAMS_NOTIFICATIONS_ENABLED: ${{ secrets.TEAMS_NOTIFICATIONS_ENABLED }}
+
+      # -- Apply plan -------------------------------------------------
+      - name: Apply plan
+        id: apply
+        run: |
+          DRY_RUN_FLAG=""
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            DRY_RUN_FLAG="--dry-run"
+            echo "DRY RUN MODE - no mutations will be made"
+          fi
+
+          python -m corev2.cli apply \
+            --plan "${{ steps.plan.outputs.plan_file }}" \
+            $DRY_RUN_FLAG \
+            2>&1 | tee /tmp/apply.log
+        env:
+          HUBSPOT_PRIVATE_APP_TOKEN: ${{ secrets.HUBSPOT_PRIVATE_APP_TOKEN }}
+          MAUTIC_BASE_URL: ${{ secrets.MAUTIC_BASE_URL }}
+          MAUTIC_USERNAME: ${{ secrets.MAUTIC_USERNAME }}
+          MAUTIC_PASSWORD: ${{ secrets.MAUTIC_PASSWORD }}
+          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          TEAMS_NOTIFICATIONS_ENABLED: ${{ secrets.TEAMS_NOTIFICATIONS_ENABLED }}
+
+      # -- Commit artifacts -------------------------------------------
+      - name: Commit logs and artifacts
+        if: always()
+        run: |
+          git config user.name  "GitHub Actions Bot"
           git config user.email "actions@github.com"
-          git add logs/*.log corev2/artifacts/*.json corev2/artifacts/*.jsonl || true
-          git diff --staged --quiet || git commit -m "🤖 Sync logs: $(date -u '+%Y-%m-%d %H:%M UTC')" || true
-          git push origin ${{ github.ref_name }} || echo "⚠️ Push failed (may be no changes)"
-      
-      - name: Upload artifacts on failure
-        if: ${{ failure() }}
+
+          mkdir -p logs
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          cp /tmp/plan.log  "logs/plan_${TIMESTAMP}.log"  2>/dev/null || true
+          cp /tmp/apply.log "logs/apply_${TIMESTAMP}.log" 2>/dev/null || true
+
+          git add corev2/artifacts/ logs/ 2>/dev/null || true
+          git diff --staged --quiet || \
+            git commit -m "Sync run $(date -u '+%Y-%m-%d %H:%M UTC') [skip ci]"
+          git push origin HEAD || echo "Nothing to push"
+
+      # -- Upload artifacts on failure --------------------------------
+      - name: Upload debug artifacts on failure
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: sync-logs-${{ github.run_number }}
+          name: sync-failure-${{ github.run_number }}
           path: |
-            /tmp/*.log
+            /tmp/plan.log
+            /tmp/apply.log
             corev2/artifacts/*.json
-          retention-days: 7
-
-      - name: Notify Teams on failure
-        if: ${{ failure() }}
-        run: |
-          ERROR_SNIPPET=""
-          if [ -f /tmp/sync_error.log ]; then
-            ERROR_SNIPPET=$(tail -n 5 /tmp/sync_error.log | head -c 500)
-          elif [ -f /tmp/apply_output.log ]; then
-            ERROR_SNIPPET=$(tail -n 5 /tmp/apply_output.log | head -c 500)
-          elif [ -f /tmp/plan_output.log ]; then
-            ERROR_SNIPPET=$(tail -n 5 /tmp/plan_output.log | head -c 500)
-          fi
-          
-          # Escape JSON special characters
-          ERROR_SNIPPET=$(echo "$ERROR_SNIPPET" | python3 -c "import sys,json; print(json.dumps(sys.stdin.read()))" | sed 's/^"//;s/"$//')
-          
-          curl -s -o /dev/null -w "%{http_code}" \
-            -H "Content-Type: application/json" \
-            -d "{\"text\": \"❌ CRM Sync FAILED\\n\\nRun #${{ github.run_number }}\\nTriggered: ${{ github.event_name }}\\nLogs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\\n\\nError:\\n${ERROR_SNIPPET}\"}" \
-            "$TEAMS_WEBHOOK_URL" || echo "⚠️ Teams notification failed"
-        env:
-          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          retention-days: 14
