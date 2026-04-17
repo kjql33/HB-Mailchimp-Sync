@@ -17,6 +17,10 @@ hubspot:
       - id: "719"
         name: "Recruitment"
         tag: "Recruitment"
+        tag_overrides:
+          - property: "branches"
+            condition: "gt:1"
+            tag: "General Multi"
       - id: "720"
         name: "Competition"
         tag: "Competition"
@@ -155,6 +159,9 @@ secondary_sync:
       source_list: "987"
       source_name: "General Mailchimp Import"
       remove_from_source: false  # Dynamic list - HubSpot auto-excludes
+      additional_remove_lists:   # Recruitment contacts with branches>1 get routed here — clean up origin list
+        - list_id: "719"
+          list_name: "Recruitment"
 
     - exit_tag: "Recruitment Finished"
       destination_list: "947"
