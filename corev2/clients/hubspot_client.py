@@ -119,7 +119,7 @@ class HubSpotClient(HTTPBaseClient):
         properties: Optional[List[str]] = None
     ) -> Dict[str, Any]:
         """
-        Get contact by email address.
+        Get contact by email address (v3 API).
         
         Args:
             email: Contact email address
@@ -136,9 +136,12 @@ class HubSpotClient(HTTPBaseClient):
         if properties is None:
             properties = ["email", "firstname", "lastname"]
         
-        endpoint = f"/contacts/v1/contact/email/{email}/profile"
+        endpoint = f"/crm/v3/objects/contacts/{email}"
         
-        params = {"property": properties}
+        params = {
+            "idProperty": "email",
+            "properties": ",".join(properties)
+        }
         
         result = await self.get(endpoint, params=params)
         
@@ -156,7 +159,7 @@ class HubSpotClient(HTTPBaseClient):
         data = result["data"]
         return {
             "found": True,
-            "vid": data.get("vid"),
+            "vid": int(data["id"]),
             "email": email,
             "properties": data.get("properties", {})
         }
@@ -237,10 +240,10 @@ class HubSpotClient(HTTPBaseClient):
         value: str
     ) -> Dict[str, Any]:
         """
-        Update a single contact property.
+        Update a single contact property (v3 API).
         
         Args:
-            contact_vid: Contact VID
+            contact_vid: Contact record ID
             property_name: Property name (e.g., "ORI_LISTS")
             value: New value
         
@@ -251,18 +254,15 @@ class HubSpotClient(HTTPBaseClient):
                 "property": str
             }
         """
-        endpoint = f"/contacts/v1/contact/vid/{contact_vid}/profile"
+        endpoint = f"/crm/v3/objects/contacts/{contact_vid}"
         
         payload = {
-            "properties": [
-                {
-                    "property": property_name,
-                    "value": value
-                }
-            ]
+            "properties": {
+                property_name: value
+            }
         }
         
-        result = await self.post(endpoint, json=payload)
+        result = await self.patch(endpoint, json=payload)
         
         if result["status"] in [200, 204]:
             return {

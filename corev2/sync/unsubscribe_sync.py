@@ -227,23 +227,15 @@ class UnsubscribeSyncEngine:
         }
         
         try:
-            # Get all contacts in List 443
+            # Get all contacts in List 443 (v3 API)
             logger.info(f"Fetching members of List {OPTED_OUT_LIST_ID} (Opted Out)...")
             list_members = []
-            offset = 0
-            has_more = True
             
-            while has_more:
-                result = await self.hs_client.get(
-                    f'/contacts/v1/lists/{OPTED_OUT_LIST_ID}/contacts/all',
-                    params={'count': 100, 'vidOffset': offset}
-                )
-                
-                contacts = result.get('contacts', [])
-                list_members.extend(contacts)
-                
-                has_more = result.get('has-more', False)
-                offset = result.get('vid-offset', 0)
+            async for contact in self.hs_client.get_list_members(
+                str(OPTED_OUT_LIST_ID),
+                properties=["email", "firstname", "lastname"]
+            ):
+                list_members.append(contact)
             
             summary["list_443_members"] = len(list_members)
             logger.info(f"Found {len(list_members)} contacts in List 443")
@@ -254,20 +246,7 @@ class UnsubscribeSyncEngine:
             # Check each contact in Mailchimp
             for contact in list_members:
                 vid = contact.get('vid')
-                email = None
-                
-                # Extract email from identity profiles
-                for identity in contact.get('identity-profiles', []):
-                    for identity_item in identity.get('identities', []):
-                        if identity_item.get('type') == 'EMAIL':
-                            email = identity_item.get('value')
-                            break
-                    if email:
-                        break
-                
-                if not email:
-                    logger.warning(f"  No email found for VID {vid} - skipping")
-                    continue
+                email = contact.get('email')
                 
                 try:
                     logger.info(f"Checking {email} in Mailchimp...")
