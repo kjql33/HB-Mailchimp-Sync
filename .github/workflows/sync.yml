@@ -87,6 +87,7 @@ jobs:
           git config user.email "actions@github.com"
           git add logs/*.log corev2/artifacts/*.json corev2/artifacts/*.jsonl || true
           git diff --staged --quiet || git commit -m "🤖 Sync logs: $(date -u '+%Y-%m-%d %H:%M UTC')" || true
+          git pull --rebase origin ${{ github.ref_name }} || true
           git push origin ${{ github.ref_name }} || echo "⚠️ Push failed (may be no changes)"
       
       - name: Upload artifacts on failure
