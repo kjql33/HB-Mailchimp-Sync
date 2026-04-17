@@ -1,7 +1,7 @@
 # PRODUCTION CONFIGURATION for HubSpot ↔ Mailchimp Sync V2
 # 
 # CONFIGURED FOR: Multi-list sync (6 import lists)
-#   Sanctioned(969) → Recruitment(719) → Competition(720) → Sub Agents(989) → New Agents(945) → General(987)
+#   Sanctioned(969) → Recruitment(719) → Competition(720) → Sub Agents(1050) → New Agents(945) → General(987)
 # SAFETY: allow_apply=true, allow_archive=true, contact_limit=0 (UNLIMITED)
 
 hubspot:
@@ -20,7 +20,7 @@ hubspot:
       - id: "720"
         name: "Competition"
         tag: "Competition"
-      - id: "989"
+      - id: "1050"
         name: "Sub Agents"
         tag: "Sub Agents"
       - id: "945"
@@ -97,7 +97,7 @@ exclusion_matrix:
       - "969"  # Sanctioned
       - "719"  # Recruitment
       - "720"  # Competition
-      - "989"  # Sub Agents
+      - "1050"  # Sub Agents
       - "945"  # New Agents
       - "987"  # General Mailchimp Import (LAST - catch-all)
     exclude:
@@ -173,10 +173,10 @@ secondary_sync:
     - exit_tag: "Sub Agents Finished"
       destination_list: "1005"
       destination_name: "Sub Agents Handover"
-      source_list: "989"
+      source_list: "1050"
       source_name: "Sub Agents"
-      remove_from_source: false  # Dynamic list - HubSpot auto-excludes
-      additional_remove_lists:   # Static sublists feeding dynamic list 989
+      remove_from_source: true   # Static list - remove on exit
+      additional_remove_lists:   # Also remove from agency sublists
         - list_id: "900"
           list_name: "EXP"
         - list_id: "972"
