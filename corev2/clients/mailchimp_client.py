@@ -380,13 +380,14 @@ class MailchimpClient(HTTPBaseClient):
         else:
             raise Exception(f"Mailchimp archive failed: {result['status']} - {result['data']}")
     
-    async def get_all_members(self, count: int = 1000, offset: int = 0):
+    async def get_all_members(self, count: int = 1000, offset: int = 0, status: str = None):
         """
         Iterate over all Mailchimp audience members (paginated).
         
         Args:
             count: Members per page (max 1000)
             offset: Starting offset
+            status: Optional status filter (e.g. 'subscribed', 'unsubscribed', 'cleaned', 'archived')
         
         Yields:
             Member dicts with email_address, status, tags, merge_fields
@@ -394,6 +395,8 @@ class MailchimpClient(HTTPBaseClient):
         while True:
             endpoint = f"/lists/{self.audience_id}/members"
             params = {"count": min(count, 1000), "offset": offset}
+            if status:
+                params["status"] = status
             
             result = await self.get(endpoint, params=params)
             

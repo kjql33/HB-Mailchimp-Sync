@@ -202,6 +202,103 @@ class UnsubscribeSyncEngine:
         
         return summary
     
+    async def scan_cleaned_and_sync(self) -> Dict[str, Any]:
+        """
+        Scan Mailchimp for 'cleaned' (hard-bounced) contacts and sync bounce status to HubSpot.
+
+        Cleaned contacts in Mailchimp have permanently undeliverable emails. This method:
+          - Strips all tags from the cleaned contact in Mailchimp
+          - Sets hs_email_bad_address = "true" on the matching HubSpot contact
+
+        NOTE: Mailchimp does NOT allow resubscribing cleaned contacts — do not attempt it.
+
+        Returns:
+            {
+                "mailchimp_cleaned": int,
+                "tags_removed": int,
+                "hubspot_flagged": int,
+                "not_in_hubspot": int,
+                "errors": List[Dict]
+            }
+        """
+        logger.info("Starting Mailchimp cleaned (hard-bounce) → HubSpot sync...")
+
+        summary = {
+            "mailchimp_cleaned": 0,
+            "tags_removed": 0,
+            "hubspot_flagged": 0,
+            "not_in_hubspot": 0,
+            "errors": []
+        }
+
+        cleaned_contacts = []
+        async for member in self.mc_client.get_all_members(count=500, status="cleaned"):
+            cleaned_contacts.append({
+                "email": member.get("email_address"),
+                "tags": member.get("tags", [])
+            })
+
+        summary["mailchimp_cleaned"] = len(cleaned_contacts)
+        logger.info(f"Found {len(cleaned_contacts)} cleaned contacts in Mailchimp")
+
+        if not cleaned_contacts:
+            logger.info("No cleaned contacts to process")
+            return summary
+
+        for contact in cleaned_contacts:
+            email = contact["email"]
+            tags = contact["tags"]
+
+            try:
+                logger.info(f"Processing cleaned contact: {email}")
+
+                # Strip all tags from the Mailchimp member
+                if tags:
+                    try:
+                        await self.mc_client.remove_tags(email, tags)
+                        summary["tags_removed"] += 1
+                        logger.info(f"  Removed {len(tags)} tag(s) from {email}")
+                    except Exception as tag_err:
+                        logger.warning(f"  Could not remove tags from {email}: {tag_err}")
+                        summary["errors"].append({"email": email, "error": f"tag removal: {tag_err}"})
+
+                # Look up contact in HubSpot
+                hs_contact = await self.hs_client.get_contact_by_email(email)
+
+                if not hs_contact or not hs_contact.get("found"):
+                    logger.info(f"  {email} not found in HubSpot — skipping HS update")
+                    summary["not_in_hubspot"] += 1
+                    await asyncio.sleep(0.1)
+                    continue
+
+                vid = hs_contact.get("vid") or hs_contact.get("id")
+
+                # Flag email as invalid in HubSpot (string "true", not boolean)
+                try:
+                    await self.hs_client.update_contact_property(
+                        vid, "hs_email_bad_address", "true"
+                    )
+                    summary["hubspot_flagged"] += 1
+                    logger.info(f"  Set hs_email_bad_address=true for {email} (VID: {vid})")
+                except Exception as hs_err:
+                    logger.error(f"  Failed to flag {email} in HubSpot: {hs_err}")
+                    summary["errors"].append({"email": email, "error": f"hs_flag: {hs_err}"})
+
+            except Exception as e:
+                logger.error(f"  Error processing cleaned contact {email}: {e}")
+                summary["errors"].append({"email": email, "error": str(e)})
+
+            await asyncio.sleep(0.1)
+
+        logger.info(f"\n✓ Mailchimp Cleaned → HubSpot Sync Complete:")
+        logger.info(f"  • Cleaned contacts found: {summary['mailchimp_cleaned']}")
+        logger.info(f"  • Tags stripped in Mailchimp: {summary['tags_removed']}")
+        logger.info(f"  • Flagged in HubSpot: {summary['hubspot_flagged']}")
+        logger.info(f"  • Not found in HubSpot: {summary['not_in_hubspot']}")
+        logger.info(f"  • Errors: {len(summary['errors'])}")
+
+        return summary
+
     async def sync_list_443_to_mailchimp(self) -> Dict[str, Any]:
         """
         Reverse sync: Check HubSpot List 443 (Opted Out) and archive any members in Mailchimp.

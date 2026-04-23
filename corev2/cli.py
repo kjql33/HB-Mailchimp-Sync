@@ -389,10 +389,20 @@ def apply_mode(plan_path: Path, dry_run: bool = False) -> int:
                     logger.info(f"  Skipped (already unsubscribed): {unsub_results['skipped']}")
                     if unsub_results['errors']:
                         logger.warning(f"  Errors: {len(unsub_results['errors'])}")
-                    
-                    # STEP 1B: DISABLED - List 443 no longer exists
-                    # List 762 "Unsubscribed/Opted Out" is a DYNAMIC LIST - auto-managed by HubSpot when contacts opt out
-                    # Reverse direction (HubSpot → Mailchimp) handled via subscription status checks + archival reconciliation
+
+                    # STEP 1B: Sync cleaned (hard-bounced) contacts from Mailchimp → HubSpot
+                    logger.info("🔄 Step 1B: Syncing Mailchimp cleaned (hard-bounce) contacts to HubSpot...")
+                    cleaned_results = await unsub_engine.scan_cleaned_and_sync()
+                    logger.info(f"✔ Cleaned contact sync complete:")
+                    logger.info(f"  Mailchimp cleaned: {cleaned_results['mailchimp_cleaned']}")
+                    logger.info(f"  Tags stripped: {cleaned_results['tags_removed']}")
+                    logger.info(f"  HubSpot flagged: {cleaned_results['hubspot_flagged']}")
+                    logger.info(f"  Not in HubSpot: {cleaned_results['not_in_hubspot']}")
+                    if cleaned_results['errors']:
+                        logger.warning(f"  Errors: {len(cleaned_results['errors'])}")
+
+                    # NOTE: STEP 1B (List 443 reverse sync) is DISABLED - List 443 no longer exists
+                    # List 762 "Unsubscribed/Opted Out" is DYNAMIC - auto-managed by HubSpot
                     # NOTE: NEVER manually add/remove contacts from List 762 - it's criteria-based
                     # logger.info("🔄 Step 1B: Syncing HubSpot List 443 (Opted Out) to Mailchimp...")
                     # list443_results = await unsub_engine.sync_list_443_to_mailchimp()
