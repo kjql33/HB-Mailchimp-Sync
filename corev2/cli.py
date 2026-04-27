@@ -14,11 +14,15 @@ Environment Variables (all required unless noted):
   MAUTIC_PASSWORD              Mautic admin password
   TEAMS_WEBHOOK_URL            (optional) Microsoft Teams webhook
   TEAMS_NOTIFICATIONS_ENABLED  (optional) "true" to enable Teams alerts
-  LOAD_DOTENV=1                (local dev only) auto-load .env file
 
 GitHub Actions:
   Set all required variables as repository secrets.
   See .github/workflows/sync.yml for the full workflow.
+
+Stability:
+  Before every sync, the pipeline runs a Mautic API health check.
+  If Mautic returns 500 (Docker permissions issue), it auto-fixes
+  the container permissions and retries before aborting.
 """
 
 import argparse
@@ -49,9 +53,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-# ----------------------------------------------------------------------
+# ──────────────────────────────────────────────────────────────────────
 # Mode implementations
-# ----------------------------------------------------------------------
+# ──────────────────────────────────────────────────────────────────────
 
 def validate_config_mode(config_path: Path) -> int:
     try:
@@ -74,12 +78,14 @@ def plan_mode(
     output_path: Path,
     only_email: Optional[str] = None,
     only_vid: Optional[str] = None,
+    skip_health_check: bool = False,
 ) -> int:
     try:
         from corev2.config.loader import load_config, compute_config_hash
         from corev2.clients.hubspot_client import HubSpotClient
         from corev2.clients.mautic_client import MauticClient
         from corev2.planner.primary import SyncPlanner
+        from corev2.health import check_mautic_health
 
         config = load_config(str(config_path))
         config_hash = compute_config_hash(config)
@@ -98,6 +104,21 @@ def plan_mode(
         contact_limit = config.safety.test_contact_limit or None
 
         async def run():
+            # STEP 0: Mautic health check (auto-fixes permissions if needed)
+            if not skip_health_check:
+                logger.info("STEP 0: Mautic API health check...")
+                healthy = await check_mautic_health(
+                    base_url=config.mautic.base_url,
+                    username=config.mautic.username.get_secret_value(),
+                    password=config.mautic.password.get_secret_value(),
+                    auto_fix=True,
+                )
+                if not healthy:
+                    raise RuntimeError(
+                        "Mautic API is not healthy after auto-fix attempts. "
+                        "Check Docker container status: docker ps | grep mautic"
+                    )
+
             async with hs_client, mc_client:
                 return await planner.generate_plan(
                     contact_limit=contact_limit,
@@ -125,7 +146,11 @@ def plan_mode(
         return 1
 
 
-def apply_mode(plan_path: Path, dry_run: bool = False) -> int:
+def apply_mode(
+    plan_path: Path,
+    dry_run: bool = False,
+    skip_health_check: bool = False,
+) -> int:
     try:
         from corev2.config.loader import load_config, compute_config_hash
         from corev2.config.schema import RunMode
@@ -134,6 +159,7 @@ def apply_mode(plan_path: Path, dry_run: bool = False) -> int:
         from corev2.executor.engine import SyncExecutor, AudienceCapGuard
         from corev2.sync.unsubscribe_sync import UnsubscribeSyncEngine
         from corev2.planner.secondary import SecondaryPlanner
+        from corev2.health import check_mautic_health
 
         # Load plan
         with open(plan_path, encoding="utf-8") as f:
@@ -141,7 +167,7 @@ def apply_mode(plan_path: Path, dry_run: bool = False) -> int:
 
         config_file = plan_data.get("metadata", {}).get("config_file")
         if not config_file:
-            raise ValueError("Plan missing config_file in metadata - regenerate plan")
+            raise ValueError("Plan missing config_file in metadata — regenerate plan")
 
         config = load_config(config_file)
 
@@ -150,7 +176,7 @@ def apply_mode(plan_path: Path, dry_run: bool = False) -> int:
         plan_hash = plan_data.get("metadata", {}).get("config_hash")
         if plan_hash and current_hash != plan_hash:
             raise ValueError(
-                f"Config hash mismatch - plan was generated with a different config.\n"
+                f"Config hash mismatch — plan was generated with a different config.\n"
                 f"  Plan hash:    {plan_hash}\n"
                 f"  Current hash: {current_hash}\n"
                 f"Regenerate the plan with: python -m corev2.cli plan"
@@ -161,7 +187,7 @@ def apply_mode(plan_path: Path, dry_run: bool = False) -> int:
             if config.safety.run_mode != RunMode.PROD:
                 raise ValueError(f"run_mode must be 'prod' (current: '{config.safety.run_mode.value}')")
             if not config.safety.allow_apply:
-                raise ValueError("allow_apply=false - set to true in config to enable live mutations")
+                raise ValueError("allow_apply=false — set to true in config to enable live mutations")
             if config.safety.test_contact_limit == 0 and not config.safety.allow_unlimited:
                 raise ValueError("test_contact_limit=0 requires allow_unlimited=true")
             has_archive = any(
@@ -172,7 +198,7 @@ def apply_mode(plan_path: Path, dry_run: bool = False) -> int:
                 raise ValueError("Plan contains archive operations but allow_archive=false")
             logger.info("All safety gates passed")
         else:
-            logger.info("DRY-RUN MODE - no mutations will be made")
+            logger.info("DRY-RUN MODE — no mutations will be made")
 
         # Initialise clients
         hs_client = HubSpotClient(
@@ -191,6 +217,21 @@ def apply_mode(plan_path: Path, dry_run: bool = False) -> int:
         )
 
         async def run():
+            # STEP 0: Mautic health check (auto-fixes permissions if needed)
+            if not skip_health_check:
+                logger.info("STEP 0: Mautic API health check...")
+                healthy = await check_mautic_health(
+                    base_url=config.mautic.base_url,
+                    username=config.mautic.username.get_secret_value(),
+                    password=config.mautic.password.get_secret_value(),
+                    auto_fix=True,
+                )
+                if not healthy:
+                    raise RuntimeError(
+                        "Mautic API is not healthy after auto-fix attempts. "
+                        "Check Docker container: docker logs mautic --tail 20"
+                    )
+
             async with hs_client, mc_client:
 
                 # STEP 1: Unsubscribe sync (Mautic → HubSpot)
@@ -211,7 +252,7 @@ def apply_mode(plan_path: Path, dry_run: bool = False) -> int:
                     cap_guard = AudienceCapGuard(mc_client, config.mautic.audience_cap, webhook_url)
                     can_proceed = await cap_guard.preflight_check()
                     if not can_proceed:
-                        logger.error("Audience cap reached - aborting")
+                        logger.error("Audience cap reached — aborting")
                         return {"aborted": True, "abort_reason": "audience_cap_reached"}
 
                 executor = SyncExecutor(config, hs_client, mc_client, dry_run=dry_run)
@@ -260,21 +301,22 @@ def apply_mode(plan_path: Path, dry_run: bool = False) -> int:
         return 1
 
 
-def sync_mode(config_path: Path) -> int:
+def sync_mode(config_path: Path, skip_health_check: bool = False) -> int:
     """Convenience: plan then apply in one command."""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     plan_path = Path(f"corev2/artifacts/plan_{timestamp}.json")
 
     logger.info("Running full sync (plan + apply)...")
-    rc = plan_mode(config_path, plan_path)
+    # Health check only once during plan — apply skips it
+    rc = plan_mode(config_path, plan_path, skip_health_check=skip_health_check)
     if rc != 0:
         return rc
-    return apply_mode(plan_path)
+    return apply_mode(plan_path, skip_health_check=True)
 
 
-# ----------------------------------------------------------------------
+# ──────────────────────────────────────────────────────────────────────
 # CLI
-# ----------------------------------------------------------------------
+# ──────────────────────────────────────────────────────────────────────
 
 def main() -> int:
     parser = argparse.ArgumentParser(
@@ -299,6 +341,9 @@ Examples:
 
   # Debug single contact
   python -m corev2.cli plan --only-email user@example.com --output /tmp/debug.json
+
+  # Skip health check (GitHub Actions — Docker not accessible)
+  python -m corev2.cli sync --skip-health-check
         """,
     )
     parser.add_argument(
@@ -322,6 +367,11 @@ Examples:
     parser.add_argument("--dry-run", action="store_true", help="Simulate without mutations")
     parser.add_argument("--only-email", type=str, help="Filter to single contact by email")
     parser.add_argument("--only-vid", type=str, help="Filter to single contact by VID")
+    parser.add_argument(
+        "--skip-health-check",
+        action="store_true",
+        help="Skip Mautic health check (use in GitHub Actions where Docker is not accessible)",
+    )
 
     args = parser.parse_args()
 
@@ -329,14 +379,20 @@ Examples:
         if args.mode == "validate-config":
             return validate_config_mode(args.config)
         elif args.mode == "plan":
-            return plan_mode(args.config, args.output, args.only_email, args.only_vid)
+            return plan_mode(
+                args.config, args.output, args.only_email, args.only_vid,
+                skip_health_check=args.skip_health_check,
+            )
         elif args.mode == "apply":
             if not args.plan:
                 logger.error("--plan required for apply mode")
                 return 1
-            return apply_mode(args.plan, dry_run=args.dry_run)
+            return apply_mode(
+                args.plan, dry_run=args.dry_run,
+                skip_health_check=args.skip_health_check,
+            )
         elif args.mode == "sync":
-            return sync_mode(args.config)
+            return sync_mode(args.config, skip_health_check=args.skip_health_check)
     except KeyboardInterrupt:
         logger.info("\nInterrupted by user")
         return 130

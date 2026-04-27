@@ -30,7 +30,7 @@ jobs:
     timeout-minutes: 300
 
     steps:
-      # -- Setup ------------------------------------------------------
+      # ── Setup ──────────────────────────────────────────────────────
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -43,7 +43,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      # -- Validate config --------------------------------------------
+      # ── Validate config ────────────────────────────────────────────
       - name: Validate config
         run: python -m corev2.cli validate-config --config ${{ env.CONFIG_PATH }}
         env:
@@ -54,7 +54,7 @@ jobs:
           TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
           TEAMS_NOTIFICATIONS_ENABLED: ${{ secrets.TEAMS_NOTIFICATIONS_ENABLED }}
 
-      # -- Generate plan ----------------------------------------------
+      # ── Generate plan ──────────────────────────────────────────────
       - name: Generate operations plan
         id: plan
         run: |
@@ -66,9 +66,12 @@ jobs:
             EXTRA_ARGS="--only-email ${{ github.event.inputs.only_email }}"
           fi
 
+          # --skip-health-check: Docker not accessible from GitHub Actions runner
+          # The health check and permission fix only works on the Ubuntu server directly
           python -m corev2.cli plan \
             --config ${{ env.CONFIG_PATH }} \
             --output "$PLAN_FILE" \
+            --skip-health-check \
             $EXTRA_ARGS \
             2>&1 | tee /tmp/plan.log
         env:
@@ -79,18 +82,19 @@ jobs:
           TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
           TEAMS_NOTIFICATIONS_ENABLED: ${{ secrets.TEAMS_NOTIFICATIONS_ENABLED }}
 
-      # -- Apply plan -------------------------------------------------
+      # ── Apply plan ─────────────────────────────────────────────────
       - name: Apply plan
         id: apply
         run: |
           DRY_RUN_FLAG=""
           if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
             DRY_RUN_FLAG="--dry-run"
-            echo "DRY RUN MODE - no mutations will be made"
+            echo "DRY RUN MODE — no mutations will be made"
           fi
 
           python -m corev2.cli apply \
             --plan "${{ steps.plan.outputs.plan_file }}" \
+            --skip-health-check \
             $DRY_RUN_FLAG \
             2>&1 | tee /tmp/apply.log
         env:
@@ -101,7 +105,7 @@ jobs:
           TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
           TEAMS_NOTIFICATIONS_ENABLED: ${{ secrets.TEAMS_NOTIFICATIONS_ENABLED }}
 
-      # -- Commit artifacts -------------------------------------------
+      # ── Commit artifacts ───────────────────────────────────────────
       - name: Commit logs and artifacts
         if: always()
         run: |
@@ -118,7 +122,7 @@ jobs:
             git commit -m "Sync run $(date -u '+%Y-%m-%d %H:%M UTC') [skip ci]"
           git push origin HEAD || echo "Nothing to push"
 
-      # -- Upload artifacts on failure --------------------------------
+      # ── Upload artifacts on failure ────────────────────────────────
       - name: Upload debug artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v4
