@@ -257,8 +257,11 @@ class SyncPlanner:
             logger.info("Running archival reconciliation (INV-006)...")
             from corev2.planner.reconciliation import ArchivalReconciliation
 
-            # active_emails = contacts in sync lists AND NOT in any exclusion list
+            # active_emails = contacts in sync lists AND NOT in any exclusion list.
+            # Also track excluded_contacts for Exclusion Cleanup: contacts in manual sync lists
+            # that have entered an exclusion list must be removed from those HubSpot lists.
             active_emails: Set[str] = set()
+            excluded_contacts: Dict[str, Dict] = {}  # {email: {"vid": ..., "sync_list_ids": [...]}}
             for em, data in contacts_by_email.items():
                 lids = data["list_ids"]
                 excluded = False
@@ -266,6 +269,17 @@ class SyncPlanner:
                     gcfg = getattr(self.config.exclusion_matrix, gn)
                     if lids & set(gcfg.exclude):
                         excluded = True
+                        # Track manual/static sync lists this contact is in (needs HubSpot cleanup)
+                        sync_list_ids = [lid for lid in lids if lid in set(gcfg.lists)]
+                        if sync_list_ids:
+                            excluded_contacts[em] = {
+                                "vid": data["vid"],
+                                "sync_list_ids": sync_list_ids,
+                            }
+                            logger.info(
+                                f"Contact {em} in exclusion list → "
+                                f"will remove from HubSpot lists: {sync_list_ids}"
+                            )
                         break
                 if not excluded:
                     active_emails.add(em)
@@ -281,14 +295,26 @@ class SyncPlanner:
             )
 
             if recon_result.archive_operations:
-                # Group archive ops by email and append to plan
+                # Group archive ops by email and append to plan.
+                # Also append remove_hs_from_list ops for excluded contacts (Exclusion Cleanup rule).
                 ops_by_email: Dict[str, List] = {}
                 for op in recon_result.archive_operations:
                     em = op.get("email", "")
                     ops_by_email.setdefault(em, []).append(op)
 
                 for em, ops in ops_by_email.items():
-                    plan["operations"].append({"email": em, "vid": None, "operations": ops})
+                    exc_vid = None
+                    if em in excluded_contacts:
+                        exc_data = excluded_contacts[em]
+                        exc_vid = exc_data["vid"]
+                        for list_id in exc_data["sync_list_ids"]:
+                            ops.append({
+                                "type": "remove_hs_from_list",
+                                "list_id": list_id,
+                                "vid": exc_vid,
+                                "reason": "contact_in_exclusion_list",
+                            })
+                    plan["operations"].append({"email": em, "vid": exc_vid, "operations": ops})
                     plan["summary"]["contacts_with_operations"] += 1
                     for op in ops:
                         t = op["type"]
@@ -303,6 +329,43 @@ class SyncPlanner:
                 logger.info(
                     f"Archival reconciliation: no orphans to archive "
                     f"({recon_result.orphaned_members} found, {recon_result.exempt_members} exempt)"
+                )
+
+            # Exclusion Cleanup SECOND PASS: contacts in exclusion lists but NOT in Mautic.
+            # No archive op was generated for them above, but they still sit in manual HubSpot
+            # sync lists (Recruitment, Competition, Sub Agents, etc.) and must be removed.
+            emails_already_planned = {
+                entry["email"] for entry in plan["operations"] if entry.get("email")
+            }
+            direct_removal_ops = 0
+            for exc_email, exc_data in excluded_contacts.items():
+                sync_list_ids = exc_data.get("sync_list_ids", [])
+                if not sync_list_ids or exc_email in emails_already_planned:
+                    continue
+                exc_vid = exc_data["vid"]
+                removal_ops = [
+                    {
+                        "type": "remove_hs_from_list",
+                        "list_id": list_id,
+                        "vid": exc_vid,
+                        "reason": "contact_in_exclusion_list",
+                    }
+                    for list_id in sync_list_ids
+                ]
+                plan["operations"].append({"email": exc_email, "vid": exc_vid, "operations": removal_ops})
+                plan["summary"]["contacts_with_operations"] += 1
+                plan["summary"]["operations_by_type"]["remove_hs_from_list"] = (
+                    plan["summary"]["operations_by_type"].get("remove_hs_from_list", 0) + len(removal_ops)
+                )
+                direct_removal_ops += len(removal_ops)
+                logger.info(
+                    f"Contact {exc_email} in exclusion list → removing from "
+                    f"HubSpot list(s) {sync_list_ids} (not present in Mautic)"
+                )
+            if direct_removal_ops > 0:
+                logger.info(
+                    f"Generated {direct_removal_ops} additional HubSpot list removal "
+                    f"operations for excluded contacts not in Mautic"
                 )
 
         return plan
