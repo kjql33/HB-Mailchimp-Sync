@@ -37,7 +37,7 @@ HubSpot CRM  ---- Stage 1 (Primary Sync) ----►  Mautic
 | Stage   | Direction        | Trigger                   | What it does                                      |
 | ------- | ---------------- | ------------------------- | ------------------------------------------------- |
 | Stage 1 | HubSpot → Mautic | Every 8 hours (scheduled) | Creates/updates contacts with correct tags        |
-| Stage 2 | Inside Mautic    | Ejas applies exit tags    | Email journeys run until contact finishes         |
+| Stage 2 | Inside Mautic    | Mautic campaigns auto-apply exit tags | Email journeys run until contact finishes         |
 | Stage 3 | Mautic → HubSpot | Every 8 hours (scheduled) | Moves finished contacts to HubSpot handover lists |
 
 ---
@@ -271,7 +271,7 @@ To change the schedule, edit `.github/workflows/sync.yml`:
 | 969     | Sanctioned       | `Sanctioned`                                            |
 | 719     | Recruitment      | `Recruitment`                                           |
 | 720     | Competition      | `Competition`                                           |
-| 989     | Sub Agents       | `Sub Agents`                                            |
+| 1050    | Sub Agents       | `Sub Agents`                                            |
 | 945     | New Agents       | `New Agents`                                            |
 | 987     | General          | `General Single` or `General Multi` (branch split)      |
 | 784     | Manual Inclusion | `General Single` + `Manual Inclusion` tag               |
