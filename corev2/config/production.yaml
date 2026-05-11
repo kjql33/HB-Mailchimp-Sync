@@ -21,7 +21,7 @@ hubspot:
         name: "Competition"
         tag: "Competition"
 
-      - id: "989"
+      - id: "1050"
         name: "Sub Agents"
         tag: "Sub Agents"
 
@@ -87,7 +87,7 @@ sync:
 # INV-001: Four-group exclusion matrix
 exclusion_matrix:
   general_marketing:
-    lists: ["969", "719", "720", "989", "945", "987"]
+    lists: ["969", "719", "720", "1050", "945", "987"]
     exclude: ["762", "773", "717"]
 
   special_campaigns:
@@ -144,9 +144,9 @@ secondary_sync:
     - exit_tag: "Sub Agents Finished"
       destination_list: "1005"
       destination_name: "Sub Agents Handover"
-      source_list: "989"
+      source_list: "1050"
       source_name: "Sub Agents"
-      remove_from_source: false   # DYNAMIC list
+      remove_from_source: true    # STATIC list - must remove manually
       additional_remove_lists:
         - list_id: "900"
           list_name: "EXP"

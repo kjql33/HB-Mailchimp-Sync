@@ -242,8 +242,15 @@ def apply_mode(
                     logger.info(f"  Unsubscribed found: {unsub_results['mailchimp_unsubscribed']}")
                     logger.info(f"  HubSpot updates:    {unsub_results['hubspot_updates']}")
                     logger.info(f"  Skipped:            {unsub_results['skipped']}")
+
+                    # STEP 1B: Cleaned/bounced contact sync (Mautic → HubSpot bad address flag)
+                    logger.info("STEP 1B: Mautic cleaned/bounced → HubSpot bad address flag...")
+                    cleaned_results = await unsub.scan_cleaned_and_sync()
+                    logger.info(f"  Cleaned found:      {cleaned_results['mautic_cleaned']}")
+                    logger.info(f"  Tags removed:       {cleaned_results['tags_removed']}")
+                    logger.info(f"  HubSpot flagged:    {cleaned_results['hubspot_flagged']}")
                 else:
-                    logger.info("STEP 1: Skipped (dry-run)")
+                    logger.info("STEP 1 + 1B: Skipped (dry-run)")
 
                 # STEP 2: Primary sync (HubSpot → Mautic)
                 logger.info("STEP 2: Executing primary sync operations...")

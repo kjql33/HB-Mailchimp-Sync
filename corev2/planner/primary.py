@@ -249,6 +249,62 @@ class SyncPlanner:
                     )
 
         logger.info(f"Plan complete: {plan['summary']['contacts_with_operations']} contacts with operations")
+
+        # Archival reconciliation (INV-006)
+        # Scans Mautic for contacts that have a source tag but are no longer in any HubSpot sync list.
+        # Skipped for single-contact debug runs (--only-email / --only-vid) to avoid false positives.
+        if self.config.safety.allow_archive and not (only_email or only_vid):
+            logger.info("Running archival reconciliation (INV-006)...")
+            from corev2.planner.reconciliation import ArchivalReconciliation
+
+            # active_emails = contacts in sync lists AND NOT in any exclusion list
+            active_emails: Set[str] = set()
+            for em, data in contacts_by_email.items():
+                lids = data["list_ids"]
+                excluded = False
+                for gn in _GROUP_ORDER:
+                    gcfg = getattr(self.config.exclusion_matrix, gn)
+                    if lids & set(gcfg.exclude):
+                        excluded = True
+                        break
+                if not excluded:
+                    active_emails.add(em)
+
+            reconciliation = ArchivalReconciliation(
+                mc_client=self.mc_client,
+                config=self.config,
+                max_archive_per_run=self.config.archival.max_archive_per_run,
+            )
+            recon_result = await reconciliation.scan_for_orphans(
+                active_hubspot_emails=active_emails,
+                dry_run=False,
+            )
+
+            if recon_result.archive_operations:
+                # Group archive ops by email and append to plan
+                ops_by_email: Dict[str, List] = {}
+                for op in recon_result.archive_operations:
+                    em = op.get("email", "")
+                    ops_by_email.setdefault(em, []).append(op)
+
+                for em, ops in ops_by_email.items():
+                    plan["operations"].append({"email": em, "vid": None, "operations": ops})
+                    plan["summary"]["contacts_with_operations"] += 1
+                    for op in ops:
+                        t = op["type"]
+                        plan["summary"]["operations_by_type"][t] = (
+                            plan["summary"]["operations_by_type"].get(t, 0) + 1
+                        )
+                logger.info(
+                    f"Archival reconciliation: {len(recon_result.archive_operations)} ops added "
+                    f"({recon_result.orphaned_members} orphans, {recon_result.exempt_members} exempt)"
+                )
+            else:
+                logger.info(
+                    f"Archival reconciliation: no orphans to archive "
+                    f"({recon_result.orphaned_members} found, {recon_result.exempt_members} exempt)"
+                )
+
         return plan
 
     async def _plan_contact_ops(

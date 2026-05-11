@@ -20,7 +20,7 @@ permissions:
   contents: write
 
 env:
-  PYTHON_VERSION: "3.12"
+  PYTHON_VERSION: "3.13"
   CONFIG_PATH: "corev2/config/production.yaml"
 
 jobs:
@@ -32,10 +32,10 @@ jobs:
     steps:
       # ── Setup ──────────────────────────────────────────────────────
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
@@ -120,6 +120,7 @@ jobs:
           git add corev2/artifacts/ logs/ 2>/dev/null || true
           git diff --staged --quiet || \
             git commit -m "Sync run $(date -u '+%Y-%m-%d %H:%M UTC') [skip ci]"
+          git pull --rebase origin ${{ github.ref_name }} || true
           git push origin HEAD || echo "Nothing to push"
 
       # ── Upload artifacts on failure ────────────────────────────────

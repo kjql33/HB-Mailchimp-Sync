@@ -3,8 +3,12 @@ Mautic → HubSpot unsubscribe sync.
 
 Scans Mautic for opted-out contacts and mirrors that status to HubSpot
 using the Communication Preferences API.
+
+Step 1:  scan_and_sync()         — Mautic unsubscribed → HubSpot opt-out
+Step 1B: scan_cleaned_and_sync() — Mautic bounced/cleaned → strip tags + set hs_email_bad_address
 """
 
+import asyncio
 import logging
 from typing import Dict, Any
 
@@ -110,6 +114,78 @@ class UnsubscribeSyncEngine:
             f"Unsubscribe sync complete: "
             f"{summary['hubspot_updates']} updated, "
             f"{summary['skipped']} skipped, "
+            f"{len(summary['errors'])} errors"
+        )
+        return summary
+
+    async def scan_cleaned_and_sync(self) -> Dict[str, Any]:
+        """
+        Scan Mautic for hard-bounced (cleaned) contacts and flag them in HubSpot.
+
+        For each cleaned contact:
+          1. Remove all tags from Mautic (clean slate — prevents re-tagging next run)
+          2. Set hs_email_bad_address=true in HubSpot
+
+        Returns:
+            {mautic_cleaned, tags_removed, hubspot_flagged, not_in_hubspot, errors}
+        """
+        logger.info("Starting Mautic → HubSpot cleaned/bounced contact sync (Step 1B)...")
+
+        summary: Dict[str, Any] = {
+            "mautic_cleaned": 0,
+            "tags_removed": 0,
+            "hubspot_flagged": 0,
+            "not_in_hubspot": 0,
+            "errors": [],
+        }
+
+        cleaned = []
+        async for member in self.mc_client.get_all_members():
+            if member.get("status") == "cleaned":
+                cleaned.append(member)
+
+        summary["mautic_cleaned"] = len(cleaned)
+        logger.info(f"Found {len(cleaned)} cleaned/bounced contacts in Mautic")
+
+        if not cleaned:
+            logger.info("No cleaned contacts to process")
+            return summary
+
+        for member in cleaned:
+            email = member.get("email_address")
+            tags = member.get("tags", [])
+            try:
+                # Step 1: Strip all Mautic tags so they won't be re-applied next sync run
+                if tags:
+                    remove_result = await self.mc_client.remove_tags(email, tags)
+                    if remove_result.get("success"):
+                        summary["tags_removed"] += len(tags)
+                        logger.debug(f"  {email}: removed {len(tags)} tags from Mautic")
+
+                # Step 2: Flag hs_email_bad_address in HubSpot
+                hs_contact = await self.hs_client.get_contact_by_email(email)
+                if not hs_contact["found"]:
+                    logger.debug(f"  {email}: not found in HubSpot — skipping flag")
+                    summary["not_in_hubspot"] += 1
+                    continue
+
+                await self.hs_client.update_contact_property(
+                    hs_contact["vid"], "hs_email_bad_address", "true"
+                )
+                summary["hubspot_flagged"] += 1
+                logger.info(f"  {email}: flagged hs_email_bad_address=true in HubSpot")
+
+            except Exception as e:
+                logger.error(f"  {email}: error during cleaned sync — {e}")
+                summary["errors"].append({"email": email, "error": str(e)})
+
+            await asyncio.sleep(0.1)  # gentle rate limiting
+
+        logger.info(
+            f"Cleaned sync complete: {summary['mautic_cleaned']} found, "
+            f"{summary['tags_removed']} tags removed, "
+            f"{summary['hubspot_flagged']} HubSpot flagged, "
+            f"{summary['not_in_hubspot']} not in HubSpot, "
             f"{len(summary['errors'])} errors"
         )
         return summary
